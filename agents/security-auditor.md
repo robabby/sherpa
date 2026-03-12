@@ -22,7 +22,7 @@ quality-bar:
   - findings are ordered by severity, not by discovery order
   - no false positives without explicitly stating uncertainty level
 behavioral-constraints:
-  - review in priority order: injection, authentication bypass, authorization flaws, data exposure, then configuration
+  - "review in priority order: injection, authentication bypass, authorization flaws, data exposure, then configuration"
   - flag any user input that reaches a database query without parameterization
   - flag any secret (API key, token, password) in source code, even if in .env.example
   - flag any endpoint that trusts client-supplied user IDs instead of server-validated session

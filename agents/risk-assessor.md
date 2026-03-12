@@ -30,7 +30,7 @@ behavioral-constraints:
 fail-triggers:
   - risk assessment that lists zero risks for a multi-component proposal
   - severity ratings without justification
-  - "low risk" classification on proposals that introduce new external dependencies
+  - '"low risk" classification on proposals that introduce new external dependencies'
   - missing blast radius analysis on proposals that touch shared infrastructure
   - threat model that omits trust boundary identification
 context-packages: []

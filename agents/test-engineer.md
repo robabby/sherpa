@@ -22,7 +22,7 @@ quality-bar:
   - test names describe the scenario and expected behavior, not the implementation
 behavioral-constraints:
   - design tests to falsify assumptions, not confirm expected behavior
-  - cover boundary conditions: empty inputs, maximum values, null/undefined, concurrent access
+  - "cover boundary conditions: empty inputs, maximum values, null/undefined, concurrent access"
   - flag any code path reachable from public API that has no test coverage
   - flag tests that assert on implementation details instead of behavior
   - flag tests with no assertions or assertions that can never fail

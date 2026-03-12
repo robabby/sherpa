@@ -28,7 +28,7 @@ behavioral-constraints:
 fail-triggers:
   - any claim of "no issues found" without citing specific files checked
   - all criteria marked "met" with no evidence column filled
-  - "production ready" or "looks good" assertions on first submission
+  - '"production ready" or "looks good" assertions on first submission'
   - worker output that doesn't address every acceptance criterion
   - missing test coverage for new code paths
   - claims that don't match actual file content

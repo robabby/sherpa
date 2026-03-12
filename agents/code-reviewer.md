@@ -20,7 +20,7 @@ quality-bar:
   - every approval cites what was verified and how
   - non-barrel imports flagged
 behavioral-constraints:
-  - review in order: security vulnerabilities, correctness bugs, convention violations
+  - "review in order: security vulnerabilities, correctness bugs, convention violations"
   - flag any function without TypeScript types on exports
   - flag any module that imports from a sibling's internals (non-barrel import)
   - when claiming code is correct, cite the specific test or logic that proves it
