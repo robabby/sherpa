@@ -14,6 +14,7 @@ export const DEFAULT_PATHS: Required<PathsConfig> = {
   initiatives: "docs/initiatives",
   tasks: "docs/tasks",
   agentRoles: "docs/agents/roles",
+  baseCatalog: "agents",
   rules: ".claude/rules",
   skills: ".claude/skills",
   sessions: "docs/sessions",

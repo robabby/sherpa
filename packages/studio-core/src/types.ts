@@ -69,6 +69,16 @@ export interface AgentRole {
   toolPermissions: string[];
   escalation: string[];
   description: string;
+  // Behavioral agent fields (from base catalog)
+  disposition?: string;
+  domainScope?: string[];
+  behavioralConstraints?: string[];
+  qualityBar?: string[];
+  failTriggers?: string[];
+  outputStyle?: string;
+  vibe?: string;
+  tags?: string[];
+  source?: "base" | "org";
 }
 
 // Assignment constants

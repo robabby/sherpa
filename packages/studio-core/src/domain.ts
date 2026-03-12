@@ -22,6 +22,7 @@ import {
 } from "./markdown"
 import {
   agentRoleFrontmatterSchema,
+  behavioralAgentFrontmatterSchema,
   branchSeedFrontmatterSchema,
   initiativeFrontmatterSchema,
   ruleFrontmatterSchema,
@@ -397,13 +398,55 @@ export function getSkills(projectSkillSlugs?: Set<string>): Skill[] {
 }
 
 /**
- * Scan docs/agents/roles/*.md, parse frontmatter, return AgentRole[].
+ * Scan agents/ (base catalog) and docs/agents/roles/ (org-specific),
+ * parse frontmatter, return AgentRole[].
  */
 export function getAgentRoles(): AgentRole[] {
-  const files = listMarkdownFiles("docs/agents/roles")
   const roles: AgentRole[] = []
 
-  for (const filePath of files) {
+  // Base catalog (agents/) — uses behavioral agent schema
+  const baseCatalogFiles = listMarkdownFiles("agents")
+    .filter((f) => !f.endsWith("README.md"))
+  for (const filePath of baseCatalogFiles) {
+    const source = readProjectFile(filePath)
+    if (!source) continue
+
+    const { data: rawData, content } = parseFrontmatter(source)
+    if (!rawData) continue
+    const parsed = behavioralAgentFrontmatterSchema.safeParse(rawData)
+    if (!parsed.success) continue
+    const data = parsed.data
+
+    const body = content.replace(/^#[^\n]*\n/, "").trim()
+
+    roles.push({
+      slug: data.name,
+      displayName: data["display-name"],
+      category: data.category,
+      modelTier: data["model-tier"] ?? "medium",
+      patterns: data.patterns ?? [],
+      structure: data.structure ?? null,
+      contextPackages: data["context-packages"] ?? [],
+      rules: data.rules ?? [],
+      skills: data.skills ?? [],
+      toolPermissions: data["tool-permissions"] ?? [],
+      escalation: data.escalation ?? [],
+      description: body,
+      disposition: data.disposition,
+      domainScope: data["domain-scope"] ?? [],
+      behavioralConstraints: data["behavioral-constraints"] ?? [],
+      qualityBar: data["quality-bar"] ?? [],
+      failTriggers: data["fail-triggers"] ?? [],
+      outputStyle: data["output-style"],
+      vibe: data.vibe,
+      tags: data.tags ?? [],
+      source: "base",
+    })
+  }
+
+  // Org-specific roles (docs/agents/roles/) — uses legacy schema
+  const orgFiles = listMarkdownFiles("docs/agents/roles")
+  for (const filePath of orgFiles) {
     const source = readProjectFile(filePath)
     if (!source) continue
 
@@ -414,6 +457,9 @@ export function getAgentRoles(): AgentRole[] {
     if (!data) continue
 
     const body = content.replace(/^#[^\n]*\n/, "").trim()
+
+    // Skip if base catalog already has this agent (org overrides handled separately)
+    if (roles.some((r) => r.slug === data.role)) continue
 
     roles.push({
       slug: data.role,
@@ -428,6 +474,7 @@ export function getAgentRoles(): AgentRole[] {
       toolPermissions: data["tool-permissions"] ?? [],
       escalation: data.escalation ?? [],
       description: body,
+      source: "org",
     })
   }
 

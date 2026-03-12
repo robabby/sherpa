@@ -14,6 +14,7 @@ export interface PathsConfig {
   initiatives?: string
   tasks?: string
   agentRoles?: string
+  baseCatalog?: string
   rules?: string
   skills?: string
   sessions?: string
