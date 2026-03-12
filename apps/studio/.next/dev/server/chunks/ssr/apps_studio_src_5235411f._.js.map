@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/rob/Workbench/sherpa/apps/studio/src/components/ui/sacred-spinner.tsx"],"sourcesContent":["export function SacredSpinner({ size = \"md\" }: { size?: \"sm\" | \"md\" | \"lg\" }) {\n  const sizeClass = size === \"lg\" ? \"h-8 w-8\" : size === \"sm\" ? \"h-4 w-4\" : \"h-6 w-6\"\n  return (\n    <div className={`${sizeClass} animate-spin rounded-full border-2 border-muted-foreground/20 border-t-primary`} />\n  )\n}\n"],"names":[],"mappings":";;;;;;AAAO,SAAS,cAAc,EAAE,OAAO,IAAI,EAAiC;IAC1E,MAAM,YAAY,SAAS,OAAO,YAAY,SAAS,OAAO,YAAY;IAC1E,qBACE,+YAAC;QAAI,WAAW,GAAG,UAAU,+EAA+E,CAAC;;;;;;AAEjH"}},
-    {"offset": {"line": 24, "column": 0}, "map": {"version":3,"sources":["file:///Users/rob/Workbench/sherpa/apps/studio/src/app/process/loading.tsx"],"sourcesContent":["import { SacredSpinner } from \"@/components/ui/sacred-spinner\";\n\nexport default function ProcessLoading() {\n  return (\n    <div className=\"flex h-[60vh] items-center justify-center\">\n      <SacredSpinner size=\"lg\" />\n    </div>\n  );\n}\n"],"names":[],"mappings":";;;;;AAAA;;;AAEe,SAAS;IACtB,qBACE,+YAAC;QAAI,WAAU;kBACb,cAAA,+YAAC,gLAAa;YAAC,MAAK;;;;;;;;;;;AAG1B"}}]
-}
