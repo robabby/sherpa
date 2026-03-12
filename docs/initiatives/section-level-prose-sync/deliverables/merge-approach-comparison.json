@@ -1,0 +1,19 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "merge-approach-comparison",
+  "title": "Clean Merge Rate by Approach (31-File Benchmark)",
+  "description": "Percentage of files merged without conflicts across merge strategies. Weave's section-level approach achieves 100% vs git's 48% on structured documents.",
+  "created": "2026-03-11",
+  "sourceIteration": 1,
+  "chartType": "bar",
+  "data": [
+    { "name": "Git (line-level)", "rate": 48 },
+    { "name": "Mergiraf (syntax-aware)", "rate": 83 },
+    { "name": "Weave (section-level)", "rate": 100 }
+  ],
+  "series": [
+    { "key": "rate", "label": "Clean Merge Rate (%)", "color": "var(--chart-1)" }
+  ],
+  "xAxis": { "dataKey": "name" },
+  "legend": false
+}

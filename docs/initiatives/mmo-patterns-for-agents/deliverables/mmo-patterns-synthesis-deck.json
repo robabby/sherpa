@@ -1,0 +1,64 @@
+{
+  "$schema": "wavepoint/deck@1",
+  "id": "mmo-patterns-synthesis",
+  "title": "Game Server Patterns for Multi-Agent Coordination",
+  "created": "2026-03-11",
+  "sourceIteration": 1,
+  "slides": [
+    {
+      "type": "title",
+      "heading": "Game Server Patterns for Multi-Agent Coordination",
+      "subtitle": "What 20 years of MMO architecture teaches us about multi-agent AI — Iteration 1 Synthesis"
+    },
+    {
+      "type": "content",
+      "heading": "The Isomorphism",
+      "body": "MMO game servers and multi-agent AI frameworks solve the **same structural problem**: multiple concurrent processes mutating shared state.\n\n- **Game world** = Filesystem\n- **Per-client replica** = Agent's context window\n- **Game server** = Agent instance\n- **Replication layer** = MCP coordination server\n- **EntityGraph** = Git repository\n- **Tick rate** = Agent sync rhythm\n- **Authority** = Write lock / task assignment\n- **Interest management** = Context engineering"
+    },
+    {
+      "type": "content",
+      "heading": "Finding #1: The Single-Writer Invariant",
+      "body": "Every system examined enforces one rule: **exactly one node has write authority per entity/component at any moment.**\n\n- Star Citizen, SpatialOS, EVE Online, Photon, Mirror, coherence — all enforce this independently\n- SpatialOS innovated **component-level authority**: different workers own different components of the same entity\n- **For agents**: different agents can write to different sections of the same file, but never the same section simultaneously"
+    },
+    {
+      "type": "split",
+      "heading": "Finding #2: Git IS Already the Netcode",
+      "left": {
+        "body": "**Game Pattern**\n- Client-side prediction\n- Server reconciliation\n- State snapshots\n- Delta compression\n- Rollback + replay\n- Conflict detection\n- Optimistic concurrency"
+      },
+      "right": {
+        "body": "**Git Equivalent**\n- Working in a branch/worktree\n- `git rebase`\n- Commits\n- Git's diff algorithm\n- `git rebase --onto`\n- Merge conflicts\n- Push fails if diverged"
+      }
+    },
+    {
+      "type": "content",
+      "heading": "Finding #3: The Missing Layer",
+      "body": "Star Citizen's **replication layer** (dedicated microservice tier between servers) is the pattern Sherpa needs.\n\n- No server talks to another server directly — all state flows through the intermediary\n- Handles authority tracking, transfer mediation, crash recovery\n- Current AI frameworks (OpenAI Swarm, Semantic Kernel) transfer conversational context, not artifact authority\n- **Sherpa's MCP server IS the replication layer** — this is the gap no one else fills"
+    },
+    {
+      "type": "content",
+      "heading": "Finding #4: Context Engineering = Interest Management",
+      "body": "Game industry solved \"what state does this client need\" 30 years ago. AI calls it \"context engineering.\"\n\n**The DOI Model for Files** (from Eclipse Mylyn, 2005):\n```\nDOI(file, agent) = TaskRelevance + DependencyProximity - Staleness\n```\n\n**Three LOD Tiers:**\n- **LOD 0**: Full file content (editing + direct deps)\n- **LOD 1**: Signatures/types (~10-20% of tokens)\n- **LOD 2**: File paths only (~1% of tokens)"
+    },
+    {
+      "type": "content",
+      "heading": "Finding #5: Prevention > Detection > Compensation",
+      "body": "The cost hierarchy for multi-agent conflicts:\n\n| Strategy | Cost | Example |\n|----------|------|--------|\n| **Prevention** | Cheap | Task partitioning, file leases |\n| **Detection** | Medium | Git version check at merge |\n| **Compensation** | Expensive | Rebase, retry, Judge arbitration |\n\nFighting games invest in prediction accuracy to minimize rollback. Sherpa should invest in task partitioning to minimize conflicts. **Re-running an agent session costs minutes.**"
+    },
+    {
+      "type": "split",
+      "heading": "Five Patterns for Sherpa",
+      "left": {
+        "body": "**1. Single-Writer Authority**\nComponent-level, MCP-enforced\n\n**2. Replication Layer**\nMCP server mediates all mutations\n\n**3. Prevention→Compensation**\nPartition first, detect second, compensate last"
+      },
+      "right": {
+        "body": "**4. Bounded Authority Transfer**\nFencing tokens + timeout + orphan detection\n\n**5. Time Dilation as Backpressure**\nSlow down under load, don't add more agents"
+      }
+    },
+    {
+      "type": "content",
+      "heading": "Next: Two Branch Seeds",
+      "body": "**DOI Model for Agents** (high priority)\n- Prototype a DOI-based context selector as MCP tool\n- Input: task description + focus files → Output: ranked file list with LOD assignments\n- Measure against real agent sessions\n\n**Game Authority as MCP Protocol** (high priority)\n- Translate Improbable patent's 4-state model into MCP tool API\n- Design fencing token implementation backed by SQLite\n- Define heartbeat/orphan detection protocol"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/rob/Workbench/sherpa/apps/studio/src/app/process/layout.tsx"],"sourcesContent":["/**\n * Process layout — full-width, no max-w-6xl constraint.\n * The workspace uses the full content area for its three-zone grid.\n * Other studio pages use max-w-6xl via their own layouts.\n */\nexport default function ProcessLayout({\n  children,\n}: {\n  children: React.ReactNode;\n}) {\n  return <>{children}</>;\n}\n"],"names":[],"mappings":"AAAA;;;;CAIC;;;;;;AACc,SAAS,cAAc,EACpC,QAAQ,EAGT;IACC,qBAAO;kBAAG;;AACZ"}}]
+}

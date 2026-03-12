@@ -1,0 +1,23 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "sync-strategy-comparison",
+  "title": "Framework Sync Strategies: Automation vs Preservation",
+  "description": "Comparing framework config sync approaches on two axes: how much is automated (no manual review needed) vs how well consumer customizations are preserved.",
+  "created": "2026-03-11",
+  "sourceIteration": 1,
+  "chartType": "radar",
+  "data": [
+    { "strategy": "Rails app:update", "automation": 20, "preservation": 40, "simplicity": 80 },
+    { "strategy": "Expo prebuild", "automation": 90, "preservation": 10, "simplicity": 70 },
+    { "strategy": "Copier update", "automation": 70, "preservation": 80, "simplicity": 50 },
+    { "strategy": "Kustomize overlay", "automation": 60, "preservation": 90, "simplicity": 40 },
+    { "strategy": "sherpa sync (proposed)", "automation": 80, "preservation": 90, "simplicity": 60 }
+  ],
+  "series": [
+    { "key": "automation", "label": "Automation", "color": "var(--chart-1)" },
+    { "key": "preservation", "label": "Customization Preserved", "color": "var(--chart-2)" },
+    { "key": "simplicity", "label": "Simplicity", "color": "var(--chart-3)" }
+  ],
+  "xAxis": { "dataKey": "strategy" },
+  "legend": true
+}

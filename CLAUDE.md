@@ -13,6 +13,13 @@ Behavioral agentic collaboration framework. A toolkit for running Human+AI colla
 ## Structure
 
 ```
+apps/
+  studio/         Next.js 16 Studio app (Tailwind v4, shadcn/ui)    [pnpm workspace]
+packages/
+  studio-core/    @sherpa/studio-core — domain logic, types, schemas [pnpm workspace]
+  studio-ui/      @sherpa/studio-ui — 91 React components            [pnpm workspace]
+  studio-mcp/     @sherpa/studio-mcp — MCP server                    [pnpm workspace]
+  studio/         @sherpa/studio — umbrella (withSherpa, defineConfig)[pnpm workspace]
 docs/
   initiatives/    Initiative directories (proposal → plan → activity → implementation)
   agents/roles/   Behavioral agent role definitions
@@ -20,6 +27,17 @@ docs/
   rules/          Convention files (auto-load via globs)
   skills/         Skill commands (/rr, /integration-review, /plan-tasks)
 .worktrees/       Git worktrees for isolated work
+```
+
+## Workspace
+
+pnpm monorepo. All packages and apps are workspace members.
+
+```bash
+pnpm dev          # Studio dev server (localhost:3000)
+pnpm build        # Studio production build
+pnpm check        # Typecheck all packages
+pnpm install      # Install all dependencies
 ```
 
 ## The Seven Pillars
@@ -34,7 +52,7 @@ docs/
 
 ## Current Phase
 
-**Research & Architecture.** The framework is being extracted from WavePoint (`../wavepoint/docs/initiatives/sherpa-framework-extraction/`). This repo is the destination — starting with research initiatives that will inform the Sherpa consulting business and framework design.
+**Monorepo with Studio.** The `@sherpa/studio-*` packages have been extracted from WavePoint. The Studio app runs against Sherpa's own governance data (initiatives, rules, skills, agents). WavePoint-specific panels (primitives, API catalog, transit content, portfolio) are stubbed out.
 
 ## Conventions
 

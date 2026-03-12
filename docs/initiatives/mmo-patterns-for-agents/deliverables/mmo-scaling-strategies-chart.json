@@ -1,0 +1,67 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "mmo-scaling-strategies",
+  "title": "MMO Scaling Strategies: Consistency vs. Scale Trade-off",
+  "description": "Compares how major MMO architectures balance consistency guarantees against player/entity scale, mapped to their agent coordination equivalents",
+  "created": "2026-03-11",
+  "sourceIteration": 1,
+  "chartType": "radar",
+  "data": [
+    {
+      "name": "EVE Online (TiDi)",
+      "consistency": 10,
+      "scale": 4,
+      "complexity": 3,
+      "latencyTolerance": 2,
+      "conflictPrevention": 9
+    },
+    {
+      "name": "Star Citizen (Replication Layer)",
+      "consistency": 8,
+      "scale": 8,
+      "complexity": 9,
+      "latencyTolerance": 6,
+      "conflictPrevention": 7
+    },
+    {
+      "name": "SpatialOS (Component Authority)",
+      "consistency": 7,
+      "scale": 9,
+      "complexity": 10,
+      "latencyTolerance": 7,
+      "conflictPrevention": 8
+    },
+    {
+      "name": "Photon (Room-Based)",
+      "consistency": 9,
+      "scale": 3,
+      "complexity": 2,
+      "latencyTolerance": 5,
+      "conflictPrevention": 6
+    },
+    {
+      "name": "GGPO (Rollback)",
+      "consistency": 6,
+      "scale": 2,
+      "complexity": 7,
+      "latencyTolerance": 9,
+      "conflictPrevention": 3
+    },
+    {
+      "name": "Figma (Property LWW)",
+      "consistency": 5,
+      "scale": 7,
+      "complexity": 4,
+      "latencyTolerance": 8,
+      "conflictPrevention": 8
+    }
+  ],
+  "series": [
+    { "key": "consistency", "label": "Consistency", "color": "var(--chart-1)" },
+    { "key": "scale", "label": "Scale", "color": "var(--chart-2)" },
+    { "key": "complexity", "label": "Implementation Complexity", "color": "var(--chart-3)" },
+    { "key": "latencyTolerance", "label": "Latency Tolerance", "color": "var(--chart-4)" },
+    { "key": "conflictPrevention", "label": "Conflict Prevention", "color": "var(--chart-5)" }
+  ],
+  "legend": true
+}

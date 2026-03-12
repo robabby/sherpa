@@ -1,0 +1,232 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+
+  /* Backgrounds */
+  --color-obsidian: #0c0c0c;
+  --color-warm-charcoal: #1a1714;
+  --color-dark-bronze: #252019;
+
+  /* Primary Accent - Gold */
+  --color-gold: #d4a84b;
+  --color-gold-bright: #e8c068;
+  --color-gold-muted: #a68a3c;
+
+  /* Secondary Accent - Copper */
+  --color-copper: #b87333;
+  --color-bronze: #8a7355;
+  --color-tarnished: #5c4d3d;
+
+  /* Text Colors */
+  --color-cream: #f5f0e6;
+  --color-warm-gray: #b8a99a;
+  --color-dim: #7a6b5a;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Light Mode */
+  --background: #faf8f3;
+  --foreground: #2a2520;
+  --card: #f2ede2;
+  --card-foreground: #2a2520;
+  --popover: #f2ede2;
+  --popover-foreground: #2a2520;
+  --primary: #876b24;
+  --primary-foreground: #faf8f3;
+  --secondary: #e6e0d3;
+  --secondary-foreground: #2a2520;
+  --muted: #e6e0d3;
+  --muted-foreground: #7a7268;
+  --accent: #8f5a28;
+  --accent-foreground: #faf8f3;
+  --destructive: #c53030;
+  --border: rgba(135, 107, 36, 0.2);
+  --input: rgba(135, 107, 36, 0.12);
+  --ring: #a38230;
+  --chart-1: #876b24;
+  --chart-2: #a38230;
+  --chart-3: #8f5a28;
+  --chart-4: #6d563f;
+  --chart-5: #7d6324;
+  --sidebar: #f2ede2;
+  --sidebar-foreground: #2a2520;
+  --sidebar-primary: #876b24;
+  --sidebar-primary-foreground: #faf8f3;
+  --sidebar-accent: #e6e0d3;
+  --sidebar-accent-foreground: #2a2520;
+  --sidebar-border: rgba(135, 107, 36, 0.2);
+  --sidebar-ring: #a38230;
+
+  --glow-gold: rgba(163, 130, 48, 0.15);
+  --glow-copper: rgba(143, 90, 40, 0.12);
+  --border-gold: rgba(163, 130, 48, 0.25);
+  --border-copper: rgba(143, 90, 40, 0.18);
+
+  --color-session: #4a5a9e;
+  --color-session-bright: #5e72b8;
+  --color-session-muted: #3d4a80;
+  --glow-session: rgba(74, 90, 158, 0.15);
+
+  --color-mcp: #1a7a8e;
+  --color-mcp-bright: #2a96aa;
+  --color-mcp-muted: #126070;
+  --glow-mcp: rgba(26, 122, 142, 0.15);
+  --border-mcp: rgba(26, 122, 142, 0.25);
+
+  --color-primitive: #2a7d6e;
+  --color-primitive-bright: #3a9d8a;
+  --color-primitive-muted: #1f5c52;
+  --glow-primitive: rgba(42, 125, 110, 0.15);
+  --border-primitive: rgba(42, 125, 110, 0.25);
+
+  --color-api: #4a7c9e;
+  --color-api-bright: #5e96b8;
+  --color-api-muted: #3d6580;
+  --glow-api: rgba(74, 124, 158, 0.15);
+  --border-api: rgba(74, 124, 158, 0.25);
+
+  --color-engaged: #876b24;
+  --color-not-engaged: rgba(163, 130, 48, 0.25);
+}
+
+.dark {
+  --background: #0c0c0c;
+  --foreground: #f5f0e6;
+  --card: #1a1714;
+  --card-foreground: #f5f0e6;
+  --popover: #1a1714;
+  --popover-foreground: #f5f0e6;
+  --primary: #d4a84b;
+  --primary-foreground: #0c0c0c;
+  --secondary: #252019;
+  --secondary-foreground: #f5f0e6;
+  --muted: #252019;
+  --muted-foreground: #b8a99a;
+  --accent: #b87333;
+  --accent-foreground: #0c0c0c;
+  --destructive: #dc2626;
+  --border: rgba(212, 168, 75, 0.15);
+  --input: rgba(212, 168, 75, 0.1);
+  --ring: #d4a84b;
+  --chart-1: #d4a84b;
+  --chart-2: #e8c068;
+  --chart-3: #b87333;
+  --chart-4: #8a7355;
+  --chart-5: #a68a3c;
+  --sidebar: #1a1714;
+  --sidebar-foreground: #f5f0e6;
+  --sidebar-primary: #d4a84b;
+  --sidebar-primary-foreground: #0c0c0c;
+  --sidebar-accent: #252019;
+  --sidebar-accent-foreground: #f5f0e6;
+  --sidebar-border: rgba(212, 168, 75, 0.15);
+  --sidebar-ring: #d4a84b;
+
+  --glow-gold: rgba(212, 168, 75, 0.2);
+  --glow-copper: rgba(184, 115, 51, 0.15);
+  --border-gold: rgba(212, 168, 75, 0.3);
+  --border-copper: rgba(184, 115, 51, 0.2);
+
+  --color-session: #7b90d4;
+  --color-session-bright: #96a8e4;
+  --color-session-muted: #5e72b8;
+  --glow-session: rgba(123, 144, 212, 0.2);
+
+  --color-mcp: #40d0e0;
+  --color-mcp-bright: #60e8f0;
+  --color-mcp-muted: #30b0c0;
+  --glow-mcp: rgba(64, 208, 224, 0.2);
+  --border-mcp: rgba(64, 208, 224, 0.3);
+
+  --color-primitive: #4ec9b0;
+  --color-primitive-bright: #6ae0c8;
+  --color-primitive-muted: #3aa08a;
+  --glow-primitive: rgba(78, 201, 176, 0.2);
+  --border-primitive: rgba(78, 201, 176, 0.3);
+
+  --color-api: #7bb0d4;
+  --color-api-bright: #96c5e4;
+  --color-api-muted: #5e96b8;
+  --glow-api: rgba(123, 176, 212, 0.2);
+  --border-api: rgba(123, 176, 212, 0.3);
+
+  --color-engaged: #d4a84b;
+  --color-not-engaged: rgba(212, 168, 75, 0.3);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Lifecycle progress bar — current stage pulse */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 6px 2px var(--color-gold, #c9a94c33); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

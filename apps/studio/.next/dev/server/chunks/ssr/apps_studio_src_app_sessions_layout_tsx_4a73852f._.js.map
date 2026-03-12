@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/rob/Workbench/sherpa/apps/studio/src/app/sessions/layout.tsx"],"sourcesContent":["import type { Metadata } from \"next\";\nimport type { ReactNode } from \"react\";\n\nexport const metadata: Metadata = {\n  title: \"Sessions | Studio\",\n  robots: \"noindex, nofollow\",\n};\n\nexport default function SessionsLayout({ children }: { children: ReactNode }) {\n  return children;\n}\n"],"names":[],"mappings":";;;;;;AAGO,MAAM,WAAqB;IAChC,OAAO;IACP,QAAQ;AACV;AAEe,SAAS,eAAe,EAAE,QAAQ,EAA2B;IAC1E,OAAO;AACT"}}]
+}

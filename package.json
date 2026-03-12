@@ -1,0 +1,10 @@
+{
+  "name": "sherpa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @sherpa/studio-app dev",
+    "build": "pnpm --filter @sherpa/studio-app build",
+    "check": "pnpm -r check"
+  }
+}
