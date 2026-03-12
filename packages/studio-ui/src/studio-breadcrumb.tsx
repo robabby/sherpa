@@ -17,7 +17,7 @@ export function StudioBreadcrumb({ segments }: StudioBreadcrumbProps) {
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem>
-          <BreadcrumbLink href="/app/studio">Studio</BreadcrumbLink>
+          <BreadcrumbLink href="/">Studio</BreadcrumbLink>
         </BreadcrumbItem>
         {segments.map((seg, i) => (
           <Fragment key={i}>
