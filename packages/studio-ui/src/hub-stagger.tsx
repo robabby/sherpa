@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { motion, MotionConfig } from "motion/react";
 
-import { EASE_EMERGENCE, EASE_STANDARD } from "./lib/animation-constants";
+import { EASE_EMERGENCE, EASE_GLOW, EASE_STANDARD, ORCHESTRATION } from "./lib/animation-constants";
 
 // ---------------------------------------------------------------------------
 // HubStagger — orchestrates staggered entrance for children
@@ -18,7 +18,7 @@ const containerVariants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.06,
+      staggerChildren: ORCHESTRATION.panelStagger,
       delayChildren: 0.1,
     },
   },
@@ -82,7 +82,7 @@ export function HubStaggerItem({
 }
 
 // ---------------------------------------------------------------------------
-// HubAmbientGlow — breathing gold glow behind the top of the page
+// HubAmbientGlow — breathing warm glow behind the top of the page
 // ---------------------------------------------------------------------------
 
 interface HubAmbientGlowProps {
@@ -94,17 +94,17 @@ export function HubAmbientGlow({ className }: HubAmbientGlowProps) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.6, ease: EASE_EMERGENCE }}
+      transition={{ duration: ORCHESTRATION.glowFadeDuration, delay: ORCHESTRATION.glowActivation, ease: EASE_GLOW }}
       className={className}
     >
       <motion.div
-        animate={{ opacity: [0.03, 0.05, 0.03] }}
+        animate={{ opacity: [0.02, 0.06, 0.02] }}
         transition={{
-          duration: 4,
+          duration: 5,
           repeat: Infinity,
           ease: "easeInOut",
         }}
-        className="h-full w-full rounded-full bg-[var(--color-gold)]"
+        className="h-full w-full rounded-full bg-[var(--color-ambient-warm)]"
       />
     </motion.div>
   );

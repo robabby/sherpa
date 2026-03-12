@@ -75,8 +75,7 @@ export function HubDocsPanel({ docsByCategory }: HubDocsPanelProps) {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={docPath(doc.relativePath)}
-                    className="block truncate text-sm font-medium text-foreground transition-colors hover:text-[var(--color-bronze)]"
-
+                    className="block truncate font-heading text-sm font-medium text-foreground transition-colors hover:text-[var(--color-bronze)]"
                   >
                     {doc.title}
                   </Link>
@@ -84,9 +83,7 @@ export function HubDocsPanel({ docsByCategory }: HubDocsPanelProps) {
                     {CATEGORY_LABELS[doc.category] ?? doc.category}
                   </span>
                 </div>
-                <span className="shrink-0 font-mono text-xs text-muted-foreground/60">
-                  {formatShortDate(doc.lastModified)}
-                </span>
+                <DocAge dateStr={doc.lastModified} />
               </div>
             ))}
           </div>
@@ -139,4 +136,22 @@ function formatShortDate(dateStr: string): string {
   } catch {
     return dateStr;
   }
+}
+
+function DocAge({ dateStr }: { dateStr: string }) {
+  const days = Math.floor(
+    (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  const color =
+    days > 14
+      ? "text-rose-400/70"
+      : days > 7
+        ? "text-amber-500/70"
+        : "text-muted-foreground/60";
+
+  return (
+    <span className={`shrink-0 font-mono text-xs ${color}`}>
+      {formatShortDate(dateStr)}
+    </span>
+  );
 }

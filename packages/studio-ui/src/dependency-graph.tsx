@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { cn } from "./lib/utils";
-import type { PrimitiveCatalogEntry } from "@/lib/studio";
+import type { PrimitiveCatalogEntry, PrimitiveLevel } from "@/lib/studio";
 import { LevelBadge } from "./level-badge";
 
 interface DependencyGraphProps {
@@ -86,8 +86,8 @@ function DepMiniCard({
   entry: PrimitiveCatalogEntry;
   direction: "upstream" | "downstream";
 }) {
-  const name = entry.metadata?.name ?? entry.slug;
-  const level = entry.metadata?.level;
+  const name = String(entry.metadata?.name ?? entry.slug);
+  const level = entry.metadata?.level as PrimitiveLevel | undefined;
   const arrow = direction === "upstream" ? "\u2192" : "\u2190";
 
   return (

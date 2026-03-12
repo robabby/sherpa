@@ -30,7 +30,7 @@ export function HubSkillsPanel({ skills }: HubSkillsPanelProps) {
               <div key={skill.slug} className="min-w-0">
                 <Link
                   href={`/skills/${skill.slug}`}
-                  className="block text-sm font-medium text-foreground transition-colors hover:text-[var(--color-eclipse)]"
+                  className="block font-heading text-sm font-medium text-foreground transition-colors hover:text-[var(--color-eclipse)]"
                 >
                   {skill.name}
                 </Link>

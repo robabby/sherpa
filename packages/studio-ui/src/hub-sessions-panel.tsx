@@ -43,7 +43,7 @@ export function HubSessionsPanel({ sessions, stats }: HubSessionsPanelProps) {
             {stats.thisWeek} this week
           </p>
           {stats.weeklyTokens > 0 && (
-            <span className="text-sm text-muted-foreground">
+            <span className="font-mono text-sm text-muted-foreground">
               {formatTokens(stats.weeklyTokens)} tokens
             </span>
           )}
@@ -56,13 +56,13 @@ export function HubSessionsPanel({ sessions, stats }: HubSessionsPanelProps) {
                 key={s.sessionId}
                 className="flex items-center gap-3 text-sm"
               >
-                <span className="shrink-0 text-muted-foreground/60">
+                <span className="shrink-0 font-mono text-muted-foreground/60">
                   {formatDate(s.startedAt)}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-foreground">
+                <span className="min-w-0 flex-1 truncate font-mono text-foreground">
                   {s.initiative ?? s.branch}
                 </span>
-                <span className="shrink-0 text-muted-foreground/60">
+                <span className="shrink-0 font-mono text-muted-foreground/60">
                   {formatDuration(s.durationMinutes)}
                 </span>
               </div>

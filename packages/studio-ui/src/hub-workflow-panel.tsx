@@ -23,13 +23,13 @@ export function HubWorkflowPanel() {
       linkText="View full diagram"
     >
       <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
+        <p className="font-heading text-sm text-muted-foreground">
           Discovery → Governance → Execution → Delivery → Audit → Review
         </p>
         <div className="flex flex-wrap gap-1.5">
           {STAGES.map((stage, i) => (
             <span key={stage.name} className="flex items-center gap-1.5">
-              <span className="inline-block rounded border border-[var(--color-copper)]/20 px-2 py-0.5 font-mono text-xs text-foreground">
+              <span className="inline-block rounded border border-[var(--glass-border)] bg-[var(--glass-bg)] px-2 py-0.5 font-mono text-xs text-foreground">
                 {stage.name}
               </span>
               {i < STAGES.length - 1 && (

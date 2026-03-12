@@ -26,7 +26,7 @@ export function HubMcpPanel({ data }: HubMcpPanelProps) {
               className={cn(
                 "h-2 w-2 rounded-full",
                 data.server
-                  ? "bg-[var(--color-mcp)] shadow-[0_0_6px_var(--color-mcp)]"
+                  ? "bg-[var(--color-mcp)] shadow-[0_0_6px_var(--color-mcp)] led-active"
                   : "bg-muted-foreground/40"
               )}
             />
@@ -40,7 +40,7 @@ export function HubMcpPanel({ data }: HubMcpPanelProps) {
               className={cn(
                 "h-2 w-2 rounded-full",
                 data.lmStudio.available
-                  ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]"
+                  ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)] led-active"
                   : "bg-muted-foreground/40"
               )}
             />
@@ -58,7 +58,7 @@ export function HubMcpPanel({ data }: HubMcpPanelProps) {
             </span>
             <span className="ml-1 text-xs text-muted-foreground/60">tools</span>
           </div>
-          <div className="flex gap-3 text-xs text-muted-foreground/50">
+          <div className="flex gap-3 font-mono text-xs text-muted-foreground/50">
             <span>{taskTools.length} tasks</span>
             <span>{infraTools.length} infra</span>
           </div>

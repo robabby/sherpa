@@ -1,10 +1,10 @@
 import { cn } from "./lib/utils";
 import type { ExportSignatureKind } from "@/lib/studio";
 
-const KIND_CONFIG: Record<
+const KIND_CONFIG: Partial<Record<
   ExportSignatureKind,
   { label: string; color: string }
-> = {
+>> = {
   function: {
     label: "fn",
     color: "border-blue-500/30 text-blue-400/80 bg-blue-500/8",
@@ -36,6 +36,7 @@ export function KindBadge({ kind, className }: KindBadgeProps) {
   if (!kind) return null;
 
   const config = KIND_CONFIG[kind];
+  if (!config) return null;
 
   return (
     <span

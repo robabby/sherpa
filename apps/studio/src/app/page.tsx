@@ -162,10 +162,13 @@ export default async function StudioPage() {
 
   return (
     <div className="relative mx-auto max-w-6xl">
-      <StudioHeader />
+      <div className="atmosphere-mesh" />
       <HubAmbientGlow className="pointer-events-none absolute left-1/2 top-12 h-[200px] w-[400px] -translate-x-1/2 blur-[120px]" />
 
       <HubStagger className="relative space-y-8">
+        <HubStaggerItem variant="fade">
+          <StudioHeader />
+        </HubStaggerItem>
         <HubStaggerItem variant="fade">
           <HubOperationalPulse
             initiatives={initiatives}

@@ -8,7 +8,9 @@ export type PrimitiveLevel = "L1" | "L2" | "L3" | "L4" | "L5"
 
 export interface PrimitiveCatalogEntry {
   module: string
+  slug: string
   level: PrimitiveLevel
+  detectedExports: ExportSignature[]
   displayName: string
   description: string
   exportCount: number
@@ -16,12 +18,23 @@ export interface PrimitiveCatalogEntry {
   dependencies: string[]
   dependents: string[]
   relativePath: string
+  metadata?: {
+    name: string
+    level: PrimitiveLevel
+    description: string
+    keyExports: ExportSignature[]
+    status?: string
+    dependencies: string[]
+    [key: string]: unknown
+  } | null
   [key: string]: unknown
 }
 
 export type ExportSignatureKind =
   | "function"
   | "type"
+  | "type-alias"
+  | "variable"
   | "interface"
   | "const"
   | "class"
@@ -33,15 +46,33 @@ export interface ExportSignature {
   kind: ExportSignatureKind
   typeSignature?: string
   isDefault: boolean
+  text?: string
+  parameters?: { name: string; type: string; optional?: boolean }[]
+  returnType?: string
+  properties?: { name: string; type: string; optional?: boolean }[]
+  members?: { name: string; value?: string | number }[]
+  referencedTypes?: Record<string, ExportSignature>
+  [key: string]: unknown
 }
 
 export interface EndpointCatalogEntry {
   method: string
   path: string
+  slug: string
   tag: string
   description: string
   auth: boolean
   rateLimit: boolean
+  metadata: {
+    method: "GET" | "POST"
+    path: string
+    name: string
+    description: string
+    level: PrimitiveLevel
+    auth: string
+    primitives: string[]
+    [key: string]: unknown
+  }
   [key: string]: unknown
 }
 
@@ -53,6 +84,14 @@ export interface EclipseActivationEvent {
   aspect: string
   longitude: number
   activationLongitude: number
+  marsLongitude: number
+  eclipseLongitude: number
+  eclipseFamily: string
+  sarosNumber: string | number
+  recessionName?: string | null
+  daysToRecession?: number | null
+  nearestRecessionStart?: string | null
+  isHit?: boolean
   [key: string]: unknown
 }
 
@@ -60,11 +99,19 @@ export interface SaturnQuarterCycleEvent {
   date: string
   phase: string
   longitude: number
+  quadrant?: string
+  nearestRecessionStart?: string | null
+  daysToRecession?: number | null
+  recessionName?: string | null
+  isHit?: boolean
+  [key: string]: unknown
 }
 
 export interface LongitudeTimeSeriesPoint {
   date: string
   longitude: number
+  isQuarterCross?: boolean
+  [key: string]: unknown
 }
 
 export const PRIMITIVE_LEVELS: PrimitiveLevel[] = [
@@ -99,12 +146,12 @@ export const LEVEL_VERBS: Record<PrimitiveLevel, string> = {
   L5: "narrates",
 }
 
-export function getPrimitivesStats() {
-  return { total: 0, byLevel: {} as Record<PrimitiveLevel, number> }
+export function getPrimitivesStats(_catalog?: PrimitiveCatalogEntry[]) {
+  return { total: 0, byLevel: {} as Record<PrimitiveLevel, number>, perLevel: {} as Record<PrimitiveLevel, number> }
 }
 
 export function getApiStats() {
-  return { total: 0, byTag: {} as Record<string, number> }
+  return { total: 0, endpointCount: 0, computationCount: 0, contentCount: 0, byTag: {} as Record<string, number> }
 }
 
 export function getPrimitivesCatalog(): PrimitiveCatalogEntry[] {

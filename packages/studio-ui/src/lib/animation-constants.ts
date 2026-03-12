@@ -56,3 +56,16 @@ export const TOGGLE_VARIANTS = {
     transition: { duration: 0.2, ease: EASE_STANDARD },
   },
 } as const;
+
+// Orchestration timing for hub page entrance sequence
+export const ORCHESTRATION = {
+  headerDelay: 0,
+  pulseDelay: 0.2,
+  panelStagger: 0.06,
+  panelDelay: 0.35,
+  glowActivation: 0.8,
+  glowFadeDuration: 1.0,
+} as const;
+
+// Glow easing — smooth fade-in/out for ambient elements
+export const EASE_GLOW: [number, number, number, number] = [0.4, 0, 0.2, 1];

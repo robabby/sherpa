@@ -65,10 +65,10 @@ export function HubConventionsPanel({
                 key={rule.fileName}
                 className="flex items-center gap-2"
               >
-                <span className="h-1 w-1 shrink-0 rounded-full bg-muted-foreground/30" />
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400/60 shadow-[0_0_4px_rgba(52,211,153,0.3)]" />
                 <Link
                   href={ruleHref(rule)}
-                  className="text-sm font-medium text-foreground transition-colors hover:text-muted-foreground"
+                  className="font-heading text-sm font-medium text-foreground transition-colors hover:text-muted-foreground"
                 >
                   {rule.name}
                 </Link>
@@ -88,7 +88,7 @@ export function HubConventionsPanel({
                 {sampleGlobs.map((glob) => (
                   <span
                     key={glob}
-                    className="inline-block rounded border border-muted-foreground/15 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50"
+                    className="inline-block rounded border border-[var(--glass-border)] bg-[var(--glass-bg)] px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50"
                   >
                     {glob}
                   </span>

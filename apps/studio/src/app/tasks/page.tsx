@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { TasksContent } from "@/components/studio/tasks-content";
 import { getTaskBoard } from "@/lib/studio/tasks";
@@ -11,5 +12,9 @@ export const metadata: Metadata = {
 export default function TasksPage() {
   const tasks = getTaskBoard();
 
-  return <TasksContent tasks={tasks} />;
+  return (
+    <Suspense>
+      <TasksContent tasks={tasks} />
+    </Suspense>
+  );
 }

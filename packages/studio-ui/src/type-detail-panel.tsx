@@ -212,7 +212,7 @@ function TypeAliasSignature({
 }: {
   signature: ExportSignature;
 }) {
-  const text = signature.text.replace(/^export\s+/, "");
+  const text = (signature.text ?? "").replace(/^export\s+/, "");
 
   return (
     <pre className="whitespace-pre-wrap break-all font-mono text-xs text-foreground/80">
@@ -229,7 +229,7 @@ function VariableSignature({
   typeColor: string;
 }) {
   const [showSource, setShowSource] = useState(false);
-  const hasLongSource = signature.text.length > 200;
+  const hasLongSource = (signature.text?.length ?? 0) > 200;
 
   return (
     <div className="space-y-2">

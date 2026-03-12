@@ -39,42 +39,44 @@ export function HubOperationalPulse({
     ? formatShortDate(lastActivity)
     : "—";
 
-  const segments: string[] = [];
+  const segments: { value: number | null; label: string }[] = [];
   if (activeWorkstreams > 0) {
-    segments.push(
-      `${activeWorkstreams} active workstream${activeWorkstreams !== 1 ? "s" : ""}`
-    );
+    segments.push({
+      value: activeWorkstreams,
+      label: `active workstream${activeWorkstreams !== 1 ? "s" : ""}`,
+    });
   }
   if (pendingReview > 0) {
-    segments.push(
-      `${pendingReview} pending review`
-    );
+    segments.push({ value: pendingReview, label: "pending review" });
   }
   if (staleCount && staleCount > 0) {
-    segments.push(`${staleCount} stale`);
+    segments.push({ value: staleCount, label: "stale" });
   }
   if (projectCount > 0) {
-    segments.push(`${projectCount} projects`);
+    segments.push({ value: projectCount, label: "projects" });
   }
   if (skillCount && skillCount > 0) {
-    segments.push(`${skillCount} skills`);
+    segments.push({ value: skillCount, label: "skills" });
   }
   if (primitiveCount && primitiveCount > 0) {
-    segments.push(`${primitiveCount} primitives`);
+    segments.push({ value: primitiveCount, label: "primitives" });
   }
   if (endpointCount && endpointCount > 0) {
-    segments.push(`${endpointCount} endpoints`);
+    segments.push({ value: endpointCount, label: "endpoints" });
   }
-  segments.push(`last activity ${lastActivityDisplay}`);
+  segments.push({ value: null, label: `last activity ${lastActivityDisplay}` });
 
   return (
-    <div className="text-xs text-muted-foreground/60">
+    <div className="rounded-md bg-muted/30 px-4 py-2 font-mono text-xs text-muted-foreground/60">
       {segments.map((segment, i) => (
-        <span key={segment}>
+        <span key={segment.label}>
           {i > 0 && (
             <span className="mx-2 text-muted-foreground/30">·</span>
           )}
-          {segment}
+          {segment.value !== null && (
+            <span className="text-foreground/60">{segment.value} </span>
+          )}
+          {segment.value !== null ? segment.label : segment.label}
         </span>
       ))}
     </div>

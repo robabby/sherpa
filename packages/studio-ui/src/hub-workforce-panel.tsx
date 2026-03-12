@@ -58,7 +58,7 @@ export function HubWorkforcePanel({ roles, workstreams = [] }: HubWorkforcePanel
                     <Link
                       key={role.slug}
                       href={`/workforce/${role.slug}`}
-                      className="text-sm text-foreground transition-colors hover:text-[var(--color-eclipse)]"
+                      className="font-heading text-sm text-foreground transition-colors hover:text-[var(--color-eclipse)]"
                     >
                       {role.displayName}
                     </Link>

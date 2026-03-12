@@ -105,6 +105,7 @@ export function HubProcessPanel({
                 )}
                 <StatusBadge
                   status={heroInitiative.status}
+                  mode="led"
                   className="shrink-0"
                 />
               </div>
@@ -139,7 +140,7 @@ export function HubProcessPanel({
                     </p>
                   )}
                 </div>
-                <StatusBadge status={ws.status} className="shrink-0" />
+                <StatusBadge status={ws.status} mode="led" className="shrink-0" />
               </Link>
             ))}
           </div>
@@ -148,7 +149,7 @@ export function HubProcessPanel({
         {/* Attention needed — human-actor lifecycle items */}
         {attentionNeeded.length > 0 && (
           <div className="space-y-1">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-gold)]/60">
+            <span className="font-heading text-[10px] font-medium uppercase tracking-wider text-[var(--color-gold)]/60">
               Attention needed
             </span>
             {attentionNeeded.map((item) => (
@@ -185,7 +186,7 @@ export function HubProcessPanel({
         {/* Pending review — sorted oldest first */}
         {pendingReview.length > 0 && (
           <div className="space-y-1">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
+            <span className="font-heading text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
               Pending review
             </span>
             {pendingReview.map((item) => (
@@ -245,13 +246,12 @@ function MomentumBadge({ momentum }: { momentum: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-1.5 py-0.5 font-mono text-[10px] leading-none",
-        momentum === "active" && "bg-emerald-500/10 text-emerald-400",
-        momentum === "cooling" && "bg-amber-500/10 text-amber-400",
-        momentum === "stale" && "bg-rose-500/10 text-rose-400/80",
+        "inline-block h-2 w-2 rounded-full",
+        momentum === "active" && "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]",
+        momentum === "cooling" && "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.4)]",
+        momentum === "stale" && "bg-rose-400 shadow-[0_0_6px_rgba(248,113,113,0.4)]",
       )}
-    >
-      {momentum}
-    </span>
+      title={momentum}
+    />
   );
 }

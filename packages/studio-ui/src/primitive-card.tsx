@@ -78,7 +78,7 @@ function CuratedCard({
         >
           <span className={cn(
             "absolute inset-[2px] rounded-full",
-            STATUS_DOT[meta.status] ?? STATUS_DOT.dormant,
+            STATUS_DOT[meta.status ?? "dormant"] ?? STATUS_DOT.dormant,
             meta.status === "experimental" && "motion-safe:animate-pulse",
           )} />
           <span className={cn(
@@ -115,10 +115,10 @@ function CuratedCard({
         <div className="mb-2 flex flex-wrap gap-1">
           {exports.map((exp) => (
             <span
-              key={exp}
+              key={exp.name}
               className="rounded border border-[var(--border-primitive)] bg-[var(--color-primitive)]/5 px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-primitive)]/80"
             >
-              {exp}
+              {exp.name}
             </span>
           ))}
           {overflow > 0 && (
@@ -154,7 +154,7 @@ function CuratedCard({
 
       {/* Source path */}
       <p className="font-mono text-[10px] text-muted-foreground/40">
-        {entry.sourcePath}
+        {String(entry.relativePath)}
       </p>
     </Link>
   );
@@ -187,10 +187,10 @@ function UncategorizedCard({
         <div className="flex flex-wrap gap-1">
           {exports.map((exp) => (
             <span
-              key={exp}
+              key={exp.name}
               className="rounded border border-muted-foreground/10 px-1 py-0.5 font-mono text-[10px] text-muted-foreground/50"
             >
-              {exp}
+              {exp.name}
             </span>
           ))}
           {overflow > 0 && (

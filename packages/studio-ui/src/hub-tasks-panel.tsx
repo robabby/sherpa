@@ -3,11 +3,11 @@ import type { TaskBoardEntry } from "@/lib/studio/tasks";
 import { HubPanel } from "./hub-panel";
 
 const STATUS_DOT: Record<string, string> = {
-  pending: "bg-muted-foreground",
-  dispatched: "bg-[var(--color-copper)]",
-  completed: "bg-emerald-500",
-  reviewed: "bg-[var(--color-gold)]",
-  failed: "bg-rose-500",
+  pending: "bg-muted-foreground shadow-[0_0_4px_rgba(113,113,122,0.3)]",
+  dispatched: "bg-[var(--color-copper)] shadow-[0_0_6px_rgba(196,154,108,0.4)] led-active",
+  completed: "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]",
+  reviewed: "bg-[var(--color-gold)] shadow-[0_0_6px_rgba(212,165,116,0.4)]",
+  failed: "bg-rose-400 shadow-[0_0_6px_rgba(248,113,113,0.4)]",
 };
 
 interface HubTasksPanelProps {
@@ -52,14 +52,14 @@ export function HubTasksPanel({ tasks }: HubTasksPanelProps) {
               >
                 <span
                   className={cn(
-                    "h-1.5 w-1.5 shrink-0 rounded-full",
+                    "h-2 w-2 shrink-0 rounded-full",
                     STATUS_DOT[t.status] ?? "bg-muted-foreground"
                   )}
                 />
                 <span className="min-w-0 flex-1 truncate text-foreground">
                   {t.title}
                 </span>
-                <span className="shrink-0 rounded border border-muted-foreground/15 px-1 py-0.5 font-mono text-[10px] text-muted-foreground/50">
+                <span className="shrink-0 rounded border border-[var(--glass-border)] bg-[var(--glass-bg)] px-1 py-0.5 font-mono text-[10px] text-muted-foreground/50">
                   {t.backend}
                 </span>
               </div>

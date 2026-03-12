@@ -23,7 +23,7 @@ export function ApiCompositionGraph({
   // Group primitives by level
   const byLevel = new Map<PrimitiveLevel | "unknown", PrimitiveCatalogEntry[]>();
   for (const p of primitives) {
-    const level = p.metadata?.level ?? "unknown";
+    const level = p.level ?? "unknown";
     const existing = byLevel.get(level);
     if (existing) {
       existing.push(p);
@@ -84,7 +84,7 @@ export function ApiCompositionGraph({
                     )}
                   >
                     <span className="font-medium">
-                      {entry.metadata?.name ?? entry.slug}
+                      {String(entry.metadata?.name ?? entry.slug)}
                     </span>
                   </Link>
                 ))}

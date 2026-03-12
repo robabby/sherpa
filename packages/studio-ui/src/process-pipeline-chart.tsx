@@ -1,16 +1,4 @@
-"use client";
-
-import { useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts";
-import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-
-const chartConfig = {
-  pending: { label: "Pending", color: "var(--color-copper)" },
-  approved: { label: "Approved", color: "#34d399" },
-  "in-progress": { label: "In Progress", color: "var(--color-gold)" },
-  integrated: { label: "Integrated", color: "#60a5fa" },
-} satisfies ChartConfig;
+import { cn } from "./lib/utils";
 
 interface ProcessPipelineChartProps {
   data: {
@@ -21,100 +9,44 @@ interface ProcessPipelineChartProps {
   };
 }
 
+const segments: {
+  key: keyof ProcessPipelineChartProps["data"];
+  color: string;
+  label: string;
+}[] = [
+  { key: "pending", color: "bg-[var(--color-copper)]/50", label: "Pending" },
+  { key: "approved", color: "bg-emerald-400/50", label: "Approved" },
+  { key: "in-progress", color: "bg-[var(--color-gold)]/50", label: "In Progress" },
+  { key: "integrated", color: "bg-blue-400/50", label: "Integrated" },
+];
+
 export function ProcessPipelineChart({ data }: ProcessPipelineChartProps) {
-  const prefersReducedMotion = useReducedMotion();
-  const chartData = useMemo(() => [{ name: "pipeline", ...data }], [data]);
+  const total = data.pending + data.approved + data["in-progress"] + data.integrated;
+  if (total === 0) return null;
 
   return (
-    <ChartContainer id="studio-process-pipeline" config={chartConfig} className="h-14 w-full">
-      <BarChart
-        data={chartData}
-        layout="vertical"
-        margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-        barCategoryGap="0%"
-      >
-        <XAxis type="number" hide />
-        <YAxis type="category" dataKey="name" hide />
-        <Bar
-          dataKey="pending"
-          stackId="pipeline"
-          fill="var(--color-copper)"
-          fillOpacity={0.5}
-          activeBar={{ fillOpacity: 0.7 }}
-          radius={[3, 0, 0, 3]}
-          animationDuration={prefersReducedMotion ? 0 : 800}
-          animationEasing="ease-out"
-        />
-        <Bar
-          dataKey="approved"
-          stackId="pipeline"
-          fill="#34d399"
-          fillOpacity={0.5}
-          activeBar={{ fillOpacity: 0.7 }}
-          animationDuration={prefersReducedMotion ? 0 : 800}
-          animationEasing="ease-out"
-        />
-        <Bar
-          dataKey="in-progress"
-          stackId="pipeline"
-          fill="var(--color-gold)"
-          fillOpacity={0.5}
-          activeBar={{ fillOpacity: 0.7 }}
-          animationDuration={prefersReducedMotion ? 0 : 800}
-          animationEasing="ease-out"
-        />
-        <Bar
-          dataKey="integrated"
-          stackId="pipeline"
-          fill="#60a5fa"
-          fillOpacity={0.5}
-          activeBar={{ fillOpacity: 0.7 }}
-          radius={[0, 3, 3, 0]}
-          animationDuration={prefersReducedMotion ? 0 : 800}
-          animationEasing="ease-out"
-        />
-        <RechartsTooltip
-          content={<PipelineTooltipContent />}
-          cursor={false}
-        />
-      </BarChart>
-    </ChartContainer>
-  );
-}
-
-function PipelineTooltipContent({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ dataKey: string; value: number }>;
-}) {
-  if (!active || !payload?.length) return null;
-
-  const visible = payload.filter((item) => item.value > 0);
-  if (!visible.length) return null;
-
-  return (
-    <div className="rounded-lg border border-border/30 bg-card px-3 py-2 shadow-xl">
-      <div className="space-y-0.5">
-        {visible.map((item) => {
-          const config =
-            chartConfig[item.dataKey as keyof typeof chartConfig];
-          return (
-            <div
-              key={item.dataKey}
-              className="flex items-center gap-1.5 text-[11px]"
-            >
-              <span
-                className="inline-block h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: config?.color }}
-              />
-              <span className="text-muted-foreground">{config?.label}</span>
-              <span className="font-mono text-foreground">{item.value}</span>
-            </div>
-          );
-        })}
-      </div>
+    <div
+      className="flex h-3 w-full overflow-hidden rounded-full"
+      role="img"
+      aria-label={`Pipeline: ${segments.map((s) => `${s.label} ${data[s.key]}`).join(", ")}`}
+    >
+      {segments.map((seg, i) => {
+        const value = data[seg.key];
+        if (value === 0) return null;
+        const pct = (value / total) * 100;
+        return (
+          <div
+            key={seg.key}
+            className={cn(
+              seg.color,
+              i === 0 && "rounded-l-full",
+              i === segments.length - 1 && "rounded-r-full"
+            )}
+            style={{ width: `${pct}%` }}
+            title={`${seg.label}: ${value}`}
+          />
+        );
+      })}
     </div>
   );
 }

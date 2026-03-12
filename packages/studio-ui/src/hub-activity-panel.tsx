@@ -51,7 +51,7 @@ export function HubActivityPanel({ recentActivity }: HubActivityPanelProps) {
     >
       <div className="relative">
         {/* Continuous spine */}
-        <div className="absolute left-[3.75rem] top-2 bottom-2 w-px bg-gradient-to-b from-[var(--color-gold)]/30 via-[var(--color-gold)]/15 to-transparent" />
+        <div className="absolute left-[3.75rem] top-2 bottom-2 w-px bg-gradient-to-b from-[var(--glass-border)] via-[var(--glass-border)] to-transparent" />
 
         <div className="space-y-5">
           {groups.map((group, gi) => (
@@ -68,8 +68,8 @@ export function HubActivityPanel({ recentActivity }: HubActivityPanelProps) {
                 <div
                   className={`absolute right-0 top-1 z-10 h-2.5 w-2.5 rounded-full border-2 ${
                     gi === 0
-                      ? "border-[var(--color-gold)] bg-[var(--color-gold)]/40 shadow-[0_0_6px_var(--color-gold)/30]"
-                      : "border-[var(--color-gold)]/40 bg-background"
+                      ? "border-[var(--color-gold)] bg-[var(--color-gold)]/40 shadow-[0_0_8px_rgba(212,165,116,0.3)]"
+                      : "border-[var(--glass-border)] bg-background"
                   }`}
                 />
               </div>
