@@ -1,0 +1,36 @@
+# Behavioral Agent Catalog — Category Taxonomy
+# See: docs/initiatives/behavioral-agents/schema-spec.md
+
+categories:
+  engineering:
+    display: Engineering
+    description: System design, implementation, code quality, review
+  product:
+    display: Product
+    description: Strategy, prioritization, requirements, backlog
+    legacy-aliases: [strategy]
+  design:
+    display: Design
+    description: UI/UX, visual design, interaction patterns, research
+  research:
+    display: Research
+    description: Investigation, synthesis, evidence gathering
+  quality:
+    display: Quality
+    description: Testing, validation, evidence collection, judging
+  operations:
+    display: Operations
+    description: Documentation, support, process, project management
+  marketing:
+    display: Marketing
+    description: Content, copy, campaigns, positioning, analytics
+  security:
+    display: Security
+    description: Audit, threat modeling, compliance, access control
+  data:
+    display: Data
+    description: Analytics, pipelines, visualization, reporting
+  governance:
+    display: Governance
+    description: Domain-specific agents, orchestration, meta-agents
+    legacy-aliases: [domain]
