@@ -85,7 +85,7 @@ export function AbstractionLadder({
                   </div>
                 ) : (
                   <Link
-                    href={`/app/studio/primitives?level=${level}`}
+                    href={`/primitives?level=${level}`}
                     className={cn(
                       "flex h-9 w-14 flex-col items-center justify-center rounded-md border border-[var(--color-primitive)]/10 transition-colors hover:border-[var(--color-primitive)]/25",
                       currentLevel === null ? styles.bg : "bg-muted/30",

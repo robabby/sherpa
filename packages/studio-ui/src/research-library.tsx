@@ -12,7 +12,7 @@ import {
 import type { InitiativeResearch } from "@/lib/studio";
 
 function docHref(relativePath: string): string {
-  return `/app/studio/docs/${relativePath.replace(/^docs\//, "").replace(/\.md$/, "")}`;
+  return `/docs/${relativePath.replace(/^docs\//, "").replace(/\.md$/, "")}`;
 }
 
 interface ResearchLibraryProps {

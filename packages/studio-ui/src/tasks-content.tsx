@@ -376,7 +376,7 @@ function TaskTable({ tasks }: { tasks: TaskBoardEntry[] }) {
                 </td>
                 <td className="px-4 py-3">
                   <Link
-                    href={`/app/studio/tasks/${task.id}`}
+                    href={`/tasks/${task.id}`}
                     className="font-medium text-foreground transition-colors hover:text-[var(--color-copper)]"
                   >
                     {task.title}

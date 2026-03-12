@@ -45,8 +45,8 @@ function DeliverableCard({
   const Icon = isChart ? BarChart2 : Presentation;
 
   const href = isChart
-    ? `/app/studio/process/${slugs.join("/")}/chart/${deliverable.id}`
-    : `/app/studio/process/${slugs.join("/")}/present/${deliverable.id}`;
+    ? `/process/${slugs.join("/")}/chart/${deliverable.id}`
+    : `/process/${slugs.join("/")}/present/${deliverable.id}`;
 
   return (
     <Link href={href}>

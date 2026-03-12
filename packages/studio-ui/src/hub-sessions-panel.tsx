@@ -32,7 +32,7 @@ export function HubSessionsPanel({ sessions, stats }: HubSessionsPanelProps) {
   return (
     <HubPanel
       variant="sessions"
-      href="/app/studio/sessions"
+      href="/sessions"
       title="Sessions"
       label="SESSIONS"
       linkText="View all sessions"

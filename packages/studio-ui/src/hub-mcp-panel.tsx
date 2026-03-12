@@ -13,7 +13,7 @@ export function HubMcpPanel({ data }: HubMcpPanelProps) {
   return (
     <HubPanel
       variant="mcp"
-      href="/app/studio/mcp"
+      href="/mcp"
       title="MCP Server"
       label="PROTOCOL"
       linkText="View MCP dashboard"

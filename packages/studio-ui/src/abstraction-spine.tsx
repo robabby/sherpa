@@ -59,7 +59,7 @@ export function AbstractionSpine({
           return (
             <div key={level} className="flex flex-1 items-center">
               <SpineNode
-                href={isActive ? "/app/studio/primitives" : `/app/studio/primitives?level=${level}`}
+                href={isActive ? "/primitives" : `/primitives?level=${level}`}
                 level={level}
                 name={LEVEL_NAMES[level]}
                 verb={LEVEL_VERBS[level]}
@@ -84,7 +84,7 @@ export function AbstractionSpine({
         {uncategorized > 0 && (
           <div className="ml-3 flex items-center border-l border-dashed border-muted-foreground/15 pl-3">
             <Link
-              href={activeFilter === "uncategorized" ? "/app/studio/primitives" : "/app/studio/primitives?level=uncategorized"}
+              href={activeFilter === "uncategorized" ? "/primitives" : "/primitives?level=uncategorized"}
               className={cn(
                 "flex flex-col items-center rounded-lg border px-3 py-2 transition-all",
                 "bg-muted-foreground/5 border-muted-foreground/15",
@@ -102,7 +102,7 @@ export function AbstractionSpine({
         {activeFilter !== null && (
           <div className="ml-3 flex items-center">
             <Link
-              href="/app/studio/primitives"
+              href="/primitives"
               className="inline-flex items-center rounded-full border border-muted-foreground/20 px-3 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:border-muted-foreground/30 hover:text-muted-foreground/80"
             >
               Show all
@@ -114,7 +114,7 @@ export function AbstractionSpine({
       {/* Mobile: pill strip */}
       <div className="flex flex-wrap gap-2 sm:hidden">
         <MobilePill
-          href="/app/studio/primitives"
+          href="/primitives"
           label="All"
           isActive={activeFilter === null}
         />
@@ -124,7 +124,7 @@ export function AbstractionSpine({
           return (
             <MobilePill
               key={level}
-              href={isActive ? "/app/studio/primitives" : `/app/studio/primitives?level=${level}`}
+              href={isActive ? "/primitives" : `/primitives?level=${level}`}
               label={`${level} ${LEVEL_NAMES[level]} (${perLevel[level]})`}
               isActive={isActive}
               bgClass={opacity.bg}
@@ -135,7 +135,7 @@ export function AbstractionSpine({
         })}
         {uncategorized > 0 && (
           <MobilePill
-            href={activeFilter === "uncategorized" ? "/app/studio/primitives" : "/app/studio/primitives?level=uncategorized"}
+            href={activeFilter === "uncategorized" ? "/primitives" : "/primitives?level=uncategorized"}
             label={`Uncategorized (${uncategorized})`}
             isActive={activeFilter === "uncategorized"}
           />

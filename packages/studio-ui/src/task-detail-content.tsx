@@ -203,7 +203,7 @@ export function TaskDetailContent({ task }: TaskDetailContentProps) {
         <motion.div variants={fadeVariant}>
           <StudioBreadcrumb
             segments={[
-              { label: "Tasks", href: "/app/studio/tasks" },
+              { label: "Tasks", href: "/tasks" },
               { label: task.title },
             ]}
           />
@@ -236,7 +236,7 @@ export function TaskDetailContent({ task }: TaskDetailContentProps) {
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground/60">
             {task.initiative && (
               <Link
-                href={`/app/studio/process/${task.initiative}`}
+                href={`/process/${task.initiative}`}
                 className="transition-colors hover:text-[var(--color-copper)]"
               >
                 {task.initiative}

@@ -80,7 +80,7 @@ export function UnifiedInitiativeCard({ entry }: UnifiedInitiativeCardProps) {
         {/* Title row */}
         <div className="mb-2 flex items-start justify-between gap-3">
           <Link
-            href={`/app/studio/process/${initiative.slug}`}
+            href={`/process/${initiative.slug}`}
             className="text-base font-medium text-foreground transition-colors hover:text-[var(--color-gold)]"
           >
             {initiative.title}

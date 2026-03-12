@@ -52,7 +52,7 @@ export function DocSearch({ items }: DocSearchProps) {
           {results.map((result) => (
             <Link
               key={result.item.relativePath}
-              href={`/app/studio/docs/${pathToSlug(result.item.relativePath)}`}
+              href={`/docs/${pathToSlug(result.item.relativePath)}`}
               className="block px-4 py-2 text-sm hover:bg-[var(--color-gold)]/10"
               onClick={() => setQuery("")}
             >

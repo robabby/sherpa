@@ -17,7 +17,7 @@ export function HubWorkflowPanel() {
   return (
     <HubPanel
       variant="workflow"
-      href="/app/studio/workflow"
+      href="/workflow"
       title="Operating Loop"
       label="WORKFLOW"
       linkText="View full diagram"

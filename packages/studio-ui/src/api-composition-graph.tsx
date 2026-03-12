@@ -76,7 +76,7 @@ export function ApiCompositionGraph({
                 {entries.map((entry) => (
                   <Link
                     key={entry.slug}
-                    href={`/app/studio/primitives/${encodeURIComponent(entry.slug)}`}
+                    href={`/primitives/${encodeURIComponent(entry.slug)}`}
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded border px-2 py-1 text-xs transition-colors",
                       "border-[var(--border-primitive)] bg-[var(--color-primitive)]/5",
@@ -103,7 +103,7 @@ export function ApiCompositionGraph({
               {(byLevel.get("unknown") ?? []).map((entry) => (
                 <Link
                   key={entry.slug}
-                  href={`/app/studio/primitives/${encodeURIComponent(entry.slug)}`}
+                  href={`/primitives/${encodeURIComponent(entry.slug)}`}
                   className="inline-flex items-center rounded border border-muted-foreground/15 px-2 py-1 font-mono text-xs text-muted-foreground/60 hover:border-muted-foreground/25"
                 >
                   {entry.slug}

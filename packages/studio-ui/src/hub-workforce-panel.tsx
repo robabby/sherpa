@@ -21,7 +21,7 @@ export function HubWorkforcePanel({ roles, workstreams = [] }: HubWorkforcePanel
   return (
     <HubPanel
       variant="workforce"
-      href="/app/studio/workforce"
+      href="/workforce"
       title="Agent Workforce"
       label="WORKFORCE"
       linkText="View all roles"
@@ -57,7 +57,7 @@ export function HubWorkforcePanel({ roles, workstreams = [] }: HubWorkforcePanel
                   {catRoles.map((role) => (
                     <Link
                       key={role.slug}
-                      href={`/app/studio/workforce/${role.slug}`}
+                      href={`/workforce/${role.slug}`}
                       className="text-sm text-foreground transition-colors hover:text-[var(--color-eclipse)]"
                     >
                       {role.displayName}

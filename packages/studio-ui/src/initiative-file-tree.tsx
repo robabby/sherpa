@@ -44,14 +44,14 @@ const ANNOTATION_ICONS: Record<FileTreeAnnotation, { icon: typeof FileText; clas
 // ---------------------------------------------------------------------------
 
 function docHref(relativePath: string): string {
-  return `/app/studio/docs/${relativePath.replace(/^docs\//, "").replace(/\.md$/, "")}`;
+  return `/docs/${relativePath.replace(/^docs\//, "").replace(/\.md$/, "")}`;
 }
 
 /**
  * Build the chart viewer URL from a deliverable's relative path.
  * Path: docs/initiatives/<slug>/deliverables/<file>.json
  * or:   docs/initiatives/<slug>/sub-initiatives/<sub>/deliverables/<file>.json
- * URL:  /app/studio/process/<slug>/chart/<id>
+ * URL:  /process/<slug>/chart/<id>
  */
 function deliverableHref(relativePath: string, fileName: string): string {
   const id = fileName.replace(/\.json$/, "");
@@ -60,7 +60,7 @@ function deliverableHref(relativePath: string, fileName: string): string {
   if (!match) return "#";
   // Convert "parent/sub-initiatives/child" segments into URL slugs
   const slugPath = match[1]!.replace(/\/sub-initiatives\//g, "/");
-  return `/app/studio/process/${slugPath}/chart/${id}`;
+  return `/process/${slugPath}/chart/${id}`;
 }
 
 function isDocLinkable(node: FileTreeNode): boolean {

@@ -95,19 +95,19 @@ function formatDate(dateStr: string): string {
 function sourceToHref(source: string): string | null {
   if (source.startsWith("docs/initiatives/")) {
     const slug = source.split("/")[2];
-    if (slug) return `/app/studio/process/${slug}`;
+    if (slug) return `/process/${slug}`;
   }
   if (source.startsWith(".claude/rules/")) {
     const slug = source.replace(".claude/rules/", "").replace(".md", "");
-    return `/app/studio/conventions/${slug}`;
+    return `/conventions/${slug}`;
   }
   if (source.startsWith(".claude/skills/")) {
     const slug = source.split("/")[2];
-    if (slug) return `/app/studio/skills/${slug}`;
+    if (slug) return `/skills/${slug}`;
   }
   if (source.startsWith("docs/")) {
     const docPath = source.replace(/\.md$/, "");
-    return `/app/studio/docs/${docPath}`;
+    return `/docs/${docPath}`;
   }
   return null;
 }
@@ -273,7 +273,7 @@ function RoleAssignmentPills({ roles }: { roles: WorkstreamRoleAssignment[] }) {
       {roles.map((r) => (
         <Link
           key={r.slug}
-          href={`/app/studio/workforce/${r.slug}`}
+          href={`/workforce/${r.slug}`}
           className="inline-flex items-center gap-1.5 rounded-full border border-muted-foreground/15 bg-muted-foreground/5 px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:border-[var(--color-eclipse)]/30 hover:text-[var(--color-eclipse)]"
         >
           <span className={cn("h-1.5 w-1.5 rounded-full", ASSIGNMENT_STATUS_COLORS[r.status] ?? "bg-muted-foreground/40")} />
@@ -641,7 +641,7 @@ function OverviewTab({ node, onStatusChange, onPostApproval, onArchive, onRestor
               {(meta.chartSpecs as ChartSpec[]).map((spec) => (
                 <Link
                   key={spec.id}
-                  href={`/app/studio/process/${node.id.replace("initiative/", "")}/chart/${spec.id}`}
+                  href={`/process/${node.id.replace("initiative/", "")}/chart/${spec.id}`}
                   className="block"
                 >
                   <div className="group rounded-lg border border-[var(--border-gold)]/15 bg-card/50 p-3 transition-colors hover:border-[var(--color-gold)]/40">
@@ -991,7 +991,7 @@ function getActionsForNode(node: ProcessNode): ActionButton[] {
       actions.push({
         label: "View Details",
         icon: ExternalLink,
-        href: `/app/studio/process/${slug}`,
+        href: `/process/${slug}`,
       });
       break;
     }
@@ -1001,7 +1001,7 @@ function getActionsForNode(node: ProcessNode): ActionButton[] {
         actions.push({
           label: "View Initiative",
           icon: ExternalLink,
-          href: `/app/studio/process/${initSlug}`,
+          href: `/process/${initSlug}`,
         });
       }
       if (node.metadata.worktree) {
@@ -1021,7 +1021,7 @@ function getActionsForNode(node: ProcessNode): ActionButton[] {
         actions.push({
           label: "Parent Initiative",
           icon: ExternalLink,
-          href: `/app/studio/process/${parentSlug}`,
+          href: `/process/${parentSlug}`,
         });
       }
       break;
@@ -1059,7 +1059,7 @@ function getActionsForNode(node: ProcessNode): ActionButton[] {
       actions.push({
         label: "View Exports",
         icon: ExternalLink,
-        href: `/app/studio/primitives/${slug}`,
+        href: `/primitives/${slug}`,
       });
       break;
     }

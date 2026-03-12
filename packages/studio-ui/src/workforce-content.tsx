@@ -267,7 +267,7 @@ function RoleCard({
   return (
     <motion.div variants={cardVariant}>
       <Link
-        href={`/app/studio/workforce/${role.slug}`}
+        href={`/workforce/${role.slug}`}
         className={cn(
           "group relative flex h-full flex-col overflow-hidden rounded-lg border bg-card/30 backdrop-blur-[2px] transition-all duration-200",
           categoryStyle.border,

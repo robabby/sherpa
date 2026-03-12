@@ -26,7 +26,7 @@ export function PrimitiveApiSurface({ endpoints }: PrimitiveApiSurfaceProps) {
         {endpoints.map((entry) => (
           <Link
             key={entry.slug}
-            href={`/app/studio/api/${encodeURIComponent(entry.slug)}`}
+            href={`/api/${encodeURIComponent(entry.slug)}`}
             className={cn(
               "flex items-center gap-3 rounded-lg border px-4 py-3",
               "border-[var(--border-api)] bg-[var(--color-api)]/[0.03]",

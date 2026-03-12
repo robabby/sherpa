@@ -31,7 +31,7 @@ export function ActivityFullTimeline({
             {/* Date column */}
             <div className="relative flex w-20 shrink-0 items-start">
               <Link
-                href={`/app/studio/portfolio/${group.date}`}
+                href={`/portfolio/${group.date}`}
                 className="relative z-10 pr-2.5 font-mono text-[11px] leading-5 text-muted-foreground transition-colors hover:text-[var(--color-gold)]"
               >
                 {group.label}

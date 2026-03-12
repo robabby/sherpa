@@ -14,7 +14,7 @@ export function HubSkillsPanel({ skills }: HubSkillsPanelProps) {
   return (
     <HubPanel
       variant="skills"
-      href="/app/studio/skills"
+      href="/skills"
       title="Agent Skills"
       label="SKILLS"
       linkText="View all skills"
@@ -29,7 +29,7 @@ export function HubSkillsPanel({ skills }: HubSkillsPanelProps) {
             {projectSkills.map((skill) => (
               <div key={skill.slug} className="min-w-0">
                 <Link
-                  href={`/app/studio/skills/${skill.slug}`}
+                  href={`/skills/${skill.slug}`}
                   className="block text-sm font-medium text-foreground transition-colors hover:text-[var(--color-eclipse)]"
                 >
                   {skill.name}

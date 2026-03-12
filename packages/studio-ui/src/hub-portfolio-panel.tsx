@@ -55,7 +55,7 @@ export function HubPortfolioPanel({ portfolio }: HubPortfolioPanelProps) {
   return (
     <HubPanel
       variant="portfolio"
-      href="/app/studio/portfolio"
+      href="/portfolio"
       title="Projects"
       label="PORTFOLIO"
       linkText="View portfolio"

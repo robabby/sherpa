@@ -74,7 +74,7 @@ export function HubProcessPanel({
   return (
     <HubPanel
       variant="process"
-      href="/app/studio/process"
+      href="/process"
       title="Initiatives"
       label="PROCESS"
       linkText="View all initiatives"
@@ -83,7 +83,7 @@ export function HubProcessPanel({
         {/* Hero initiative */}
         {heroInitiative && (
           <Link
-            href={`/app/studio/process/${heroInitiative.slug}`}
+            href={`/process/${heroInitiative.slug}`}
             className={cn(
               "block rounded-lg border-l-2 pl-3 transition-colors hover:bg-[var(--color-copper)]/5",
               heroInitiative.status === "in-progress"
@@ -126,7 +126,7 @@ export function HubProcessPanel({
             {activeWorkstreams.map((ws) => (
               <Link
                 key={ws.slug}
-                href={`/app/studio/process/${ws.initiative?.split("/")[0] ?? ws.slug}`}
+                href={`/process/${ws.initiative?.split("/")[0] ?? ws.slug}`}
                 className="flex items-center justify-between gap-2 rounded-md px-1 py-0.5 transition-colors hover:bg-[var(--color-copper)]/5"
               >
                 <div className="min-w-0 flex-1">
@@ -154,7 +154,7 @@ export function HubProcessPanel({
             {attentionNeeded.map((item) => (
               <Link
                 key={item.slug}
-                href={`/app/studio/process/${item.slug}`}
+                href={`/process/${item.slug}`}
                 className="flex items-center justify-between gap-2 rounded-md border-l-2 border-l-[var(--color-gold)]/30 px-2 py-0.5 transition-colors hover:bg-[var(--color-copper)]/5"
               >
                 <span className="truncate text-sm text-foreground/80">
@@ -191,7 +191,7 @@ export function HubProcessPanel({
             {pendingReview.map((item) => (
               <Link
                 key={item.slug}
-                href={`/app/studio/process/${item.slug}`}
+                href={`/process/${item.slug}`}
                 className="flex items-center justify-between gap-2 rounded-md px-1 py-0.5 transition-colors hover:bg-[var(--color-copper)]/5"
               >
                 <span className="truncate text-sm text-foreground/80">

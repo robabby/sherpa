@@ -65,7 +65,7 @@ export function ActivityEntry({
       {/* Date column */}
       <div className="w-16 shrink-0 pt-0.5 text-right">
         <Link
-          href={`/app/studio/portfolio/${entry.date}`}
+          href={`/portfolio/${entry.date}`}
           className="font-mono text-xs text-muted-foreground transition-colors hover:text-[var(--color-gold)]"
         >
           {formatDate(entry.date)}

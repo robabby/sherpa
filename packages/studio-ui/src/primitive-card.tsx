@@ -49,7 +49,7 @@ function CuratedCard({
 
   return (
     <Link
-      href={`/app/studio/primitives/${encodeURIComponent(entry.slug)}`}
+      href={`/primitives/${encodeURIComponent(entry.slug)}`}
       className={cn(
         "group block rounded-lg border bg-card/30 p-5",
         "transition-all duration-200 hover:-translate-y-px hover:border-[var(--color-primitive)]/40",
@@ -174,7 +174,7 @@ function UncategorizedCard({
 
   return (
     <Link
-      href={`/app/studio/primitives/${encodeURIComponent(entry.slug)}`}
+      href={`/primitives/${encodeURIComponent(entry.slug)}`}
       className="group block rounded-md border border-muted-foreground/10 bg-background p-3 transition-colors hover:border-muted-foreground/20"
     >
       <p className="mb-1 font-mono text-xs text-muted-foreground">

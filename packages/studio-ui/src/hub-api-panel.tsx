@@ -20,7 +20,7 @@ export function HubApiPanel({ catalog }: HubApiPanelProps) {
   return (
     <HubPanel
       variant="api"
-      href="/app/studio/api"
+      href="/api"
       title="REST API"
       label="API SURFACE"
       linkText="Browse endpoints"

@@ -127,7 +127,7 @@ export function TaskSummaryWidget({ tasks }: TaskSummaryWidgetProps) {
 
       {/* Link to full board */}
       <Link
-        href="/app/studio/tasks"
+        href="/tasks"
         className="text-sm text-[var(--color-copper)]/70 transition-colors hover:text-[var(--color-copper)]"
       >
         View all tasks →

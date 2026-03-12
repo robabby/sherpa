@@ -39,7 +39,7 @@ export function HubConventionsPanel({
   return (
     <HubPanel
       variant="conventions"
-      href="/app/studio/conventions"
+      href="/conventions"
       title="System Rules"
       label="CONVENTIONS"
       linkText="View conventions"
@@ -104,9 +104,9 @@ export function HubConventionsPanel({
 
 /**
  * Convert a rule to its conventions spoke href.
- * Rule files: ".claude/rules/foo-bar.md" → "/app/studio/conventions/foo-bar"
+ * Rule files: ".claude/rules/foo-bar.md" → "/conventions/foo-bar"
  */
 function ruleHref(rule: Rule): string {
   const slug = rule.fileName.replace(/\.md$/, "");
-  return `/app/studio/conventions/${slug}`;
+  return `/conventions/${slug}`;
 }

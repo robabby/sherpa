@@ -12,7 +12,7 @@ function nodeToHref(node: ResearchTreeNode): string | null {
   const match = node.relativePath.match(/^docs\/initiatives\/(.+)$/);
   if (!match?.[1]) return null;
   const segments = match[1].split("/sub-initiatives/");
-  return `/app/studio/process/${segments.join("/")}`;
+  return `/process/${segments.join("/")}`;
 }
 import {
   generateRrLaunchPrompt,

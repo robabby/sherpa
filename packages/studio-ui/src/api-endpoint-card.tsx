@@ -15,7 +15,7 @@ export function ApiEndpointCard({ entry }: ApiEndpointCardProps) {
 
   return (
     <Link
-      href={`/app/studio/api/${encodeURIComponent(entry.slug)}`}
+      href={`/api/${encodeURIComponent(entry.slug)}`}
       className={cn(
         "group block rounded-lg border bg-card/30 p-5",
         "transition-all duration-200 hover:-translate-y-px",

@@ -189,7 +189,7 @@ export function UnifiedCardClient({
                             key={d.id}
                             href={
                               d.type === "deck"
-                                ? `/app/studio/process/${initiativeSlug}/present/${d.id}`
+                                ? `/process/${initiativeSlug}/present/${d.id}`
                                 : undefined
                             }
                             className={cn(

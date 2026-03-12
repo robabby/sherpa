@@ -6,25 +6,20 @@
 @theme {
   --font-sans: ui-sans-serif, system-ui, sans-serif;
 
-  /* Backgrounds */
-  --color-obsidian: #0c0c0c;
-  --color-warm-charcoal: #1a1714;
-  --color-dark-bronze: #252019;
-
-  /* Primary Accent - Gold */
-  --color-gold: #d4a84b;
-  --color-gold-bright: #e8c068;
-  --color-gold-muted: #a68a3c;
-
-  /* Secondary Accent - Copper */
-  --color-copper: #b87333;
-  --color-bronze: #8a7355;
-  --color-tarnished: #5c4d3d;
-
-  /* Text Colors */
-  --color-cream: #f5f0e6;
-  --color-warm-gray: #b8a99a;
-  --color-dim: #7a6b5a;
+  /* Legacy color tokens — studio-ui references these via Tailwind classes.
+     Mapped to neutral zinc equivalents so components compile and render. */
+  --color-obsidian: #09090b;
+  --color-warm-charcoal: #18181b;
+  --color-dark-bronze: #27272a;
+  --color-gold: #a1a1aa;
+  --color-gold-bright: #d4d4d8;
+  --color-gold-muted: #71717a;
+  --color-copper: #a1a1aa;
+  --color-bronze: #71717a;
+  --color-tarnished: #52525b;
+  --color-cream: #fafafa;
+  --color-warm-gray: #a1a1aa;
+  --color-dim: #71717a;
 }
 
 @theme inline {
@@ -66,137 +61,152 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ── Light mode (shadcn/ui zinc defaults) ──────────────────────── */
 :root {
   --radius: 0.625rem;
 
-  /* Light Mode */
-  --background: #faf8f3;
-  --foreground: #2a2520;
-  --card: #f2ede2;
-  --card-foreground: #2a2520;
-  --popover: #f2ede2;
-  --popover-foreground: #2a2520;
-  --primary: #876b24;
-  --primary-foreground: #faf8f3;
-  --secondary: #e6e0d3;
-  --secondary-foreground: #2a2520;
-  --muted: #e6e0d3;
-  --muted-foreground: #7a7268;
-  --accent: #8f5a28;
-  --accent-foreground: #faf8f3;
-  --destructive: #c53030;
-  --border: rgba(135, 107, 36, 0.2);
-  --input: rgba(135, 107, 36, 0.12);
-  --ring: #a38230;
-  --chart-1: #876b24;
-  --chart-2: #a38230;
-  --chart-3: #8f5a28;
-  --chart-4: #6d563f;
-  --chart-5: #7d6324;
-  --sidebar: #f2ede2;
-  --sidebar-foreground: #2a2520;
-  --sidebar-primary: #876b24;
-  --sidebar-primary-foreground: #faf8f3;
-  --sidebar-accent: #e6e0d3;
-  --sidebar-accent-foreground: #2a2520;
-  --sidebar-border: rgba(135, 107, 36, 0.2);
-  --sidebar-ring: #a38230;
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --destructive: #ef4444;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #18181b;
+  --chart-1: #e76e50;
+  --chart-2: #2a9d90;
+  --chart-3: #274754;
+  --chart-4: #e9c46a;
+  --chart-5: #f4a462;
+  --sidebar: #f4f4f5;
+  --sidebar-foreground: #09090b;
+  --sidebar-primary: #18181b;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #18181b;
 
-  --glow-gold: rgba(163, 130, 48, 0.15);
-  --glow-copper: rgba(143, 90, 40, 0.12);
-  --border-gold: rgba(163, 130, 48, 0.25);
-  --border-copper: rgba(143, 90, 40, 0.18);
+  /* Domain color tokens (studio-ui panels) */
+  --glow-gold: rgba(24, 24, 27, 0.08);
+  --glow-copper: rgba(24, 24, 27, 0.06);
+  --border-gold: rgba(24, 24, 27, 0.15);
+  --border-copper: rgba(24, 24, 27, 0.12);
+  --glass-inner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
-  --color-session: #4a5a9e;
-  --color-session-bright: #5e72b8;
-  --color-session-muted: #3d4a80;
-  --glow-session: rgba(74, 90, 158, 0.15);
+  --color-session: #6366f1;
+  --color-session-bright: #818cf8;
+  --color-session-muted: #4f46e5;
+  --glow-session: rgba(99, 102, 241, 0.1);
 
-  --color-mcp: #1a7a8e;
-  --color-mcp-bright: #2a96aa;
-  --color-mcp-muted: #126070;
-  --glow-mcp: rgba(26, 122, 142, 0.15);
-  --border-mcp: rgba(26, 122, 142, 0.25);
+  --color-mcp: #0891b2;
+  --color-mcp-bright: #22d3ee;
+  --color-mcp-muted: #0e7490;
+  --glow-mcp: rgba(8, 145, 178, 0.1);
+  --border-mcp: rgba(8, 145, 178, 0.2);
 
-  --color-primitive: #2a7d6e;
-  --color-primitive-bright: #3a9d8a;
-  --color-primitive-muted: #1f5c52;
-  --glow-primitive: rgba(42, 125, 110, 0.15);
-  --border-primitive: rgba(42, 125, 110, 0.25);
+  --color-primitive: #059669;
+  --color-primitive-bright: #34d399;
+  --color-primitive-muted: #047857;
+  --glow-primitive: rgba(5, 150, 105, 0.1);
+  --border-primitive: rgba(5, 150, 105, 0.2);
 
-  --color-api: #4a7c9e;
-  --color-api-bright: #5e96b8;
-  --color-api-muted: #3d6580;
-  --glow-api: rgba(74, 124, 158, 0.15);
-  --border-api: rgba(74, 124, 158, 0.25);
+  --color-api: #2563eb;
+  --color-api-bright: #60a5fa;
+  --color-api-muted: #1d4ed8;
+  --glow-api: rgba(37, 99, 235, 0.1);
+  --border-api: rgba(37, 99, 235, 0.2);
 
-  --color-engaged: #876b24;
-  --color-not-engaged: rgba(163, 130, 48, 0.25);
+  --color-eclipse: #7c3aed;
+  --color-transit: #7c3aed;
+  --glow-eclipse: rgba(124, 58, 237, 0.1);
+  --glow-transit: rgba(124, 58, 237, 0.1);
+
+  --color-engaged: #18181b;
+  --color-not-engaged: rgba(24, 24, 27, 0.15);
 }
 
+/* ── Dark mode (shadcn/ui zinc defaults) ───────────────────────── */
 .dark {
-  --background: #0c0c0c;
-  --foreground: #f5f0e6;
-  --card: #1a1714;
-  --card-foreground: #f5f0e6;
-  --popover: #1a1714;
-  --popover-foreground: #f5f0e6;
-  --primary: #d4a84b;
-  --primary-foreground: #0c0c0c;
-  --secondary: #252019;
-  --secondary-foreground: #f5f0e6;
-  --muted: #252019;
-  --muted-foreground: #b8a99a;
-  --accent: #b87333;
-  --accent-foreground: #0c0c0c;
-  --destructive: #dc2626;
-  --border: rgba(212, 168, 75, 0.15);
-  --input: rgba(212, 168, 75, 0.1);
-  --ring: #d4a84b;
-  --chart-1: #d4a84b;
-  --chart-2: #e8c068;
-  --chart-3: #b87333;
-  --chart-4: #8a7355;
-  --chart-5: #a68a3c;
-  --sidebar: #1a1714;
-  --sidebar-foreground: #f5f0e6;
-  --sidebar-primary: #d4a84b;
-  --sidebar-primary-foreground: #0c0c0c;
-  --sidebar-accent: #252019;
-  --sidebar-accent-foreground: #f5f0e6;
-  --sidebar-border: rgba(212, 168, 75, 0.15);
-  --sidebar-ring: #d4a84b;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #09090b;
+  --card-foreground: #fafafa;
+  --popover: #09090b;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #d4d4d8;
+  --chart-1: #e76e50;
+  --chart-2: #2a9d90;
+  --chart-3: #274754;
+  --chart-4: #e9c46a;
+  --chart-5: #f4a462;
+  --sidebar: #18181b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #fafafa;
+  --sidebar-primary-foreground: #18181b;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #27272a;
+  --sidebar-ring: #d4d4d8;
 
-  --glow-gold: rgba(212, 168, 75, 0.2);
-  --glow-copper: rgba(184, 115, 51, 0.15);
-  --border-gold: rgba(212, 168, 75, 0.3);
-  --border-copper: rgba(184, 115, 51, 0.2);
+  /* Domain color tokens (studio-ui panels) */
+  --glow-gold: rgba(250, 250, 250, 0.06);
+  --glow-copper: rgba(250, 250, 250, 0.04);
+  --border-gold: rgba(250, 250, 250, 0.1);
+  --border-copper: rgba(250, 250, 250, 0.08);
+  --glass-inner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 
-  --color-session: #7b90d4;
-  --color-session-bright: #96a8e4;
-  --color-session-muted: #5e72b8;
-  --glow-session: rgba(123, 144, 212, 0.2);
+  --color-session: #818cf8;
+  --color-session-bright: #a5b4fc;
+  --color-session-muted: #6366f1;
+  --glow-session: rgba(129, 140, 248, 0.15);
 
-  --color-mcp: #40d0e0;
-  --color-mcp-bright: #60e8f0;
-  --color-mcp-muted: #30b0c0;
-  --glow-mcp: rgba(64, 208, 224, 0.2);
-  --border-mcp: rgba(64, 208, 224, 0.3);
+  --color-mcp: #22d3ee;
+  --color-mcp-bright: #67e8f9;
+  --color-mcp-muted: #06b6d4;
+  --glow-mcp: rgba(34, 211, 238, 0.15);
+  --border-mcp: rgba(34, 211, 238, 0.2);
 
-  --color-primitive: #4ec9b0;
-  --color-primitive-bright: #6ae0c8;
-  --color-primitive-muted: #3aa08a;
-  --glow-primitive: rgba(78, 201, 176, 0.2);
-  --border-primitive: rgba(78, 201, 176, 0.3);
+  --color-primitive: #34d399;
+  --color-primitive-bright: #6ee7b7;
+  --color-primitive-muted: #10b981;
+  --glow-primitive: rgba(52, 211, 153, 0.15);
+  --border-primitive: rgba(52, 211, 153, 0.2);
 
-  --color-api: #7bb0d4;
-  --color-api-bright: #96c5e4;
-  --color-api-muted: #5e96b8;
-  --glow-api: rgba(123, 176, 212, 0.2);
-  --border-api: rgba(123, 176, 212, 0.3);
+  --color-api: #60a5fa;
+  --color-api-bright: #93c5fd;
+  --color-api-muted: #3b82f6;
+  --glow-api: rgba(96, 165, 250, 0.15);
+  --border-api: rgba(96, 165, 250, 0.2);
 
-  --color-engaged: #d4a84b;
-  --color-not-engaged: rgba(212, 168, 75, 0.3);
+  --color-eclipse: #a78bfa;
+  --color-transit: #a78bfa;
+  --glow-eclipse: rgba(167, 139, 250, 0.15);
+  --glow-transit: rgba(167, 139, 250, 0.15);
+
+  --color-engaged: #fafafa;
+  --color-not-engaged: rgba(250, 250, 250, 0.2);
 }
 
 @layer base {
@@ -214,10 +224,9 @@
   outline-offset: 2px;
 }
 
-/* Lifecycle progress bar — current stage pulse */
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 0 0 transparent; }
-  50% { box-shadow: 0 0 6px 2px var(--color-gold, #c9a94c33); }
+  50% { box-shadow: 0 0 6px 2px rgba(161, 161, 170, 0.2); }
 }
 
 @media (prefers-reduced-motion: reduce) {

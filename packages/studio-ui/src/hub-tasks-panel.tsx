@@ -26,7 +26,7 @@ export function HubTasksPanel({ tasks }: HubTasksPanelProps) {
   return (
     <HubPanel
       variant="tasks"
-      href="/app/studio/tasks"
+      href="/tasks"
       title="Task Board"
       label="TASKS"
       linkText="View task board"

@@ -22,7 +22,7 @@ export function ScopeFilterBar({
     <div className="flex flex-wrap gap-2">
       {/* "All" pill */}
       <Link
-        href="/app/studio/activity"
+        href="/activity"
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
           activeScope === null
@@ -41,7 +41,7 @@ export function ScopeFilterBar({
         return (
           <Link
             key={scope}
-            href={`/app/studio/activity?scope=${scope}`}
+            href={`/activity?scope=${scope}`}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
               isActive && colorClasses

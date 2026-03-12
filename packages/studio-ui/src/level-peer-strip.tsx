@@ -32,7 +32,7 @@ function PeerCard({ entry }: { entry: PrimitiveCatalogEntry }) {
 
   return (
     <Link
-      href={`/app/studio/primitives/${encodeURIComponent(entry.slug)}`}
+      href={`/primitives/${encodeURIComponent(entry.slug)}`}
       className={cn(
         "flex flex-col rounded-lg border border-[var(--border-primitive)]/12 bg-card/20 px-3 py-2.5",
         "transition-colors hover:border-[var(--color-primitive)]/25",

@@ -33,22 +33,22 @@ function resolvePath(base: string, relative: string): string {
 
 /** Convert a monorepo-relative file path to a Studio docs URL, or null if unmappable. */
 function pathToStudioUrl(resolvedPath: string): string | null {
-  // .claude/rules/foo.md → /app/studio/docs/rules/foo
+  // .claude/rules/foo.md → /docs/rules/foo
   if (resolvedPath.startsWith(".claude/rules/")) {
     const name = resolvedPath.replace(".claude/rules/", "").replace(/\.md$/, "");
-    return `/app/studio/docs/rules/${name}`;
+    return `/docs/rules/${name}`;
   }
-  // */CLAUDE.md → /app/studio/docs/claudemd/<dir>
+  // */CLAUDE.md → /docs/claudemd/<dir>
   if (resolvedPath.endsWith("CLAUDE.md")) {
     const dir = resolvedPath.replace(/\/?CLAUDE\.md$/, "");
     return dir
-      ? `/app/studio/docs/claudemd/${dir}`
-      : `/app/studio/docs/claudemd`;
+      ? `/docs/claudemd/${dir}`
+      : `/docs/claudemd`;
   }
-  // docs/foo/bar.md → /app/studio/docs/foo/bar
+  // docs/foo/bar.md → /docs/foo/bar
   if (resolvedPath.startsWith("docs/")) {
     const slug = resolvedPath.replace(/^docs\//, "").replace(/\.md$/, "");
-    return `/app/studio/docs/${slug}`;
+    return `/docs/${slug}`;
   }
   return null;
 }

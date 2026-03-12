@@ -44,7 +44,7 @@ export function HubActivityPanel({ recentActivity }: HubActivityPanelProps) {
   return (
     <HubPanel
       variant="activity"
-      href="/app/studio/activity"
+      href="/activity"
       title="Recent Activity"
       linkText="View full activity"
       label="Activity"
@@ -59,7 +59,7 @@ export function HubActivityPanel({ recentActivity }: HubActivityPanelProps) {
               {/* Date + node */}
               <div className="relative flex w-[4.25rem] shrink-0 items-start">
                 <Link
-                  href={`/app/studio/portfolio/${group.date}`}
+                  href={`/portfolio/${group.date}`}
                   className="relative z-10 pr-2.5 font-mono text-[11px] leading-5 text-muted-foreground transition-colors hover:text-[var(--color-gold)]"
                 >
                   {group.label}

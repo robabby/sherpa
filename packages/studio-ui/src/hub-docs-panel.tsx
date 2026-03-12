@@ -53,7 +53,7 @@ export function HubDocsPanel({ docsByCategory }: HubDocsPanelProps) {
   return (
     <HubPanel
       variant="docs"
-      href="/app/studio/docs"
+      href="/docs"
       title="Knowledge Base"
       label="DOCUMENTATION"
       linkText="Browse docs"
@@ -118,11 +118,11 @@ export function HubDocsPanel({ docsByCategory }: HubDocsPanelProps) {
 
 /**
  * Convert a relative docs path to a Studio doc viewer URL.
- * e.g. "docs/architecture/platform-strategy.md" → "/app/studio/docs/architecture/platform-strategy"
+ * e.g. "docs/architecture/platform-strategy.md" → "/docs/architecture/platform-strategy"
  */
 function docPath(relativePath: string): string {
   return (
-    "/app/studio/docs/" +
+    "/docs/" +
     relativePath
       .replace(/^docs\//, "")
       .replace(/\.md$/, "")

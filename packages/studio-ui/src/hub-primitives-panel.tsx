@@ -27,7 +27,7 @@ export function HubPrimitivesPanel({ catalog }: HubPrimitivesPanelProps) {
   return (
     <HubPanel
       variant="primitives"
-      href="/app/studio/primitives"
+      href="/primitives"
       title="Computation Primitives"
       label="MODULE CATALOG"
       linkText="Browse catalog"

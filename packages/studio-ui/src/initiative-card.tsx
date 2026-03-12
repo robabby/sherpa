@@ -9,7 +9,7 @@ interface InitiativeCardProps {
 
 export function InitiativeCard({ initiative }: InitiativeCardProps) {
   return (
-    <Link href={`/app/studio/process/${initiative.slug}`}>
+    <Link href={`/process/${initiative.slug}`}>
       <Card className="border border-[var(--border-gold)]/30 bg-background p-5 transition-all hover:border-[var(--color-gold)]/50 hover:shadow-[0_0_20px_rgba(212,168,75,0.1)]">
         <div className="mb-3 flex items-start justify-between gap-3">
           <Text size="3" weight="medium" className="text-foreground">

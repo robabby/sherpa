@@ -48,7 +48,7 @@ export function InitiativeContents({ slug, basePath, files }: InitiativeContents
                 {dirFiles.map((file) => (
                   <Link
                     key={file.relativePath}
-                    href={`/app/studio/docs/${(basePath ?? `docs/initiatives/${slug}`).replace(/^docs\//, "")}/${subDir}/${file.fileName.replace(/\.md$/, "")}`}
+                    href={`/docs/${(basePath ?? `docs/initiatives/${slug}`).replace(/^docs\//, "")}/${subDir}/${file.fileName.replace(/\.md$/, "")}`}
                     className="block rounded-md px-2 py-1 text-sm text-foreground/80 transition-colors hover:bg-[var(--color-copper)]/5 hover:text-foreground"
                   >
                     {file.title}
