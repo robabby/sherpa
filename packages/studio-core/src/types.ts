@@ -1,10 +1,18 @@
 // Agent role constants
 export const AGENT_ROLE_CATEGORIES = [
-  "strategy",
-  "design",
   "engineering",
-  "domain",
+  "product",
+  "design",
+  "research",
+  "quality",
   "operations",
+  "marketing",
+  "security",
+  "data",
+  "governance",
+  // Legacy (accepted with warning by linter, mapped by Studio)
+  "strategy",
+  "domain",
 ] as const;
 export type AgentRoleCategory = (typeof AGENT_ROLE_CATEGORIES)[number];
 

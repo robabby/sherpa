@@ -11,6 +11,13 @@ import {
   Users,
   Zap,
   Clock,
+  Package,
+  FlaskConical,
+  CheckCircle,
+  Megaphone,
+  Shield,
+  Database,
+  Scale,
   type LucideIcon,
 } from "lucide-react";
 
@@ -100,6 +107,93 @@ const CATEGORY_STYLES: Record<AgentRoleCategory, CategoryStyle> = {
     badge:
       "border-[var(--color-session)]/30 bg-[var(--color-session)]/8 text-[var(--color-session)]",
     statBg: "bg-[var(--color-session)]/8 border-[var(--color-session)]/20",
+  },
+  product: {
+    label: "Product",
+    icon: Package,
+    color: "var(--color-copper)",
+    border: "border-[var(--color-copper)]/20",
+    hoverBorder: "hover:border-[var(--color-copper)]/45",
+    hoverGlow: "hover:shadow-[0_0_24px_var(--glow-copper)]",
+    accentBar:
+      "bg-gradient-to-b from-[var(--color-copper)]/60 via-[var(--color-copper)]/20 to-transparent",
+    badge: "border-[var(--color-copper)]/30 bg-[var(--color-copper)]/8 text-[var(--color-copper)]",
+    statBg: "bg-[var(--color-copper)]/8 border-[var(--color-copper)]/20",
+  },
+  research: {
+    label: "Research",
+    icon: FlaskConical,
+    color: "var(--color-eclipse)",
+    border: "border-[var(--color-eclipse)]/20",
+    hoverBorder: "hover:border-[var(--color-eclipse)]/45",
+    hoverGlow: "hover:shadow-[0_0_24px_var(--glow-eclipse)]",
+    accentBar:
+      "bg-gradient-to-b from-[var(--color-eclipse)]/60 via-[var(--color-eclipse)]/20 to-transparent",
+    badge:
+      "border-[var(--color-eclipse)]/30 bg-[var(--color-eclipse)]/8 text-[var(--color-eclipse)]",
+    statBg: "bg-[var(--color-eclipse)]/8 border-[var(--color-eclipse)]/20",
+  },
+  quality: {
+    label: "Quality",
+    icon: CheckCircle,
+    color: "var(--color-primitive)",
+    border: "border-[var(--color-primitive)]/20",
+    hoverBorder: "hover:border-[var(--color-primitive)]/45",
+    hoverGlow: "hover:shadow-[0_0_24px_var(--glow-primitive)]",
+    accentBar:
+      "bg-gradient-to-b from-[var(--color-primitive)]/60 via-[var(--color-primitive)]/20 to-transparent",
+    badge:
+      "border-[var(--color-primitive)]/30 bg-[var(--color-primitive)]/8 text-[var(--color-primitive)]",
+    statBg: "bg-[var(--color-primitive)]/8 border-[var(--color-primitive)]/20",
+  },
+  marketing: {
+    label: "Marketing",
+    icon: Megaphone,
+    color: "var(--color-gold)",
+    border: "border-[var(--color-gold)]/20",
+    hoverBorder: "hover:border-[var(--color-gold)]/45",
+    hoverGlow: "hover:shadow-[0_0_24px_var(--glow-gold)]",
+    accentBar:
+      "bg-gradient-to-b from-[var(--color-gold)]/60 via-[var(--color-gold)]/20 to-transparent",
+    badge: "border-[var(--color-gold)]/30 bg-[var(--color-gold)]/8 text-[var(--color-gold)]",
+    statBg: "bg-[var(--color-gold)]/8 border-[var(--color-gold)]/20",
+  },
+  security: {
+    label: "Security",
+    icon: Shield,
+    color: "var(--color-bronze)",
+    border: "border-[var(--color-bronze)]/20",
+    hoverBorder: "hover:border-[var(--color-bronze)]/45",
+    hoverGlow: "hover:shadow-[0_0_24px_var(--glow-bronze)]",
+    accentBar:
+      "bg-gradient-to-b from-[var(--color-bronze)]/60 via-[var(--color-bronze)]/20 to-transparent",
+    badge: "border-[var(--color-bronze)]/30 bg-[var(--color-bronze)]/8 text-[var(--color-bronze)]",
+    statBg: "bg-[var(--color-bronze)]/8 border-[var(--color-bronze)]/20",
+  },
+  data: {
+    label: "Data",
+    icon: Database,
+    color: "var(--color-session)",
+    border: "border-[var(--color-session)]/20",
+    hoverBorder: "hover:border-[var(--color-session)]/45",
+    hoverGlow: "hover:shadow-[0_0_24px_var(--glow-session)]",
+    accentBar:
+      "bg-gradient-to-b from-[var(--color-session)]/60 via-[var(--color-session)]/20 to-transparent",
+    badge:
+      "border-[var(--color-session)]/30 bg-[var(--color-session)]/8 text-[var(--color-session)]",
+    statBg: "bg-[var(--color-session)]/8 border-[var(--color-session)]/20",
+  },
+  governance: {
+    label: "Governance",
+    icon: Scale,
+    color: "var(--color-gold)",
+    border: "border-[var(--color-gold)]/20",
+    hoverBorder: "hover:border-[var(--color-gold)]/45",
+    hoverGlow: "hover:shadow-[0_0_24px_var(--glow-gold)]",
+    accentBar:
+      "bg-gradient-to-b from-[var(--color-gold)]/60 via-[var(--color-gold)]/20 to-transparent",
+    badge: "border-[var(--color-gold)]/30 bg-[var(--color-gold)]/8 text-[var(--color-gold)]",
+    statBg: "bg-[var(--color-gold)]/8 border-[var(--color-gold)]/20",
   },
 };
 

@@ -156,6 +156,46 @@ export const agentRoleFrontmatterSchema = z.object({
   escalation: z.array(z.string()).default([]),
 });
 
+export const behavioralAgentFrontmatterSchema = z
+  .object({
+    // Required
+    name: z.string().optional(),
+    role: z.string().optional(), // legacy alias for name
+    "display-name": z.string(),
+    category: z.enum(AGENT_ROLE_CATEGORIES),
+    disposition: z.string(),
+
+    // Behavioral (all optional)
+    "domain-scope": z.array(z.string()).optional().default([]),
+    "behavioral-constraints": z.array(z.string()).optional().default([]),
+    "quality-bar": z.array(z.string()).optional().default([]),
+    "fail-triggers": z.array(z.string()).optional().default([]),
+    "output-style": z.string().optional(),
+
+    // Operational (all optional)
+    "model-tier": z.enum(AGENT_MODEL_TIERS).optional().default("medium"),
+    "tool-permissions": z.array(z.string()).optional().default([]),
+    escalation: z.array(z.string()).optional().default([]),
+    "context-packages": z.array(z.string()).optional().default([]),
+    rules: z.array(z.string()).optional().default([]),
+    skills: z.array(z.string()).optional().default([]),
+    patterns: z.array(z.enum(AGENT_PATTERNS)).optional().default([]),
+    structure: z.enum(AGENT_STRUCTURES).nullable().optional().default(null),
+
+    // Display (all optional)
+    vibe: z.string().optional(),
+    tags: z.array(z.string()).optional().default([]),
+    emoji: z.string().optional(),
+  })
+  .transform(({ role: _role, name, ...rest }) => ({
+    ...rest,
+    name: name ?? _role ?? "",
+  }))
+  .refine((data) => data.name.length > 0, {
+    message: "Either 'name' or 'role' must be provided",
+    path: ["name"],
+  });
+
 // Session manifest schemas
 
 export const sessionTokensSchema = z.object({
