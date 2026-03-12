@@ -25,7 +25,8 @@ import { StudioBreadcrumb } from "./studio-breadcrumb";
 import { TaskSummaryWidget } from "./task-summary-widget";
 import { EASE_STANDARD } from "./lib/animation-constants";
 import { cn } from "./lib/utils";
-import type { AgentRole, AgentRoleCategory } from "@/lib/studio";
+import type { AgentRole } from "@/lib/studio";
+import { AGENT_ROLE_CATEGORIES, type AgentRoleCategory } from "@/lib/studio/types";
 import type { TaskBoardEntry } from "@/lib/studio/tasks";
 
 // ---------------------------------------------------------------------------
@@ -442,13 +443,7 @@ function RoleCard({
 // Category Section
 // ---------------------------------------------------------------------------
 
-const AGENT_ROLE_CATEGORIES: AgentRoleCategory[] = [
-  "strategy",
-  "design",
-  "engineering",
-  "domain",
-  "operations",
-];
+// AGENT_ROLE_CATEGORIES imported from @/lib/studio/types (canonical source)
 
 function CategorySection({
   category,
