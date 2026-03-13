@@ -1,0 +1,26 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "behavioral-framework-comparison",
+  "title": "Agent Definition Frameworks: Behavioral Structure Score",
+  "description": "How much behavioral structure each framework provides vs. freeform instructions. Sherpa is the only framework with decomposed behavioral fields.",
+  "created": "2026-03-11",
+  "sourceIteration": 1,
+  "chartType": "bar",
+  "data": [
+    { "name": "Sherpa", "behavioral": 5, "operational": 4 },
+    { "name": "OpenAI Agents", "behavioral": 2, "operational": 4 },
+    { "name": "Claude SDK", "behavioral": 1, "operational": 3 },
+    { "name": "AutoGen", "behavioral": 1, "operational": 3 },
+    { "name": "Mastra", "behavioral": 1, "operational": 2 },
+    { "name": "CrewAI", "behavioral": 0, "operational": 2 },
+    { "name": "Swarm", "behavioral": 0, "operational": 2 },
+    { "name": "agency-agents", "behavioral": 0, "operational": 1 },
+    { "name": "SoulSpec", "behavioral": 0, "operational": 1 }
+  ],
+  "series": [
+    { "key": "behavioral", "label": "Behavioral Structure", "color": "var(--chart-1)" },
+    { "key": "operational", "label": "Operational Fields", "color": "var(--chart-3)" }
+  ],
+  "xAxis": { "dataKey": "name" },
+  "legend": true
+}

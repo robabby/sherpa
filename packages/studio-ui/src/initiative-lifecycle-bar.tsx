@@ -2,6 +2,14 @@
 
 import type { LifecycleInfo, LifecycleStage } from "@/lib/studio/lifecycle";
 import { cn } from "./lib/utils";
+import {
+  buildRrContinuePrompt,
+  buildReviewPrompt,
+  buildPlanningPrompt,
+  buildStartPrompt,
+  buildIntegrationPrompt,
+  type InitiativePromptContext,
+} from "./lib/initiative-prompts";
 
 import { PromptCopyButton } from "./prompt-copy-button";
 
@@ -19,70 +27,6 @@ const VISUAL_STEPS = [
 
 function getVisualStepIndex(stage: LifecycleStage): number {
   return VISUAL_STEPS.findIndex((step) => step.stages.includes(stage));
-}
-
-// ---------------------------------------------------------------------------
-// Prompt builders (duplicated from detail-pane to keep this self-contained)
-// ---------------------------------------------------------------------------
-
-function buildReviewPrompt(title: string, source: string, status: string): string {
-  return [
-    `Using /integration-review, review the proposal for the ${title} initiative.`,
-    ``,
-    `Proposal: ${source}`,
-    `Status: ${status}`,
-    ``,
-    `Evaluate the proposal, check for completeness, and approve or request changes.`,
-  ].join("\n");
-}
-
-function buildRrPrompt(source: string, iterationCount: number): string {
-  const initPath = source.replace(/\/proposal\.md$/, "");
-  const lines = [`/rr`, ``, `Continue research: ${initPath}/`];
-  if (iterationCount > 0) {
-    lines.push(``, `${iterationCount} iteration(s) completed so far.`);
-  }
-  return lines.join("\n");
-}
-
-function buildPlanningPrompt(title: string, source: string, status: string): string {
-  const initPath = source.replace(/\/proposal\.md$/, "");
-  return [
-    `Using /superpowers:writing-plans, create an implementation plan for`,
-    `the ${title} initiative.`,
-    ``,
-    `Context:`,
-    `- Proposal: ${source}`,
-    `- Research: ${initPath}/research/`,
-    ``,
-    `The proposal status is ${status}. Translate the proposed changes into`,
-    `a session-by-session implementation plan.`,
-  ].join("\n");
-}
-
-function buildStartPrompt(title: string, _slug: string, source: string): string {
-  const initPath = source.replace(/\/proposal\.md$/, "");
-  return [
-    `Begin implementation of the ${title} initiative.`,
-    ``,
-    `Plan: ${initPath}/plan.md`,
-    `Proposal: ${source}`,
-    ``,
-    `Follow the plan to implement the proposed changes.`,
-  ].join("\n");
-}
-
-function buildIntegrationPrompt(title: string, _slug: string, source: string): string {
-  const initPath = source.replace(/\/proposal\.md$/, "");
-  return [
-    `Using /integration-review, integrate the completed ${title} initiative.`,
-    ``,
-    `Proposal: ${source}`,
-    `Activity: ${initPath}/activity.md`,
-    ``,
-    `Review the completed work, apply any pending proposals to shared artifacts,`,
-    `and update the initiative status to integrated.`,
-  ].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -108,37 +52,45 @@ export function InitiativeLifecycleBar({
 }: InitiativeLifecycleBarProps) {
   const currentVisualStep = getVisualStepIndex(lifecycle.stage);
 
+  const ctx: InitiativePromptContext = {
+    title: initiativeTitle,
+    slug: initiativeSlug,
+    source: initiativeSource,
+    status: initiativeStatus,
+    iterationCount: researchIterationCount,
+  };
+
   // Build suggested prompt based on lifecycle stage
   let suggestedPrompt: { prompt: string; label: string } | null = null;
   switch (lifecycle.stage) {
     case "needs-research":
     case "needs-proposal":
       suggestedPrompt = {
-        prompt: buildRrPrompt(initiativeSource, researchIterationCount),
+        prompt: buildRrContinuePrompt(ctx),
         label: lifecycle.stage === "needs-research" ? "Launch Research" : "Continue Research",
       };
       break;
     case "needs-review":
       suggestedPrompt = {
-        prompt: buildReviewPrompt(initiativeTitle, initiativeSource, initiativeStatus),
+        prompt: buildReviewPrompt(ctx),
         label: "Review Proposal",
       };
       break;
     case "needs-plan":
       suggestedPrompt = {
-        prompt: buildPlanningPrompt(initiativeTitle, initiativeSource, initiativeStatus),
+        prompt: buildPlanningPrompt(ctx),
         label: "Create Plan",
       };
       break;
     case "ready-to-start":
       suggestedPrompt = {
-        prompt: buildStartPrompt(initiativeTitle, initiativeSlug, initiativeSource),
+        prompt: buildStartPrompt(ctx),
         label: "Start Implementation",
       };
       break;
     case "ready-to-integrate":
       suggestedPrompt = {
-        prompt: buildIntegrationPrompt(initiativeTitle, initiativeSlug, initiativeSource),
+        prompt: buildIntegrationPrompt(ctx),
         label: "Integrate",
       };
       break;

@@ -1,0 +1,26 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "cms-comparison-chart",
+  "title": "CMS Suitability for Agentic Content Workflows",
+  "description": "Scoring headless CMS options across five criteria critical for sherpa.solar: API quality for agents, Vercel compatibility, TypeScript integration, cost efficiency, and editorial workflow support. Higher is better.",
+  "created": "2026-03-13",
+  "sourceIteration": 1,
+  "chartType": "radar",
+  "data": [
+    { "name": "Payload CMS", "api": 10, "vercel": 10, "typescript": 10, "cost": 10, "workflow": 9 },
+    { "name": "Sanity", "api": 9, "vercel": 8, "typescript": 9, "cost": 8, "workflow": 9 },
+    { "name": "MDX + Velite", "api": 3, "vercel": 10, "typescript": 7, "cost": 10, "workflow": 2 },
+    { "name": "Strapi", "api": 8, "vercel": 4, "typescript": 6, "cost": 8, "workflow": 7 },
+    { "name": "Ghost", "api": 7, "vercel": 4, "typescript": 3, "cost": 7, "workflow": 8 },
+    { "name": "Contentful", "api": 6, "vercel": 8, "typescript": 7, "cost": 3, "workflow": 8 }
+  ],
+  "series": [
+    { "key": "api", "label": "Agent API Quality", "color": "var(--chart-1)" },
+    { "key": "vercel", "label": "Vercel Compat", "color": "var(--chart-2)" },
+    { "key": "typescript", "label": "TypeScript", "color": "var(--chart-3)" },
+    { "key": "cost", "label": "Cost Efficiency", "color": "var(--chart-4)" },
+    { "key": "workflow", "label": "Editorial Workflow", "color": "var(--chart-5)" }
+  ],
+  "xAxis": { "dataKey": "name" },
+  "legend": true
+}

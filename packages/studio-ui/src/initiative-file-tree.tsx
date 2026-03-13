@@ -107,6 +107,26 @@ function buildSubInitiativeForDir(relativePath: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Directory summary helper
+// ---------------------------------------------------------------------------
+
+function directorySummary(node: FileTreeNode): string {
+  const count = node.children.length;
+  // Count by annotation type for richer summaries
+  const vectors = node.children.filter((c) => c.annotation === "vector").length;
+  const syntheses = node.children.filter((c) => c.annotation === "synthesis").length;
+  const seeds = node.children.filter((c) => c.annotation === "seed").length;
+
+  const parts: string[] = [];
+  if (vectors > 0) parts.push(`${vectors} vector${vectors !== 1 ? "s" : ""}`);
+  if (syntheses > 0) parts.push(`${syntheses} synthesis`);
+  if (seeds > 0) parts.push(`${seeds} seed${seeds !== 1 ? "s" : ""}`);
+
+  if (parts.length > 0) return parts.join(", ");
+  return String(count);
+}
+
+// ---------------------------------------------------------------------------
 // File tree node component
 // ---------------------------------------------------------------------------
 
@@ -227,15 +247,21 @@ function FileTreeItem({
           </span>
         )}
 
-        {/* Status badge */}
+        {/* Status badge — glow for launched seeds */}
         {node.status && (
-          <StatusBadge status={node.status} className="ml-auto text-[10px] py-0 px-1.5" />
+          <StatusBadge
+            status={node.status}
+            className={cn(
+              "ml-auto text-[10px] py-0 px-1.5",
+              node.status === "launched" && "shadow-[0_0_6px_var(--color-gold)/30]",
+            )}
+          />
         )}
 
-        {/* Child count for dirs */}
+        {/* Directory summary */}
         {isDir && node.exists && node.children.length > 0 && !node.status && (
           <span className="ml-auto shrink-0 text-[10px] text-muted-foreground/30">
-            {node.children.length}
+            {directorySummary(node)}
           </span>
         )}
 

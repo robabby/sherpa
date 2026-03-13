@@ -1,0 +1,11 @@
+{
+  "enabledPlugins": {
+    "feature-dev@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npx shadcn@latest *)",
+      "Bash(pnpm dlx shadcn@latest *)"
+    ]
+  }
+}

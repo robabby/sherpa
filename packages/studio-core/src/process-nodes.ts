@@ -1,4 +1,5 @@
 import { readProjectFile } from "./content"
+import { parseActivityLog } from "./markdown"
 import type {
   ActivityEntry,
   BranchSeed,
@@ -274,6 +275,16 @@ export function getProcessNodes(
         research,
       )
     }
+    // Enrich with activity log (parsed from activity.md)
+    const activitySource = readProjectFile(`${basePath}/activity.md`)
+    if (activitySource) {
+      const activityEntries = parseActivityLog(activitySource)
+      if (activityEntries.length > 0) {
+        node.metadata.activityLog = activityEntries
+        node.metadata.activityCount = activityEntries.length
+      }
+    }
+
     // Load chart deliverables for inline preview
     if (getters.getDeliverables && getters.getDeliverable) {
       const deliverables = getters.getDeliverables(basePath)

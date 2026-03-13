@@ -91,32 +91,44 @@ export function countLines(content: string): number {
 
 /**
  * Parse activity log entries from markdown.
- * Supports two formats:
- * - List format: `- **YYYY-MM-DD** — description`
- * - H3 heading format: `### YYYY-MM-DD — title`
+ * Supports four formats:
+ * - Bold list: `- **YYYY-MM-DD** — description`
+ * - Plain list: `- YYYY-MM-DD: description` or `- YYYY-MM-DD — description`
+ * - H2 heading: `## YYYY-MM-DD — title`
+ * - H3 heading: `### YYYY-MM-DD — title`
  */
 export function parseActivityLog(markdown: string): ActivityEntry[] {
   const entries: ActivityEntry[] = [];
+  const seen = new Set<string>();
 
-  // List format: - **YYYY-MM-DD** — description
-  const listRegex =
-    /^-\s+\*\*(\d{4}-\d{2}-\d{2})\*\*\s*[—–-]\s*(.+)$/gm;
-  let match;
-  while ((match = listRegex.exec(markdown)) !== null) {
-    const date = match[1];
-    const desc = match[2];
-    if (!date || !desc) continue;
+  function add(date: string, desc: string) {
+    const key = `${date}::${desc}`;
+    if (seen.has(key)) return;
+    seen.add(key);
     entries.push({ date, description: desc.trim() });
   }
 
-  // H3 heading format: ### YYYY-MM-DD — Title
-  const h3Regex =
-    /^###\s+(\d{4}-\d{2}-\d{2})\s*[—–-]\s*(.+)$/gm;
-  while ((match = h3Regex.exec(markdown)) !== null) {
-    const date = match[1];
-    const desc = match[2];
-    if (!date || !desc) continue;
-    entries.push({ date, description: desc.trim() });
+  let match;
+
+  // Bold list format: - **YYYY-MM-DD** — description
+  const boldListRegex =
+    /^-\s+\*\*(\d{4}-\d{2}-\d{2})\*\*\s*[—–:-]\s*(.+)$/gm;
+  while ((match = boldListRegex.exec(markdown)) !== null) {
+    if (match[1] && match[2]) add(match[1], match[2]);
+  }
+
+  // Plain list format: - YYYY-MM-DD: description  or  - YYYY-MM-DD — description
+  const plainListRegex =
+    /^-\s+(\d{4}-\d{2}-\d{2})\s*[—–:-]\s*(.+)$/gm;
+  while ((match = plainListRegex.exec(markdown)) !== null) {
+    if (match[1] && match[2]) add(match[1], match[2]);
+  }
+
+  // H2/H3 heading format: ## YYYY-MM-DD — Title  or  ### YYYY-MM-DD — Title
+  const headingRegex =
+    /^#{2,3}\s+(\d{4}-\d{2}-\d{2})\s*[—–:-]\s*(.+)$/gm;
+  while ((match = headingRegex.exec(markdown)) !== null) {
+    if (match[1] && match[2]) add(match[1], match[2]);
   }
 
   // Sort by date descending (most recent first)

@@ -1,0 +1,82 @@
+{
+  "$schema": "wavepoint/deck@1",
+  "id": "doi-research-synthesis",
+  "title": "DOI Model for Agent Context Scoping — Research Synthesis",
+  "created": "2026-03-12",
+  "sourceIteration": 1,
+  "slides": [
+    {
+      "type": "title",
+      "heading": "DOI Model for Agent Context Scoping",
+      "subtitle": "Combining 30 years of interest management theory for AI context engineering"
+    },
+    {
+      "type": "content",
+      "heading": "The Problem",
+      "body": "- Every AI coding tool solves context selection: which files go into the prompt?\n- Three paradigms today: **Embedding RAG** (Cursor, Windsurf), **Agentic tool-use** (Claude Code, Cline), **Graph ranking** (Aider)\n- **No tool computes a persistent, continuous interest function** with temporal decay\n- Wrong context is actively harmful (SWE-ContextBench: \"unfiltered experience provides negative benefits\")\n- Developer trust in AI accuracy declining: 43% → 33% (2024 → 2025)"
+    },
+    {
+      "type": "split",
+      "heading": "Two DOI Traditions",
+      "left": {
+        "body": "**Furnas (1986) — Structural**\n\n`DOI(x) = API(x) - D(x, focus)`\n\n- Stateless: recomputed on focus change\n- A priori importance (tree depth)\n- Distance from focal point\n- No learning, no history\n- **Today:** Aider's PageRank ranking"
+      },
+      "right": {
+        "body": "**Mylyn (2005) — Behavioral**\n\n`DOI(x) = interactions - decay`\n\n- Stateful: accumulates from history\n- Event-based decay (0.017/event)\n- Learns from interaction patterns\n- Cold start problem (empty context)\n- **Today:** Windsurf's action tracking"
+      }
+    },
+    {
+      "type": "content",
+      "heading": "The Unified DOI Formula",
+      "body": "```\nDOI(file, task, agent) =\n  0.10 * PageRank(file)                    # Structural importance\n+ 0.25 * (1/(1+GraphDist(file, focus)))     # Dependency proximity\n+ 0.15 * CoChange(file, focus)              # Historical coupling (MSR)\n+ 0.20 * Scent(file, task.description)      # Information scent (IFT)\n+ 0.20 * Interaction(file, agent.events)    # Behavioral (Mylyn)\n- 0.10 * Decay(events_since_last_touch)     # Event-based decay\n```\n\nCold start: structural + semantic signals dominate (w5=0).\nSteady state: behavioral signal grows dominant — matching Mylyn's proven design."
+    },
+    {
+      "type": "chart",
+      "heading": "Signal Coverage Gap",
+      "chart": {
+        "chartType": "bar",
+        "data": [
+          { "name": "Sherpa DOI", "signals": 6 },
+          { "name": "Augment", "signals": 3 },
+          { "name": "Windsurf", "signals": 3 },
+          { "name": "Aider", "signals": 2 },
+          { "name": "Copilot", "signals": 2 },
+          { "name": "Cursor", "signals": 1 },
+          { "name": "Claude Code", "signals": 0 }
+        ],
+        "series": [{ "key": "signals", "label": "DOI Signals", "color": "var(--chart-1)" }],
+        "xAxis": { "dataKey": "name" }
+      }
+    },
+    {
+      "type": "content",
+      "heading": "Three LOD Tiers",
+      "body": "Borrowed from game networking's Network Level of Detail:\n\n- **LOD 0 (full content):** Top 5-10 files. Complete source. Focus files + 1-hop imports.\n- **LOD 1 (signatures):** Next 20-50 files. Function signatures, type defs, exports. ~10-20% of tokens.\n- **LOD 2 (index):** Rest of relevant set. File path + 1-line description. ~1% of tokens.\n\nAgent can request LOD upgrade on demand via tool calls — the DOI warm start + agentic refinement pattern."
+    },
+    {
+      "type": "split",
+      "heading": "Performance Budget",
+      "left": {
+        "body": "**Cold Start (~33s)**\n- Import graph: ~500ms\n- PageRank: ~100ms\n- Co-change: ~2s (one-time)\n- Embeddings: ~30s (background)\n\nDominated by embedding computation.\nCan run in background on project open."
+      },
+      "right": {
+        "body": "**Warm Query (<200ms)**\n- Graph: ~50ms (incremental)\n- PageRank: ~100ms\n- Co-change: ~10ms (cached)\n- Embeddings: ~100ms (cached)\n- LOD assignment: ~10ms\n\n**Well under 1-second budget.**\nResponds before agent's next turn."
+      }
+    },
+    {
+      "type": "content",
+      "heading": "Why This Is Novel",
+      "body": "Three convergent findings establish genuine novelty:\n\n1. **No published work** applies DOI to LLM context window management\n2. **No published research** applies information foraging theory to AI agent tool-call patterns\n3. **No production tool** implements persistent DOI with temporal decay\n\nThe combination — using 30 years of interest management theory (games, IDEs, foraging) to manage an LLM's own context — appears to be genuinely new."
+    },
+    {
+      "type": "content",
+      "heading": "Key Insight: Agents as Better-Than-Human Foragers",
+      "body": "IFT research (Piorkowski et al. 2016): developers are **systematically suboptimal foragers**\n- >50% of navigation choices produce less value than predicted\n- ~40% cost more than predicted\n\nAgents following DOI-guided context would skip the dead ends:\n- **No vocabulary mismatch** — LLMs understand synonyms (vs TF-IDF scent)\n- **No spatial memory limits** — DOI scores provide persistent memory\n- **No sunk cost bias** — decay naturally moves attention from depleted patches\n- **No fatigue** — the DOI function doesn't degrade over time"
+    },
+    {
+      "type": "content",
+      "heading": "Next Steps",
+      "body": "**Branch seeds for future iterations:**\n\n1. **doi-prototype-mcp-tool** (high priority) — Build the MCP tool, validate against real sessions\n2. **agent-foraging-theory** (medium) — Formally model agent tool-call patterns using IFT\n3. **doi-weight-learning** (medium) — Learn optimal weights from agent session traces\n\n**Open questions:**\n- Decay function shape: linear vs exponential vs logarithmic\n- DOI interaction with context compaction\n- File-level vs function-level granularity\n- Cross-session DOI persistence"
+    }
+  ]
+}

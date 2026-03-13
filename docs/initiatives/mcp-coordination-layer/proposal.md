@@ -2,11 +2,12 @@
 status: pending
 initiative: mcp-coordination-layer
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-12
 type: research-synthesis
 risk: structural
 targets:
-  - docs/initiatives/mcp-coordination-layer/
+  - packages/studio-mcp/
+  - packages/studio-core/
 dependencies:
   - sqlite-agentic-state
   - distributed-agent-consistency
@@ -17,83 +18,108 @@ spawned-from: null
 
 ## Summary
 
-Build a single-process MCP server (Streamable HTTP transport) backed by SQLite (WAL mode, better-sqlite3) that mediates all agent state mutations with authority tracking, optimistic concurrency, and write-through file projection. The MCP server is both the lock manager and resource layer — enabling fencing token enforcement at the mutation point.
+Build a single-process MCP server (Streamable HTTP transport) backed by SQLite (WAL mode, better-sqlite3) that mediates all agent state mutations. Three-layer architecture: the MCP server provides **state** (authority, versions, tasks), Claude Code hooks provide **enforcement** (PreToolUse checks authority before every file edit), and CLAUDE.md provides **conventions** (behavioral rules). Authority is implicit through task dispatch; explicit authority tools exist only for Planners working on shared artifacts. Total tool surface: 4 tools + 1 resource.
 
 ## State Snapshot
 
-- MCP spec 2025-11-25 has no built-in coordination primitives — no ETags, version vectors, authority tracking, or conflict resolution
-- Only 3 existing MCP servers implement any locking (Agent Mail, Beads Village, Atomic Writer), none implement optimistic concurrency
-- SEP-1708 proposes file locking but is not merged
-- The MCP ecosystem is converging on application-level coordination implemented in tool logic
-- Cursor's 20-agent experiment found that both pure pessimistic locking and pure optimistic concurrency fail for AI agents; Planner/Worker/Judge with scope isolation works
+- MCP spec has no built-in coordination primitives — all coordination is application-level tool logic
+- Only 3 existing MCP servers implement any locking (Agent Mail, Beads Village, Multi-Agent Coord), all using exactly 3 locking tools each
+- Every production lease system (etcd, Consul, Azure Blob, Vault, Kubernetes) converges on 3 core operations: Acquire, Renew, Release
+- Claude Code provides worktrees (physical isolation), task tools (DAG dependencies), hooks (18 lifecycle events including HTTP hooks), and Agent Teams (filesystem-based) — but no authority tracking, fencing tokens, or cross-session state
+- `session-collab-mcp` (third-party) and Cord (June Kim) independently validate the gap and SQLite-backed architecture
+- SQLite indexed reads: 3-7μs on M1, 440K reads/sec. At ~20 checks/sec, we'd use 0.005% of capacity. No cache needed.
 
 ## Proposed Changes
 
 ### Target: `packages/studio-mcp/` (new package)
 
-Single-process MCP server with Streamable HTTP transport. Key components:
+Single-process MCP server with Streamable HTTP transport.
 
-**Authority Tools:**
-- `acquire_authority` — Request lease over a scope (initiative, file, or task). Returns fencing token. TTL-based with configurable duration.
-- `release_authority` — Explicitly release a lease.
-- `check_authority` — Query current authority state for a scope.
-- `transfer_authority` — Hand off authority to another agent.
-- `heartbeat_authority` — Renew lease TTL. Also implicitly renewed on any mutation with a valid token.
-- `override_authority` — Human-only break operation (Azure Blob model). Immediately breaks any lease.
+**Authority Tools (3 tools + 1 resource):**
+- `authority_acquire` — Request lease over a scope. Returns fencing token. Supports `transfer_from` for atomic authority transfer (single-process SQLite makes release+acquire atomic in one IMMEDIATE transaction). TTL: 30 min interactive, 10 min background workers.
+- `authority_renew` — Explicit TTL extension. Rarely needed — mutations with valid fence tokens implicitly renew leases.
+- `authority_release` — Explicitly release a lease.
+- `authority://{scope}` — MCP resource (not tool) for authority state observation and subscriptions. Cheaper in context budget than a tool.
+
+**Removed from iteration 1 design:**
+- `transfer_authority` → merged into `authority_acquire` with `transfer_from` param (no race window in single-process)
+- `heartbeat_authority` → merged into implicit renewal on mutations + `authority_renew` for edge cases
+- `check_authority` → moved to `authority://` resource (read-only observation, not a mutation)
+- `override_authority` → moved to Studio UI/CLI admin action (Azure Blob Break model — never agent-facing)
+
+**Bootstrap Tool (1 tool):**
+- `get_dashboard` — Role-scoped system state. Returns: agent's tasks, authority leases, blocked dependencies, recent activity, system summary. Worker payload ~200 tokens, Planner ~500 tokens. The "zero-baseline snapshot" from game networking.
+
+**Three-Layer Bootstrap Protocol:**
+1. **SessionStart hook** (fires on startup/resume/clear/compact): Shell command reads `.sherpa/state/dashboard.json` — file regenerated by MCP server on every mutation. Fast, possibly stale. Stdout injected as context.
+2. **`get_dashboard` tool** (agent's first action): Fresh, role-scoped authoritative state.
+3. **Resource subscriptions** (ongoing): Subscribe to `authority://`, `tasks://`, `activity://` for push-based delta updates.
+
+**Enforcement via Claude Code Hooks:**
+- `PreToolUse (Edit|Write)` → HTTP POST to MCP server → check authority → `permissionDecision: allow|deny`
+- `PostToolUse (Edit|Write)` → HTTP POST → register version update
+- `SessionStart` → register agent session
+- `SessionEnd` / `Stop` → release all authority
+- `WorktreeCreate` / `WorktreeRemove` → register/deregister worktree
+
+Hooks are deterministic enforcement, not advisory. The agent cannot bypass authority checks.
 
 **Implicit Authority via Task Dispatch:**
-When a task is dispatched to a worker, the MCP server auto-acquires file-level authority over the task's target files. No separate `acquire_authority` call needed. Workers operate on their dispatched scope. Explicit authority tools are reserved for planners, shared artifacts, and exploratory work.
+When a task is dispatched, the MCP server auto-acquires authority over target files. Workers never call `authority_acquire` directly. Explicit authority tools are reserved for Planners working on shared artifacts.
 
 **Concurrency Model:**
-- Default: optimistic concurrency — version checks on every mutation. Tool calls include `expectedVersion`, server rejects stale writes.
-- High-contention: pessimistic leases — explicit `acquire_authority` with fencing tokens for shared artifacts and initiative-level operations.
-- The MCP server enforces fencing token ordering at the mutation point (Kleppmann's ideal architecture).
+- Default: optimistic concurrency — `expectedVersion` on every mutation, server rejects stale writes
+- High-contention: pessimistic leases via `authority_acquire` for shared artifacts
+- Fencing tokens returned by `authority_acquire`, validated atomically in IMMEDIATE transactions
+
+**Server-Side Policies (no dedicated tools):**
+- **Backpressure**: HTTP 429 + `retry_after_ms` in responses + automatic TTL extension under load + task dispatch throttling (EVE TiDi pattern)
+- **Prevention→Compensation**: Prevention = task dispatch + authority_acquire. Detection = expectedVersion. Compensation = Judge + rebase.
 
 **SQLite Architecture:**
-- WAL mode, `BEGIN IMMEDIATE` for all write transactions
-- better-sqlite3 driver (synchronous, 1.2M ops/sec, no connection pooling)
+- WAL mode, `BEGIN IMMEDIATE` for all writes
+- better-sqlite3 (synchronous, in-process, page cache IS the memory cache)
 - Drizzle ORM for type-safe schema
-- One tool call = one IMMEDIATE transaction
-- Single-process Streamable HTTP eliminates cross-process SQLITE_BUSY
+- No application-level cache — SQLite reads at 3-7μs are orders of magnitude faster than needed
+- Upgrade path: better-sqlite3 → libsql (same API, 302K weekly downloads) → embedded replicas → Turso MVCC
 
 **Write-Through File Projection:**
 - Every mutation regenerates affected markdown files synchronously
 - Atomic file writes via temp+rename pattern
 - Sync metadata in frontmatter: `_projection_hash`, `_projected_at`, `_source_version`
-- Human edit detection via content hashing (body hash ≠ last-projected hash → human edit)
-- `sherpa sync` CLI: `project` (rebuild files), `ingest` (pull human edits), `reconcile` (bidirectional)
-
-**Resource Subscriptions:**
-- `authority://{scope}` resources for authority state observation
-- `notifications/resources/updated` pushed to connected agents on authority changes
+- Human edit detection via content hashing
+- `sherpa sync` CLI: `project` (rebuild), `ingest` (pull human edits), `reconcile` (bidirectional)
 
 ### Target: `packages/studio-core/` (schema additions)
 
 Authority record schema:
-- `authority_leases` table: `scope`, `agent_id`, `task_id`, `fence_token`, `mode` (exclusive/shared), `ttl_seconds`, `acquired_at`, `expires_at`, `renewed_at`
+- `authority_leases` table: `scope`, `agent_id`, `task_id`, `fence_token` (monotonic), `mode` (exclusive/shared), `ttl_seconds`, `acquired_at`, `expires_at`, `renewed_at`
 - `state_versions` table: `resource_uri`, `version` (monotonic), `content_hash`, `updated_by`, `updated_at`
-- Periodic reaper for expired leases (30 min interactive, 10 min background workers)
+- Periodic reaper for expired leases (30 min interactive, 10 min background)
+- Hash-based IDs for conflict-free entity creation across agents (Beads pattern)
+- Covering indexes on hot path: `(scope, expires_at)` for authority checks
 
 ## Rationale
 
-1. **Single-process architecture eliminates distributed coordination.** By routing all mutations through one Node.js process, we sidestep SQLITE_BUSY, cross-process locking, connection pooling, and distributed consensus. SQLite's single-writer model becomes a feature, not a limitation.
+1. **Three-layer architecture separates concerns cleanly.** MCP server = state, hooks = enforcement, CLAUDE.md = conventions. Each layer uses the mechanism best suited to its purpose. Hooks solve the "what if the agent forgets to check authority?" failure mode — enforcement is deterministic, not LLM-dependent.
 
-2. **Task dispatch as implicit authority is battle-tested.** BullMQ, Temporal, and Cursor's Planner/Worker/Judge all demonstrate that the natural unit of authority is the dispatched task, not explicit lock acquisition. This aligns with Sherpa's existing initiative/task architecture.
+2. **4 tools + 1 resource is the minimum viable surface.** Every production lease system converges on 3 operations (Acquire/Renew/Release). GitHub Copilot measured 2-5% resolution improvement from tool reduction. Every additional tool costs context tokens and degrades agent decisions.
 
-3. **MCP Agent Mail validates advisory coordination** but uses Git as storage. Sherpa inverts this (SQLite as truth, files as projection) while adopting the advisory-over-mandatory philosophy.
+3. **SQLite-as-truth with no cache is confirmed.** 3-7μs reads at 0.005% capacity utilization. Page cache handles hot data automatically (Cloudflare Durable Objects model). No application cache complexity. Upgrade path to libsql is non-disruptive.
 
-4. **Write-through projection is the simplest correct strategy.** At Sherpa's write frequency (initiative updates, not thousands/second), synchronous file regeneration has negligible latency cost and eliminates staleness. Logseq's retreat from bidirectional sync confirms that limiting editable surface area is wise.
+4. **Bootstrap protocol maps directly to game networking.** Zero-baseline snapshot (get_dashboard) → delta encoding (resource subscriptions). SessionStart hook handles context compaction. Role-scoped payloads via DOI model from MMO patterns research.
 
-5. **The MCP server as both lock manager and resource layer** is Kleppmann's recommended architecture for fencing token correctness — the enforcement point is the mutation point.
+5. **Implicit authority via task dispatch means most agents never touch authority tools.** Workers get authority through dispatch, enforcement through hooks. Only Planners and Judges interact with authority tools directly.
 
 ## Dependencies
 
-- `sqlite-agentic-state` — Schema design and SQLite configuration choices feed into this initiative's database layer
-- `distributed-agent-consistency` — Consistency model research informs the authority and concurrency design
+- `sqlite-agentic-state` — Schema design and SQLite configuration
+- `distributed-agent-consistency` — Consistency model for authority and concurrency
 
 ## Review Notes
 
-- **Upgrade path:** If single-writer SQLite becomes a bottleneck, Turso/libSQL provides MVCC with row-level conflict detection and 4x write throughput, API-compatible in embedded mode.
-- **Git worktree interaction:** If agents work in isolated worktrees, file-level authority may be unnecessary for most operations. This needs investigation in iteration 2.
-- **Multi-MCP topology:** Multiple MCP servers sharing one SQLite database would reintroduce cross-process contention. The current design assumes one coordination server.
-- **Effort:** 4-6 sessions for MVP (authority tools + SQLite schema + write-through projection). Session breakdown in `plan.md` once approved.
+- **Hook configuration**: How to automate PreToolUse hook installation — `sherpa init` should configure this. Adoption friction if manual.
+- **Agent identity**: Sessions don't have stable IDs. MCP server may need to assign UUIDs. SessionStart hook could pass identity.
+- **Fail-open vs fail-closed**: If MCP server is down, should hooks allow edits (log, degrade) or block all edits? Needs policy decision.
+- **Full tool surface**: Authority is 4 tools. Task management, initiative lifecycle, and mutations will add more. Target: under 10 total tools.
+- **Effort:** 4-6 sessions for MVP. Session breakdown in `plan.md` once approved.

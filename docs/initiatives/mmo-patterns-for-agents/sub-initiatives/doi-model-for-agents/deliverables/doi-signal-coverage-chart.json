@@ -1,0 +1,27 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "doi-signal-coverage",
+  "title": "DOI Signal Coverage Across AI Coding Tools",
+  "description": "How many of the 6 DOI signals each tool implements (structural importance, dependency proximity, co-change, semantic scent, interaction tracking, temporal decay). No tool covers all 6.",
+  "created": "2026-03-12",
+  "sourceIteration": 1,
+  "chartType": "bar",
+  "data": [
+    { "name": "Sherpa DOI (proposed)", "signals": 6 },
+    { "name": "Augment", "signals": 3 },
+    { "name": "Windsurf", "signals": 3 },
+    { "name": "Aider", "signals": 2 },
+    { "name": "GitHub Copilot", "signals": 2 },
+    { "name": "Cursor", "signals": 1 },
+    { "name": "Amazon Q", "signals": 1 },
+    { "name": "Roo Code", "signals": 1 },
+    { "name": "Claude Code", "signals": 0 },
+    { "name": "Cline", "signals": 0 },
+    { "name": "Codex CLI", "signals": 0 }
+  ],
+  "series": [
+    { "key": "signals", "label": "DOI Signals Implemented", "color": "var(--chart-1)" }
+  ],
+  "xAxis": { "dataKey": "name" },
+  "legend": false
+}

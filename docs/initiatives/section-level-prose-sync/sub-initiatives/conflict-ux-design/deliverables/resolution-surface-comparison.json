@@ -1,0 +1,24 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "resolution-surface-comparison",
+  "title": "Conflict Resolution Surfaces: Capability vs Complexity",
+  "description": "Comparing the four conflict resolution surfaces by capability richness and implementation complexity. Batch markers are MVP; Studio UI is the premium experience.",
+  "created": "2026-03-12",
+  "sourceIteration": 1,
+  "chartType": "radar",
+  "data": [
+    { "name": "Batch Markers", "ciSupport": 10, "humanUx": 3, "toolIntegration": 8, "implementationCost": 2, "interactivity": 1 },
+    { "name": "Interactive CLI", "ciSupport": 6, "humanUx": 7, "toolIntegration": 5, "implementationCost": 5, "interactivity": 8 },
+    { "name": "Editor Merge", "ciSupport": 2, "humanUx": 9, "toolIntegration": 9, "implementationCost": 4, "interactivity": 9 },
+    { "name": "Studio UI", "ciSupport": 4, "humanUx": 10, "toolIntegration": 7, "implementationCost": 8, "interactivity": 10 }
+  ],
+  "series": [
+    { "key": "ciSupport", "label": "CI/Automation Support", "color": "var(--chart-1)" },
+    { "key": "humanUx", "label": "Human UX Quality", "color": "var(--chart-2)" },
+    { "key": "toolIntegration", "label": "Tool Ecosystem Integration", "color": "var(--chart-3)" },
+    { "key": "implementationCost", "label": "Implementation Cost", "color": "var(--chart-4)" },
+    { "key": "interactivity", "label": "Interactivity", "color": "var(--chart-5)" }
+  ],
+  "xAxis": { "dataKey": "name" },
+  "legend": true
+}

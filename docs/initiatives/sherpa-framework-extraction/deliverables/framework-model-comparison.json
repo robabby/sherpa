@@ -1,0 +1,26 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "framework-model-comparison",
+  "title": "Framework Distribution Models — Sherpa Fit Score",
+  "description": "Comparison of 6 framework distribution models across 5 criteria relevant to Sherpa: update story, convention support, customization depth, solo-operator complexity, and Next.js compatibility. Higher = better fit.",
+  "created": "2026-03-11",
+  "sourceIteration": 1,
+  "chartType": "radar",
+  "data": [
+    { "name": "Payload CMS", "updateStory": 8, "conventionSupport": 4, "customization": 9, "simplicity": 7, "nextjsFit": 10 },
+    { "name": "shadcn/ui", "updateStory": 5, "conventionSupport": 6, "customization": 8, "simplicity": 9, "nextjsFit": 9 },
+    { "name": "Backstage", "updateStory": 9, "conventionSupport": 3, "customization": 10, "simplicity": 2, "nextjsFit": 3 },
+    { "name": "T3 Stack", "updateStory": 1, "conventionSupport": 2, "customization": 3, "simplicity": 10, "nextjsFit": 10 },
+    { "name": "Nx Generators", "updateStory": 10, "conventionSupport": 7, "customization": 6, "simplicity": 5, "nextjsFit": 6 },
+    { "name": "Refine", "updateStory": 7, "conventionSupport": 3, "customization": 7, "simplicity": 6, "nextjsFit": 7 }
+  ],
+  "series": [
+    { "key": "updateStory", "label": "Update Story", "color": "var(--chart-1)" },
+    { "key": "conventionSupport", "label": "Convention Support", "color": "var(--chart-2)" },
+    { "key": "customization", "label": "Customization Depth", "color": "var(--chart-3)" },
+    { "key": "simplicity", "label": "Solo-Operator Simplicity", "color": "var(--chart-4)" },
+    { "key": "nextjsFit", "label": "Next.js Compatibility", "color": "var(--chart-5)" }
+  ],
+  "xAxis": { "dataKey": "name" },
+  "legend": true
+}

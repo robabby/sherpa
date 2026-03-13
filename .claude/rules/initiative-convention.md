@@ -55,6 +55,15 @@ Body: Lightweight activity log (key milestones, not every action).
 
 Recursive research (`/rr`) is the standard way to discover and deepen initiatives. Each cycle: orient → focus → fan out → converge → propose → seed. See `.claude/skills/rr/SKILL.md` for the full protocol. Every research cycle must produce at least one proposal.
 
+## Research Report JSON
+
+Quantitative research outputs live as JSON files in `research/` with a `$schema` discriminator. The Studio file tree auto-detects these and links to the research report viewer.
+
+- **Schema discriminator**: `{ "$schema": "wavepoint/report@1", "id": "<slug>" }` (schema name is legacy, will be renamed)
+- **Registry**: `registerResearchReport(slug, filePath)` from `@sherpa/studio-core` (registry-based, slug to file path)
+- **Route**: `/research/[slug]` in the Studio app — server component rendering report data
+- **File tree integration**: `buildResearchChildren()` in `@sherpa/studio-core/file-tree` scans for matching JSON, attaches `meta.reportHref`
+
 ## Rules
 
 - **Never edit shared artifacts directly** from an initiative. Write proposals instead.

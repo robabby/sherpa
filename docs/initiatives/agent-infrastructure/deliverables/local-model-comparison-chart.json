@@ -1,0 +1,23 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "local-model-comparison",
+  "title": "Local OSS Model Viability for Low-Tier Tasks",
+  "description": "Compares candidate local models on code benchmark score, RAM usage at recommended quantization, and context window. Higher is better for HumanEval; lower is better for RAM.",
+  "created": "2026-03-06",
+  "sourceIteration": 1,
+  "chartType": "bar",
+  "data": [
+    { "name": "Qwen2.5-Coder-7B (Q8)", "humaneval": 88, "ram": 8 },
+    { "name": "Gemma 3-12B (Q5_K_M)", "humaneval": 65, "ram": 8 },
+    { "name": "Gemma 3-4B (Q8)", "humaneval": 45, "ram": 4 },
+    { "name": "Qwen3-Coder-30B MoE (Q4)", "humaneval": 78, "ram": 19 },
+    { "name": "DeepSeek-R1-14B (Q5)", "humaneval": 60, "ram": 10 },
+    { "name": "Devstral Small 24B (Q4)", "humaneval": 70, "ram": 15 }
+  ],
+  "series": [
+    { "key": "humaneval", "label": "HumanEval %", "color": "var(--chart-1)" },
+    { "key": "ram", "label": "RAM (GB)", "color": "var(--chart-3)" }
+  ],
+  "xAxis": { "dataKey": "name" },
+  "legend": true
+}

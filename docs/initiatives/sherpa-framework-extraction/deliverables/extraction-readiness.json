@@ -1,0 +1,22 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "extraction-readiness",
+  "title": "Sherpa Extraction Readiness by Layer",
+  "description": "Domain-agnostic percentage of Studio modules by dependency layer. Higher = easier to extract.",
+  "created": "2026-03-11",
+  "sourceIteration": 2,
+  "chartType": "bar",
+  "data": [
+    { "name": "L0: Leaves (8 files)", "agnostic": 100, "coupled": 0 },
+    { "name": "L1: Single-dep (5 files)", "agnostic": 100, "coupled": 0 },
+    { "name": "L2: Multi-dep (5 files)", "agnostic": 80, "coupled": 20 },
+    { "name": "L3: Roots (2 files)", "agnostic": 100, "coupled": 0 },
+    { "name": "Components (96 files)", "agnostic": 95, "coupled": 5 }
+  ],
+  "series": [
+    { "key": "agnostic", "label": "Domain-Agnostic (%)", "color": "var(--chart-1)" },
+    { "key": "coupled", "label": "Domain-Coupled (%)", "color": "var(--chart-3)" }
+  ],
+  "xAxis": { "dataKey": "name" },
+  "legend": true
+}

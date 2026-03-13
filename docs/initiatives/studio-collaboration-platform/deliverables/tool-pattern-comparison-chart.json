@@ -1,0 +1,75 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "studio-tool-pattern-comparison",
+  "title": "Agent Dashboard Tool Patterns — Feature Coverage",
+  "description": "Comparing key features across tools that inform Studio's design: exception-first design, pipeline status, morning review, cost tracking, artifact-first output, and keyboard-driven interaction.",
+  "created": "2026-03-09",
+  "sourceIteration": 1,
+  "chartType": "radar",
+  "data": [
+    {
+      "name": "PagerDuty",
+      "exceptions": 5,
+      "pipeline": 3,
+      "review": 2,
+      "cost": 1,
+      "artifacts": 2,
+      "keyboard": 3
+    },
+    {
+      "name": "Linear",
+      "exceptions": 3,
+      "pipeline": 4,
+      "review": 5,
+      "cost": 1,
+      "artifacts": 3,
+      "keyboard": 5
+    },
+    {
+      "name": "Temporal",
+      "exceptions": 2,
+      "pipeline": 5,
+      "review": 1,
+      "cost": 2,
+      "artifacts": 4,
+      "keyboard": 2
+    },
+    {
+      "name": "GitHub Actions",
+      "exceptions": 3,
+      "pipeline": 4,
+      "review": 3,
+      "cost": 1,
+      "artifacts": 5,
+      "keyboard": 2
+    },
+    {
+      "name": "Devin",
+      "exceptions": 4,
+      "pipeline": 4,
+      "review": 3,
+      "cost": 3,
+      "artifacts": 4,
+      "keyboard": 2
+    },
+    {
+      "name": "Studio (target)",
+      "exceptions": 5,
+      "pipeline": 5,
+      "review": 5,
+      "cost": 4,
+      "artifacts": 5,
+      "keyboard": 5
+    }
+  ],
+  "series": [
+    { "key": "exceptions", "label": "Exception-First", "color": "var(--chart-1)" },
+    { "key": "pipeline", "label": "Pipeline Status", "color": "var(--chart-2)" },
+    { "key": "review", "label": "Morning Review", "color": "var(--chart-3)" },
+    { "key": "cost", "label": "Cost Tracking", "color": "var(--chart-4)" },
+    { "key": "artifacts", "label": "Artifact-First", "color": "var(--chart-5)" },
+    { "key": "keyboard", "label": "Keyboard UX", "color": "var(--chart-1)" }
+  ],
+  "xAxis": { "dataKey": "name" },
+  "legend": true
+}

@@ -7,7 +7,7 @@ description: Use when starting a new research initiative, deepening an existing 
 
 ## Overview
 
-The discovery engine for WavePoint's initiative system. Each invocation reads prior work, identifies gaps, dispatches parallel research agents, synthesizes findings, and produces proposals for the initiative queue.
+The discovery engine for Sherpa's initiative system. Each invocation reads prior work, identifies gaps, dispatches parallel research agents, synthesizes findings, and produces proposals for the initiative queue.
 
 **Core cycle:**
 
@@ -55,12 +55,14 @@ Read broadly before going deep:
 
 - `docs/initiatives/<slug>/research/` — all prior iterations
 - `docs/initiatives/<slug>/branches/` — existing seed files (do not duplicate their scope)
-- `docs/research/` — adjacent research that may be relevant
-- `docs/roadmap.md` — current portfolio status
-- `docs/architecture/platform-strategy.md` — strategic context
+- `docs/framework.md` — the seven pillars, three-layer coordination architecture, three entities
+- `docs/roadmap.md` — current portfolio status and upcoming work
+- Related initiative directories — check `docs/initiatives/` for adjacent research that feeds into or depends on this work
 - Any files referenced in prior findings
 
 **The orient rule:** If you find yourself writing something already documented in a prior iteration, you failed to orient. Go deeper, not wider.
+
+**Iteration depth:** Iteration 1 surveys the landscape broadly — map the territory, identify the players, understand the state of the art. Iteration 2 determines whether coverage is sufficient to go deep or whether the landscape still has unexplored regions that need wider investigation. Iteration 3+ should be going deep on specific questions. Don't go narrow on iteration 1; don't stay shallow once you have the map.
 
 ### Step 2: Focus
 
@@ -89,11 +91,11 @@ Dispatch 3-5 subagents IN PARALLEL using the Agent tool. Each agent gets:
 
 **Agent prompt template:**
 
-> You are researching: [vector question]
+> Research this question: [vector question]
 >
 > Context: [relevant prior findings]
 >
-> Your job: Find concrete, sourced answers. Use WebSearch and WebFetch liberally. Prefer specific examples over abstract frameworks. Include URLs for every claim. If results are thin, say so honestly — don't pad.
+> Find concrete, sourced answers. Use WebSearch and WebFetch liberally. Prefer specific examples over abstract frameworks. Include URLs for every claim. If results are thin, say so honestly — don't pad.
 >
 > **IMPORTANT: Capture every link.** Your full output will be saved as a permanent research artifact. Include ALL URLs you encounter — even tangentially relevant ones. Future research iterations will mine these links. A URL you skip is a trail that goes cold.
 >
@@ -344,7 +346,7 @@ Slide types: `title`, `content` (markdown body: bold, bullets, links), `chart` (
 
 - **Every claim needs a source.** No hallucinated statistics.
 - **Concrete over abstract.** Specific examples beat frameworks.
-- **"Actionable" = buildable this week** by a solo dev + AI agents.
+- **"Actionable" = leads to a concrete next step.** For technical initiatives: buildable within sessions. For business initiatives: a decision, a design, or a plan you can act on.
 - **Don't describe what exists** — focus on what could change.
 - **1500-3000 words per iteration.** Dense, not padded.
 - **WebSearch and WebFetch liberally.** This is a research task.
@@ -357,15 +359,15 @@ Slide types: `title`, `content` (markdown body: bold, bullets, links), `chart` (
 
 ## Invocation
 
-**As a skill:** `/rr` or pass the initiative slug: `/rr vedic-astrology`
+**As a skill:** `/rr` or pass the initiative slug: `/rr behavioral-agents`
 
-**From a seed:** `/rr --seed tradition-expansion/vedic-foundation`
+**From a seed:** `/rr --seed mmo-patterns-for-agents/doi-model`
 
-This reads the seed file at `docs/initiatives/tradition-expansion/branches/vedic-foundation.md`, uses its Question and Suggested Vectors as starting input, and creates a sub-initiative directory.
+This reads the seed file at `docs/initiatives/mmo-patterns-for-agents/branches/doi-model.md`, uses its Question and Suggested Vectors as starting input, and creates a sub-initiative directory.
 
-**From a nested seed:** `/rr --seed tradition-expansion/vedic-foundation/jyotish-computations`
+**From a nested seed:** `/rr --seed mmo-patterns-for-agents/game-authority/heartbeat-protocol`
 
-This reads the seed at `docs/initiatives/tradition-expansion/sub-initiatives/vedic-foundation/branches/jyotish-computations.md` and creates a sub-initiative at `docs/initiatives/tradition-expansion/sub-initiatives/vedic-foundation/sub-initiatives/jyotish-computations/`.
+This reads the seed at `docs/initiatives/mmo-patterns-for-agents/sub-initiatives/game-authority/branches/heartbeat-protocol.md` and creates a sub-initiative at `docs/initiatives/mmo-patterns-for-agents/sub-initiatives/game-authority/sub-initiatives/heartbeat-protocol/`.
 
 **As a standalone prompt:**
 

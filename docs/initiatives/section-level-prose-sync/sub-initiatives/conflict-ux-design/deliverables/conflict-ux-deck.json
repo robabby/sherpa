@@ -1,0 +1,59 @@
+{
+  "$schema": "wavepoint/deck@1",
+  "id": "conflict-ux-design-deck",
+  "title": "Conflict UX Design for Section-Level Sync",
+  "created": "2026-03-12",
+  "sourceIteration": 1,
+  "slides": [
+    {
+      "type": "title",
+      "heading": "Conflict UX Design",
+      "subtitle": "Four surfaces for section-level sync conflict resolution"
+    },
+    {
+      "type": "content",
+      "heading": "The Problem",
+      "body": "- `sherpa sync` merges markdown convention files at **section** (heading) granularity\n- When both upstream and consumer modify the same section, what does the user see?\n- No existing tool does section-level conflict resolution for markdown\n- Spans CLI, editor integration, and web UI"
+    },
+    {
+      "type": "content",
+      "heading": "Key Research Findings",
+      "body": "- **Inline markers won.** Copier switched default from .rej to inline (v8.0.0). Cruft users actively downgrade to get inline back\n- **Batch-first is validated.** Copier deliberately rejected interactive resolution 3 times over 10 years\n- **Git-compatible = free tooling.** VS Code shows Accept/Reject buttons for any file with `<<<<<<<` markers\n- **Deferred resolution is essential.** Convention file conflicts don't block development (Jujutsu pattern)\n- **Editor integration is viable.** `code --wait --merge` works standalone without git (chezmoi proves it)"
+    },
+    {
+      "type": "split",
+      "heading": "Proposed Conflict Marker Format",
+      "left": {
+        "body": "**Design principles:**\n- Git-compatible delimiters\n- Section title on every marker line\n- diff3-style (includes base)\n- Machine-readable HTML comment header\n- `grep '^<<<<<<< '` = conflict TOC"
+      },
+      "right": {
+        "body": "```\n<!-- sherpa:conflict sections=1 -->\n<<<<<<< upstream — ## Config (modified)\ntimeout: 60s\n||||||| base — ## Config\ntimeout: 30s\n======= consumer — ## Config (modified)\ntimeout: 45s\n>>>>>>> end — ## Config\n```"
+      }
+    },
+    {
+      "type": "content",
+      "heading": "Four-Surface Escalation Cascade",
+      "body": "| Surface | Tech | Phase | When |\n|---------|------|-------|------|\n| **1. Batch markers** | Git-compatible + section metadata | MVP | Always (default output) |\n| **2. Interactive CLI** | Ink + `git add -p` model | MVP | `--interactive` or TTY |\n| **3. Editor merge** | `code --merge` (configurable) | Phase 2 | Complex sections |\n| **4. Studio UI** | @codemirror/merge + shadcn | Phase 2 | Visual merge panel |"
+    },
+    {
+      "type": "split",
+      "heading": "CLI Interactive Mode",
+      "left": {
+        "body": "**Framework:** Ink (React for CLIs)\n- Claude Code, Gemini CLI, Wrangler all use Ink\n- `useInput` for single-key actions\n- `useFocus` for section navigation\n- Progress footer with keybinding help"
+      },
+      "right": {
+        "body": "**Keybindings** (git add -p model):\n- `a` — Accept upstream\n- `k` — Keep mine\n- `e` — Edit in $EDITOR\n- `d` — Defer (resolve later)\n- `A`/`K` — All remaining\n- `q` — Quit (write markers)"
+      }
+    },
+    {
+      "type": "content",
+      "heading": "Studio Merge UI Stack",
+      "body": "- **Diff algorithm:** node-diff3 — only mature JS three-way merge library\n- **Merge view:** @codemirror/merge — built-in acceptChunk/rejectChunk APIs\n- **Custom controls:** mergeControls renderer for shadcn-styled buttons\n- **Layout:** shadcn ResizablePanelGroup + Tabs + ScrollArea\n- **Not Monaco:** DiffEditor is display-only, 3-way merge editor is internal"
+    },
+    {
+      "type": "content",
+      "heading": "Open Questions for Next Iteration",
+      "body": "1. **Conflict persistence** — `.sherpa-conflicts.json` schema for defer/resume\n2. **CI/automation mode** — exit codes, machine-readable reports, pipeline safety\n3. **Section ownership interaction** — how `<!-- sherpa:managed -->` affects conflict UX\n4. **Ink component architecture** — `<SectionDiff>`, scrolling, $EDITOR suspend/resume\n5. **Studio ↔ sync engine** — MCP real-time vs file-based integration"
+    }
+  ]
+}

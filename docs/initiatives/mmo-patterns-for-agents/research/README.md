@@ -23,6 +23,10 @@
 4. **Empirical conflict rate** — How often do agents actually collide on the same files? Determines the right point on the prevention→compensation spectrum.
 5. **Fencing tokens in git** — How to implement monotonically increasing authority tokens in a git-based system? Cross-ref `sqlite-agentic-state`.
 
+## Sub-Initiatives
+
+- `sub-initiatives/game-authority-as-mcp-protocol/` — Concrete MCP tool API design for authority management (6-state machine, 3-tier liveness, fencing tokens). Launched from `branches/game-authority-as-mcp-protocol.md`.
+
 ## Related Initiatives
 
 - `mcp-coordination-layer` — The MCP server as replication layer

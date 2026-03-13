@@ -1,0 +1,23 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "framework-convergence",
+  "title": "Framework Model Convergence: Payload Dominance Across All Concerns",
+  "description": "Across 3 iterations and 13 research vectors, each concern independently converged on the same framework reference model. Payload CMS won 4/4 architecture decisions in iteration 3.",
+  "created": "2026-03-11",
+  "sourceIteration": 3,
+  "chartType": "radar",
+  "data": [
+    { "concern": "API Design", "payload": 9, "keystatic": 7, "backstage": 4 },
+    { "concern": "Plugin System", "payload": 9, "keystatic": 3, "backstage": 7 },
+    { "concern": "Environment", "payload": 10, "keystatic": 8, "backstage": 5 },
+    { "concern": "Testing", "payload": 8, "keystatic": 4, "backstage": 7 },
+    { "concern": "White-Label", "payload": 9, "keystatic": 5, "backstage": 6 }
+  ],
+  "series": [
+    { "key": "payload", "label": "Payload CMS", "color": "var(--chart-1)" },
+    { "key": "keystatic", "label": "Keystatic", "color": "var(--chart-3)" },
+    { "key": "backstage", "label": "Backstage", "color": "var(--chart-4)" }
+  ],
+  "xAxis": { "dataKey": "concern" },
+  "legend": true
+}
