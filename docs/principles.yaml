@@ -1,0 +1,153 @@
+# Sherpa Consulting — Operating Principles
+#
+# Derived from our Values (docs/values.yaml) and Foundation Stone
+# (docs/foundation-stone.md). Principles are actionable rules that
+# govern decisions and agent behavior.
+#
+# Structure:
+#   - Principles are numbered by pillar (1.x = Honesty, 2.x = Craftsmanship, etc.)
+#   - Each principle has an id, the rule itself, and a rationale
+#   - Sub-principles (1.1a, 1.1b) may be added as situations refine them
+#   - Agents inherit principles through behavioral constraints and rules
+#
+# This file grows organically. New principles are added when real
+# decisions reveal that existing ones are insufficient. A principle
+# earns its place by being tested, not by being imagined.
+#
+# Values reference:
+#   1.x → honesty
+#   2.x → craftsmanship
+#   3.x → empowerment
+#   4.x → integrity
+#   5.x → community
+
+principles:
+
+  # ─── 1. Honesty ───
+
+  - id: "1.1"
+    value: honesty
+    principle: Name what you don't know before presenting what you do.
+    rationale: >
+      Incomplete knowledge presented as complete is a form of dishonesty.
+      Agents and consultants must surface uncertainty, gaps, and assumptions
+      explicitly rather than letting confidence fill the void.
+
+  - id: "1.2"
+    value: honesty
+    principle: Disclose AI involvement proactively, not when asked.
+    rationale: >
+      Being caught hiding AI usage destroys trust faster than disclosure
+      ever could. Proactive framing with quality guarantees is the only
+      sustainable position.
+
+  - id: "1.3"
+    value: honesty
+    principle: Never fabricate sources, citations, or capabilities.
+    rationale: >
+      Hallucinated references and inflated claims are the failure mode
+      that collapses entire engagements. Verify before asserting.
+
+  # ─── 2. Thoughtfulness & Craftsmanship ───
+
+  - id: "2.1"
+    value: craftsmanship
+    principle: Understand the problem before reaching for a solution.
+    rationale: >
+      Premature action is the most expensive kind. Exploration, research,
+      and diagnosis must precede implementation — whether the actor is a
+      human or an agent.
+
+  - id: "2.2"
+    value: craftsmanship
+    principle: Build systems that can be governed, not just shipped.
+    rationale: >
+      A system that works but cannot be understood, maintained, or reviewed
+      is a liability disguised as a deliverable. Governability is a design
+      requirement, not a follow-up task.
+
+  - id: "2.3"
+    value: craftsmanship
+    principle: Prefer minimal, correct solutions over comprehensive, speculative ones.
+    rationale: >
+      Complexity is a cost paid on every future change. The right amount of
+      architecture is the minimum that serves the current need. Three clear
+      lines beat a premature abstraction.
+
+  # ─── 3. Empowerment, Ethics & Digital Sovereignty ───
+
+  - id: "3.1"
+    value: empowerment
+    principle: Leave every client more capable than you found them.
+    rationale: >
+      Consulting that creates dependency is extraction wearing a helpful
+      mask. Every engagement should transfer knowledge, build internal
+      capability, and reduce the client's need for us over time.
+
+  - id: "3.2"
+    value: empowerment
+    principle: People own their data, their decisions, and their tools.
+    rationale: >
+      Digital sovereignty is not negotiable. We do not build lock-in,
+      capture data beyond what's needed, or make choices that should
+      belong to the people we serve.
+
+  - id: "3.3"
+    value: empowerment
+    principle: Walk away from work that causes harm, even when it pays.
+    rationale: >
+      Empowerment without conscience is leverage. If an application,
+      client, or use case conflicts with these principles, declining
+      is the only aligned response.
+
+  # ─── 4. Integrity of Process ───
+
+  - id: "4.1"
+    value: integrity
+    principle: Proposals before edits. Review before integration.
+    rationale: >
+      Direct mutation of shared artifacts bypasses the judgment of others
+      and introduces unreviewed change. The proposal is the unit of change
+      because good process requires a moment of deliberation before action.
+
+  - id: "4.2"
+    value: integrity
+    principle: Conventions must be executable, not aspirational.
+    rationale: >
+      A convention that cannot be observed, enforced, or verified is a
+      wish, not a rule. If it matters enough to write down, it matters
+      enough to build into the process.
+
+  - id: "4.3"
+    value: integrity
+    principle: The process you follow on an ordinary day is the real process.
+    rationale: >
+      Principles that only appear under scrutiny are performance.
+      Governance, review, and quality standards apply to Tuesday
+      afternoon the same way they apply to a client demo.
+
+  # ─── 5. Community & Mutual Uplift ───
+
+  - id: "5.1"
+    value: community
+    principle: Share what you learn. Teach what you build.
+    rationale: >
+      Knowledge that stays internal has a ceiling. Knowledge that
+      circulates compounds — it strengthens the community, attracts
+      collaborators, and returns in forms you didn't anticipate.
+
+  - id: "5.2"
+    value: community
+    principle: Build for the ecosystem, not just the engagement.
+    rationale: >
+      Open frameworks, transferable patterns, and public research
+      serve more people than any single client relationship. The
+      work is better when it's designed to travel.
+
+  - id: "5.3"
+    value: community
+    principle: A rising community is more resilient than any individual success.
+    rationale: >
+      Our long-term security comes from the strength of the community
+      we operate within, not from competitive advantage over it. Mutual
+      uplift is not altruism — it is strategy and conviction in equal measure.

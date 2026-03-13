@@ -1,0 +1,62 @@
+# Sherpa Consulting — Values
+#
+# These values are derived from the Foundation Stone (docs/foundation-stone.md).
+# Each value has multiple layers of resolution for different consumers:
+#   title       → agent definitions, UI badges, nav menus
+#   statement   → careers pages, consulting decks, behavioral constraints
+#   explanation → about pages, onboarding, detailed reference
+#   source      → pointer to the Foundation Stone section
+#
+# Values are stable. They change rarely and only with deliberation.
+
+values:
+  - id: honesty
+    title: Honesty
+    statement: We tell the truth about what AI can and can't do.
+    explanation: |
+      We do not perform confidence we don't have or make promises we can't keep.
+      We name risks before they become failures. We say "I don't know" when we
+      don't, and "this isn't ready" when it isn't. We would rather lose an
+      engagement than win it on false terms.
+    source: docs/foundation-stone.md#i-honesty
+
+  - id: craftsmanship
+    title: Thoughtfulness & Craftsmanship
+    statement: We understand problems before solving them and build things that endure.
+    explanation: |
+      We design systems that can be governed, maintained, and understood — not
+      just shipped. The structure behind the surface matters as much as what's
+      visible. We measure quality by what survives contact with reality, not by
+      how quickly it was produced.
+    source: docs/foundation-stone.md#ii-thoughtfulness--craftsmanship
+
+  - id: empowerment
+    title: Empowerment, Ethics & Digital Sovereignty
+    statement: Every engagement should leave people more capable and more self-determined.
+    explanation: |
+      We do not build dependence or extract value from the people we serve. The
+      organizations and individuals we work with must remain the owners of their
+      own capabilities, data, and decisions. We build with open frameworks and
+      transferable knowledge. We will walk away from applications that cause harm,
+      even when they are profitable.
+    source: docs/foundation-stone.md#iii-empowerment-ethics--digital-sovereignty
+
+  - id: integrity
+    title: Integrity of Process
+    statement: How we work reveals what we actually value.
+    explanation: |
+      Our governance is not bolted on after the fact — it is the foundation.
+      Proposals before edits. Review before integration. Behavioral constraints
+      before delegation. If our principles cannot be observed in how we operate
+      on an ordinary Tuesday, they are not principles.
+    source: docs/foundation-stone.md#iv-integrity-of-process
+
+  - id: community
+    title: Community & Mutual Uplift
+    statement: The work is not complete until it is shared.
+    explanation: |
+      We share generously and build in the open because the work is better when
+      it circulates. What we learn informs what we teach. What we teach
+      strengthens the community we operate within. We succeed when the people
+      around us are more capable because we were here.
+    source: docs/foundation-stone.md#v-community--mutual-uplift
