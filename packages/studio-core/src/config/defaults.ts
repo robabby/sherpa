@@ -9,6 +9,7 @@ import type {
   ThemeConfig,
   VocabularyConfig,
 } from "./types"
+import { DEFAULT_DISPATCH } from "../dispatch"
 
 export const DEFAULT_PATHS: Required<PathsConfig> = {
   initiatives: "docs/initiatives",
@@ -97,6 +98,7 @@ export function buildDefaults(userConfig: SherpaUserConfig): SherpaConfig {
       configPath: userConfig.mcp?.configPath ?? paths.mcpConfig,
       taskLogsPath: userConfig.mcp?.taskLogsPath ?? DEFAULT_MCP.taskLogsPath,
     },
+    dispatch: { ...DEFAULT_DISPATCH, ...userConfig.dispatch },
     plugins: userConfig.plugins ?? [],
   }
 }

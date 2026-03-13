@@ -3,6 +3,8 @@ role: product-manager
 display-name: Product Manager
 category: strategy
 model-tier: high
+task-type: general
+eligible-task-types: []
 patterns:
   - multi-agent-collaboration
   - planning

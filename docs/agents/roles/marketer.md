@@ -3,6 +3,8 @@ role: marketer
 display-name: Marketer
 category: operations
 model-tier: medium
+task-type: general
+eligible-task-types: []
 patterns:
   - prompt-chaining
   - guardrails

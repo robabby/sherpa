@@ -3,6 +3,8 @@ role: designer
 display-name: Designer
 category: design
 model-tier: high
+task-type: content-generation
+eligible-task-types: []
 patterns:
   - multi-agent-collaboration
   - guardrails

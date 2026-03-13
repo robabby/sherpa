@@ -3,6 +3,8 @@
 // framework resolves (SherpaConfig) after merging defaults + plugins.
 // ---------------------------------------------------------------------------
 
+import type { DispatchConfig } from "../dispatch"
+
 /** Plugin: receives resolved config, returns modified config. */
 export type SherpaPlugin = (config: SherpaConfig) => SherpaConfig
 
@@ -117,6 +119,8 @@ export interface SherpaUserConfig {
   agents?: AgentsConfig
   /** MCP server configuration. */
   mcp?: McpConfig
+  /** Dispatch routing configuration. */
+  dispatch?: Partial<DispatchConfig>
   /** Plugins applied in order after defaults are merged. */
   plugins?: SherpaPlugin[]
 }
@@ -134,5 +138,6 @@ export interface SherpaConfig {
   entities: Required<EntitiesConfig>
   agents: Required<AgentsConfig>
   mcp: Required<McpConfig>
+  dispatch: DispatchConfig
   plugins: SherpaPlugin[]
 }

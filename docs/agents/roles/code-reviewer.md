@@ -3,6 +3,8 @@ role: code-reviewer
 display-name: Code Reviewer
 category: engineering
 model-tier: medium
+task-type: code-review
+eligible-task-types: [audit]
 patterns:
   - reflection
   - evaluation-and-monitoring

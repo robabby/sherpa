@@ -3,6 +3,8 @@ role: product-owner
 display-name: Product Owner
 category: strategy
 model-tier: medium
+task-type: general
+eligible-task-types: []
 patterns:
   - prioritization
   - goal-setting-and-monitoring

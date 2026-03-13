@@ -3,6 +3,8 @@ role: technical-writer
 display-name: Technical Writer
 category: operations
 model-tier: medium
+task-type: content-generation
+eligible-task-types: [research]
 patterns:
   - memory-management
   - guardrails

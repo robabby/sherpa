@@ -5,6 +5,7 @@ export * from "./schemas"
 // Pure logic
 export * from "./lifecycle"
 export * from "./playbooks"
+export * from "./dispatch"
 export * from "./process-nodes-shared"
 
 // Self-contained modules

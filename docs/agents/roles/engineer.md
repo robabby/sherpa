@@ -3,6 +3,8 @@ role: engineer
 display-name: Engineer
 category: engineering
 model-tier: medium
+task-type: code-implementation
+eligible-task-types: [code-review]
 patterns:
   - reflection
   - tool-use

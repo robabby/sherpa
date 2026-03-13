@@ -63,10 +63,21 @@ TASK_FILE="$REPO_ROOT/docs/tasks/${TASK_SLUG}.md"
 WORKTREE=$(extract worktree)
 
 # Fallback defaults
+MODE="${MODE:-supervised}"
+BUDGET_USD="${BUDGET_USD:-1.00}"
+
+# Resolve backend via config bridge if not explicitly set on task
+if [[ -z "$BACKEND" || "$BACKEND" == "null" ]]; then
+  ROUTE_JSON=$(node "$SCRIPT_DIR/resolve-route.mjs" "${TASK_TYPE:-general}" "$MODE" 2>&1) || {
+    echo "ERROR: Route resolution failed: $ROUTE_JSON" >&2
+    exit 1
+  }
+  BACKEND=$(echo "$ROUTE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>console.log(JSON.parse(d).backend))")
+  RESOLVED_MODEL=$(echo "$ROUTE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>console.log(JSON.parse(d).model||''))")
+  MODEL="${RESOLVED_MODEL:-${MODEL:-}}"
+fi
 BACKEND="${BACKEND:-claude}"
 MODEL="${MODEL:-claude-sonnet-4-6}"
-MODE="${MODE:-headless}"
-BUDGET_USD="${BUDGET_USD:-1.00}"
 
 # ── Mode guard rails ──────────────────────────────────────────────────
 if [[ "$MODE" == "overnight" ]]; then

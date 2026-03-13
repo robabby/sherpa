@@ -3,6 +3,8 @@ role: ux-researcher
 display-name: UX Researcher
 category: design
 model-tier: medium
+task-type: general
+eligible-task-types: []
 patterns:
   - exploration-and-discovery
   - learning-and-adaptation

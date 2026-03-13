@@ -3,6 +3,8 @@ role: architect
 display-name: Architect
 category: engineering
 model-tier: high
+task-type: architect
+eligible-task-types: [code-review]
 patterns:
   - planning
   - guardrails

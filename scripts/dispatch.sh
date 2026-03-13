@@ -59,21 +59,18 @@ for arg in "$@"; do
 done
 set -- "${FILTERED_ARGS[@]+${FILTERED_ARGS[@]}}"
 
-# Resolve backend from task-type (hardcoded routing table)
-BACKEND=""
-SHERPA_MODEL=""
-if [[ -n "$BACKEND_OVERRIDE" ]]; then
-  BACKEND="$BACKEND_OVERRIDE"
-else
-  case "$TASK_TYPE" in
-    code-implementation) BACKEND="claude"; SHERPA_MODEL="claude-opus-4-6" ;;
-    architect)           BACKEND="claude"; SHERPA_MODEL="claude-opus-4-6" ;;
-    code-review)         BACKEND="codex" ;;
-    research|audit|embeddings) BACKEND="opencode" ;;
-    content-generation)  BACKEND="gemini" ;;
-    *)                   BACKEND="claude"; SHERPA_MODEL="claude-sonnet-4-6" ;;
-  esac
-fi
+# Resolve backend from task-type via config bridge
+ROUTE_ARGS=("$TASK_TYPE" "interactive")
+[[ -n "$BACKEND_OVERRIDE" ]] && ROUTE_ARGS+=(--backend "$BACKEND_OVERRIDE")
+
+ROUTE_JSON=$(node "${SCRIPT_DIR}/resolve-route.mjs" "${ROUTE_ARGS[@]}" 2>&1) || {
+  echo "[dispatch] Route resolution failed: ${ROUTE_JSON}" >&2
+  exit 1
+}
+
+BACKEND=$(echo "$ROUTE_JSON" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')); console.log(d.backend)")
+RESOLVED_MODEL=$(echo "$ROUTE_JSON" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')); console.log(d.model || '')")
+SHERPA_MODEL="${RESOLVED_MODEL:-}"
 
 echo "[dispatch] ${ROLE_SLUG} → ${BACKEND} (task-type: ${TASK_TYPE})" >&2
 

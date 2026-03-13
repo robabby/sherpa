@@ -20,6 +20,8 @@ export interface TaskBoardEntry {
   title: string;
   hasReport: boolean;
   hasVerdict: boolean;
+  taskType: string;
+  mode: string;
   hasBlockers: boolean;
 }
 
@@ -142,6 +144,8 @@ export function getTaskDetail(slug: string, opts?: TaskBoardOptions): TaskDetail
     dispatchedAt: meta["dispatched-at"] ?? null,
     completedAt: meta["completed-at"] ?? null,
     judgeVerdict: meta["judge-verdict"] ?? "pending",
+    taskType: meta['task-type'] ?? 'general',
+    mode: meta.mode ?? 'supervised',
     title,
     hasReport: fs.existsSync(path.join(logsDir, `${id}-report.md`)) ||
                fs.existsSync(path.join(logsDir, `${id}-output.md`)),
@@ -189,6 +193,8 @@ export function getTaskBoard(opts?: TaskBoardOptions): TaskBoardEntry[] {
       dispatchedAt: meta["dispatched-at"] ?? null,
       completedAt: meta["completed-at"] ?? null,
       judgeVerdict: meta["judge-verdict"] ?? "pending",
+      taskType: meta['task-type'] ?? 'general',
+      mode: meta.mode ?? 'supervised',
       title,
       hasReport: fs.existsSync(path.join(logsDir, `${id}-report.md`)) ||
                  fs.existsSync(path.join(logsDir, `${id}-output.md`)),

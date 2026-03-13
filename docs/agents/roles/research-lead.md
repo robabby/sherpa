@@ -3,6 +3,8 @@ role: research-lead
 display-name: Research Lead
 category: strategy
 model-tier: high
+task-type: research
+eligible-task-types: [audit]
 patterns:
   - exploration-and-discovery
   - planning
