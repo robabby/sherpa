@@ -62,6 +62,9 @@ const config: StorybookConfig = {
     options: {},
   },
   viteFinal(config) {
+    // Storybook is served at /storybook/ in production
+    config.base = process.env.NODE_ENV === "production" ? "/storybook/" : "/"
+
     // Add custom resolver plugin
     config.plugins = config.plugins ?? []
     config.plugins.push(sherpaAliasPlugin())
