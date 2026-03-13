@@ -1,0 +1,146 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: var(--font-dm-sans), "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-heading: var(--font-fraunces), "Fraunces", Georgia, serif;
+
+  /* Sherpa warm palette */
+  --color-obsidian: #08080a;
+  --color-warm-charcoal: #18181b;
+  --color-dark-bronze: #27272a;
+  --color-gold: #d4a574;
+  --color-gold-bright: #e8c49a;
+  --color-gold-muted: #b08a5e;
+  --color-copper: #c49a6c;
+  --color-bronze: #8b7355;
+  --color-tarnished: #6b5a42;
+  --color-cream: #f5f0e8;
+  --color-warm-gray: #9a8e80;
+  --color-dim: #71665a;
+  --color-ambient-warm: #d4a574;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ── Light mode (warm marketing) ─────────────────────────────── */
+:root {
+  --radius: 0.625rem;
+
+  --background: #fafaf8;
+  --foreground: #1a1a1e;
+  --card: #ffffff;
+  --card-foreground: #1a1a1e;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1e;
+  --primary: #d4a574;
+  --primary-foreground: #1a1a1e;
+  --secondary: #f5f0e8;
+  --secondary-foreground: #1a1a1e;
+  --muted: #f0ede6;
+  --muted-foreground: #71665a;
+  --accent: #f5f0e8;
+  --accent-foreground: #1a1a1e;
+  --destructive: #ef4444;
+  --border: #e4e0d8;
+  --input: #e4e0d8;
+  --ring: #d4a574;
+  --chart-1: #e76e50;
+  --chart-2: #2a9d90;
+  --chart-3: #274754;
+  --chart-4: #e9c46a;
+  --chart-5: #f4a462;
+}
+
+/* ── Dark mode (warm obsidian — from Studio) ─────────────────── */
+.dark {
+  --background: #08080a;
+  --foreground: #e8e4e0;
+  --card: #0a0a0c;
+  --card-foreground: #e8e4e0;
+  --popover: #0a0a0c;
+  --popover-foreground: #e8e4e0;
+  --primary: #d4a574;
+  --primary-foreground: #1a1a1e;
+  --secondary: #1a1a1e;
+  --secondary-foreground: #e8e4e0;
+  --muted: #1a1a1e;
+  --muted-foreground: #9a8e80;
+  --accent: #1a1a1e;
+  --accent-foreground: #e8e4e0;
+  --destructive: #ef4444;
+  --border: #1e1e22;
+  --input: #1e1e22;
+  --ring: #d4a574;
+  --chart-1: #e76e50;
+  --chart-2: #2a9d90;
+  --chart-3: #274754;
+  --chart-4: #e9c46a;
+  --chart-5: #f4a462;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

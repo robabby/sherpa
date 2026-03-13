@@ -1,8 +1,8 @@
 ---
-status: pending
+status: approved
 initiative: sherpa-website
-created: 2026-03-13
-updated: 2026-03-13
+created: 2026-03-13T00:00:00.000Z
+updated: '2026-03-13'
 type: new-plan
 risk: additive
 targets:

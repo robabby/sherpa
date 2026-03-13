@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter @sherpa/studio-app dev",
+    "dev:studio": "pnpm --filter @sherpa/studio-app dev",
     "dev:web": "pnpm --filter @sherpa/website dev",
     "build": "pnpm --filter @sherpa/studio-app build",
     "build:web": "pnpm --filter @sherpa/website build",
