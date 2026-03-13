@@ -135,7 +135,7 @@ export function InitiativeLifecycleHero({
             </div>
             <PromptCopyButton
               prompt={suggested.prompt}
-              variant="rr"
+              variant={suggested.variant as "rr"}
               label={suggested.label}
             />
           </div>

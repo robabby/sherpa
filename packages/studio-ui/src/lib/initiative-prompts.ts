@@ -265,34 +265,36 @@ export function buildRrLaunchPrompt(ctx: SeedPromptContext): string {
 // Suggested lifecycle prompt
 // ---------------------------------------------------------------------------
 
+export type SuggestedPrompt = { prompt: string; label: string; variant: string };
+
 export function getSuggestedPrompt(
   ctx: InitiativePromptContext,
   stage: LifecycleStage,
   playbook?: PlaybookInfo | null,
-): { prompt: string; label: string } | null {
+): SuggestedPrompt | null {
   // Pre-approval stages: use existing logic
   switch (stage) {
     case "needs-research":
-      return { prompt: buildRrContinuePrompt(ctx), label: "Launch Research" };
+      return { prompt: buildRrContinuePrompt(ctx), label: "Launch Research", variant: "rr" };
     case "needs-proposal":
-      return { prompt: buildRrContinuePrompt(ctx), label: "Continue Research" };
+      return { prompt: buildRrContinuePrompt(ctx), label: "Continue Research", variant: "rr" };
     case "needs-review":
-      return { prompt: buildReviewPrompt(ctx), label: "Review Proposal" };
+      return { prompt: buildReviewPrompt(ctx), label: "Review Proposal", variant: "integration-review" };
     case "ready-to-integrate":
-      return { prompt: buildIntegrationPrompt(ctx), label: "Integrate" };
+      return { prompt: buildIntegrationPrompt(ctx), label: "Integrate", variant: "integration-review" };
   }
 
   // Post-approval: use playbook to determine next play
   if (playbook?.nextPlay && (stage === "needs-plan" || stage === "ready-to-start")) {
-    const PLAY_PROMPT_MAP: Record<string, () => { prompt: string; label: string }> = {
-      "rr":          () => ({ prompt: buildRrContinuePrompt(ctx), label: "Continue Research" }),
-      "stake":       () => ({ prompt: buildStakePrompt(ctx), label: "Run /stake" }),
-      "premortem":   () => ({ prompt: buildPremortemPrompt(ctx), label: "Run /premortem" }),
-      "stress-test": () => ({ prompt: buildStressTestPrompt(ctx), label: "Run /stress-test" }),
-      "spike":       () => ({ prompt: buildSpikePrompt(ctx), label: "Run /spike" }),
-      "shape":       () => ({ prompt: buildShapePrompt(ctx), label: "Run /shape" }),
-      "design":      () => ({ prompt: buildDesignPrompt(ctx), label: "Run /design" }),
-      "plan-tasks":  () => ({ prompt: buildPlanTasksPrompt(ctx), label: "Plan Tasks" }),
+    const PLAY_PROMPT_MAP: Record<string, () => SuggestedPrompt> = {
+      "rr":          () => ({ prompt: buildRrContinuePrompt(ctx), label: "Continue Research", variant: "rr" }),
+      "stake":       () => ({ prompt: buildStakePrompt(ctx), label: "Run /stake", variant: "stake" }),
+      "premortem":   () => ({ prompt: buildPremortemPrompt(ctx), label: "Run /premortem", variant: "premortem" }),
+      "stress-test": () => ({ prompt: buildStressTestPrompt(ctx), label: "Run /stress-test", variant: "stress-test" }),
+      "spike":       () => ({ prompt: buildSpikePrompt(ctx), label: "Run /spike", variant: "spike" }),
+      "shape":       () => ({ prompt: buildShapePrompt(ctx), label: "Run /shape", variant: "shape" }),
+      "design":      () => ({ prompt: buildDesignPrompt(ctx), label: "Run /design", variant: "design" }),
+      "plan-tasks":  () => ({ prompt: buildPlanTasksPrompt(ctx), label: "Plan Tasks", variant: "plan-tasks" }),
     };
     const builder = PLAY_PROMPT_MAP[playbook.nextPlay];
     if (builder) return builder();
@@ -301,9 +303,9 @@ export function getSuggestedPrompt(
   // Fallback for post-approval without playbook
   switch (stage) {
     case "needs-plan":
-      return { prompt: buildPlanningPrompt(ctx), label: "Create Plan" };
+      return { prompt: buildPlanningPrompt(ctx), label: "Create Plan", variant: "planning" };
     case "ready-to-start":
-      return { prompt: buildStartPrompt(ctx), label: "Start Implementation" };
+      return { prompt: buildStartPrompt(ctx), label: "Start Implementation", variant: "rr" };
     default:
       return null;
   }

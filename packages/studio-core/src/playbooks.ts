@@ -81,7 +81,7 @@ const PLAY_CATALOG: Record<PlayId, PlayDef> = {
   "plan-tasks": { id: "plan-tasks", label: "Plan Tasks", skill: "/plan-tasks", artifact: "plan.md" },
   memo: { id: "memo", label: "Memo", skill: "/memo", artifact: "memo.md" },
   radar: { id: "radar", label: "Radar", skill: "/radar", artifact: "radar.md" },
-  retro: { id: "retro", label: "Retro", skill: "/retro", artifact: "retro.md" },
+  retro: { id: "retro", label: "Retro", skill: "/retro", artifact: "" },
 };
 
 // ---------------------------------------------------------------------------
