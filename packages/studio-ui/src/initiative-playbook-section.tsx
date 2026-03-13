@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Check, ChevronRight } from "lucide-react";
 import type { PlaybookInfo, PlayStatus, PlayId } from "@/lib/studio/playbooks";
 import {
   type InitiativePromptContext,
@@ -21,7 +20,7 @@ import { cn } from "./lib/utils";
 import { EASE_EMERGENCE } from "./lib/animation-constants";
 
 // ---------------------------------------------------------------------------
-// Prompt builder map — play ID → prompt builder function
+// Prompt builder map — play ID -> prompt builder function
 // ---------------------------------------------------------------------------
 
 const PLAY_PROMPT_BUILDERS: Partial<
@@ -40,7 +39,7 @@ const PLAY_PROMPT_BUILDERS: Partial<
   // retro — no client-side prompt builder yet
 };
 
-// Play ID → PromptCopyButton variant mapping
+// Play ID -> PromptCopyButton variant mapping
 const PLAY_VARIANT_MAP: Partial<
   Record<PlayId, "rr" | "stake" | "shape" | "design" | "spike" | "premortem" | "stress-test" | "plan-tasks" | "memo" | "radar">
 > = {
@@ -57,42 +56,22 @@ const PLAY_VARIANT_MAP: Partial<
 };
 
 // ---------------------------------------------------------------------------
-// Sub-components
+// Stepper node — positioned on the track
 // ---------------------------------------------------------------------------
 
-function PlayPill({
+function StepperNode({
   play,
-  promptContext,
   index,
 }: {
   play: PlayStatus;
-  promptContext: InitiativePromptContext;
   index: number;
 }) {
-  const builder = PLAY_PROMPT_BUILDERS[play.id];
-  const variant = PLAY_VARIANT_MAP[play.id];
-  const prompt = builder ? builder(promptContext) : null;
+  const shortLabel = play.skill.replace("/", "");
 
   return (
     <motion.div
-      className={cn(
-        "flex items-center gap-1.5 rounded-full border px-3 py-1.5",
-        "transition-colors",
-        play.completed && [
-          "border-[var(--color-gold)] bg-[var(--color-gold)]/10",
-          "text-[var(--color-gold)]",
-        ],
-        play.suggested && [
-          "border-[var(--color-gold)]",
-          "animate-[cta-glow_3s_ease-in-out_infinite]",
-          "text-[var(--color-gold)]",
-        ],
-        !play.completed && !play.suggested && [
-          "border-[var(--glass-border)] text-muted-foreground/40",
-          "hover:border-[var(--color-copper)]/30 hover:text-muted-foreground/60",
-        ],
-      )}
-      initial={{ opacity: 0, scale: 0.92 }}
+      className="flex flex-col items-center gap-1.5"
+      initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{
         duration: 0.35,
@@ -100,21 +79,28 @@ function PlayPill({
         ease: EASE_EMERGENCE,
       }}
     >
-      {play.completed && (
-        <Check className="size-3 text-[var(--color-gold)]" />
+      {/* Node dot */}
+      {play.completed ? (
+        <div className="h-3 w-3 rounded-full border-2 border-[var(--color-gold)] bg-[var(--color-gold)]" />
+      ) : play.suggested ? (
+        <div className="flex h-4 w-4 items-center justify-center rounded-full border-2 border-[var(--color-gold)] bg-[var(--glass-bg)] pulse-ring">
+          <div className="h-1.5 w-1.5 rounded-full bg-[var(--color-gold)]" />
+        </div>
+      ) : (
+        <div className="h-3 w-3 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)]" />
       )}
-      <span className="text-xs font-medium whitespace-nowrap">{play.label}</span>
 
-      {/* Copy button — visible for completed/suggested, hover-reveal for others */}
-      {prompt && variant && (
-        <span
-          className={cn(
-            !play.completed && !play.suggested && "opacity-0 group-hover/pill:opacity-100 transition-opacity",
-          )}
-        >
-          <PromptCopyButton prompt={prompt} variant={variant} label={play.skill} />
-        </span>
-      )}
+      {/* Label */}
+      <span
+        className={cn(
+          "font-mono text-[9px] leading-none",
+          play.completed && "text-[var(--color-gold)]/60",
+          play.suggested && "text-[var(--color-gold)]",
+          !play.completed && !play.suggested && "text-muted-foreground/25",
+        )}
+      >
+        {shortLabel}
+      </span>
     </motion.div>
   );
 }
@@ -134,6 +120,19 @@ export function InitiativePlaybookSection({
 }: InitiativePlaybookSectionProps) {
   const completedCount = playbook.plays.filter((p) => p.completed).length;
   const totalCount = playbook.plays.length;
+  const fillPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+  // Resolve the suggested play for CTA
+  const suggestedPlay = playbook.nextPlay
+    ? playbook.plays.find((p) => p.id === playbook.nextPlay) ?? null
+    : null;
+  const ctaBuilder = suggestedPlay
+    ? PLAY_PROMPT_BUILDERS[suggestedPlay.id]
+    : undefined;
+  const ctaVariant = suggestedPlay
+    ? PLAY_VARIANT_MAP[suggestedPlay.id]
+    : undefined;
+  const ctaPrompt = ctaBuilder ? ctaBuilder(promptContext) : null;
 
   return (
     <motion.div
@@ -156,53 +155,74 @@ export function InitiativePlaybookSection({
           {playbook.label}
         </span>
         <span className="ml-auto font-mono text-[10px] text-muted-foreground/40">
-          {completedCount}/{totalCount} plays
+          {completedCount}/{totalCount} complete
         </span>
       </div>
 
-      {/* Play sequence — horizontal pipeline with chevron connectors */}
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        {playbook.plays.map((play, i) => (
-          <div key={play.id} className="group/pill flex items-center gap-1.5">
-            {i > 0 && (
-              <ChevronRight
-                className={cn(
-                  "size-3 flex-shrink-0",
-                  play.completed || playbook.plays[i - 1]?.completed
-                    ? "text-[var(--color-gold)]/40"
-                    : "text-muted-foreground/15",
-                )}
-              />
-            )}
-            <PlayPill play={play} promptContext={promptContext} index={i} />
-          </div>
-        ))}
-      </div>
-
-      {/* Cross-cutting plays */}
-      <div className="mt-3 border-t border-[var(--glass-border)] pt-3">
-        <span className="font-mono text-[10px] text-muted-foreground/40">
-          Available anytime
-        </span>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          {playbook.crossCutting.map((play) => {
-            const builder = PLAY_PROMPT_BUILDERS[play.id];
-            const variant = PLAY_VARIANT_MAP[play.id];
-            const prompt = builder ? builder(promptContext) : null;
-
-            return (
-              <div key={play.id} className="flex items-center">
-                {prompt && variant ? (
-                  <PromptCopyButton prompt={prompt} variant={variant} label={play.skill} />
-                ) : (
-                  <span className="rounded-full border border-[var(--glass-border)] px-2.5 py-1 text-[10px] text-muted-foreground/30">
-                    {play.skill}
-                  </span>
-                )}
-              </div>
-            );
-          })}
+      {/* Stepper track */}
+      <div className="relative mt-4 px-1">
+        {/* Track background */}
+        <div className="absolute left-1 right-1 top-[5px] h-[2px] rounded-full bg-[var(--glass-border)]">
+          {/* Fill overlay */}
+          <div
+            className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-[var(--color-gold)] to-[var(--color-gold-bright)]"
+            style={{ width: `${fillPercent}%` }}
+          />
         </div>
+
+        {/* Nodes */}
+        <div className="relative flex justify-between">
+          {playbook.plays.map((play, i) => (
+            <StepperNode key={play.id} play={play} index={i} />
+          ))}
+        </div>
+      </div>
+
+      {/* Suggested action CTA */}
+      {suggestedPlay && ctaPrompt && ctaVariant && (
+        <div className="mt-3 flex items-center justify-between rounded-lg border border-[var(--color-gold)]/20 bg-[var(--color-gold)]/5 px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-[var(--color-gold)]">
+              Run {suggestedPlay.skill}
+            </span>
+            <span className="rounded-full bg-[var(--color-copper)]/10 px-1.5 py-0.5 text-[9px] text-[var(--color-copper)]">
+              Agent
+            </span>
+          </div>
+          <PromptCopyButton
+            prompt={ctaPrompt}
+            variant={ctaVariant}
+            label={suggestedPlay.skill}
+          />
+        </div>
+      )}
+
+      {/* Cross-cutting row */}
+      <div className="mt-3 flex items-center gap-2 border-t border-[var(--glass-border)] pt-2.5">
+        <span className="font-mono text-[9px] text-muted-foreground/30">
+          anytime
+        </span>
+        {playbook.crossCutting.map((play) => {
+          const builder = PLAY_PROMPT_BUILDERS[play.id];
+          const variant = PLAY_VARIANT_MAP[play.id];
+          const prompt = builder ? builder(promptContext) : null;
+
+          return (
+            <span key={play.id}>
+              {prompt && variant ? (
+                <PromptCopyButton
+                  prompt={prompt}
+                  variant={variant}
+                  label={play.skill}
+                />
+              ) : (
+                <span className="font-mono text-[9px] text-muted-foreground/30">
+                  {play.skill}
+                </span>
+              )}
+            </span>
+          );
+        })}
       </div>
     </motion.div>
   );
