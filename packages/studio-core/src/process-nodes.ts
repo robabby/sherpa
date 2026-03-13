@@ -1,5 +1,6 @@
 import { readProjectFile } from "./content"
 import { parseActivityLog } from "./markdown"
+import { detectPlaybook, getPlaybookStatus, type ArtifactFlags } from "./playbooks"
 import type {
   ActivityEntry,
   BranchSeed,
@@ -266,6 +267,23 @@ export function getProcessNodes(
         hasPlan,
         linkedWorkstreamStatus,
       })
+
+      // Enrich with playbook data
+      const artifactFlags: ArtifactFlags = {
+        hasResearch: !!research && research.iterations.length > 0,
+        hasStake: readProjectFile(`${basePath}/stake.md`) !== null,
+        hasPremortem: readProjectFile(`${basePath}/premortem.md`) !== null,
+        hasStressTest: readProjectFile(`${basePath}/stress-test.md`) !== null,
+        hasSpike: readProjectFile(`${basePath}/spike.md`) !== null,
+        hasShape: readProjectFile(`${basePath}/shape.md`) !== null,
+        hasDesign: readProjectFile(`${basePath}/design.md`) !== null,
+        hasPlan,
+        hasMemo: readProjectFile(`${basePath}/memo.md`) !== null,
+        hasRadar: readProjectFile(`${basePath}/radar.md`) !== null,
+      }
+      const playbookId = detectPlaybook(init.risk)
+      node.metadata.playbook = getPlaybookStatus(playbookId, artifactFlags)
+      node.metadata.artifacts = artifactFlags
     }
     if (getters.buildInitiativeFileTree) {
       node.metadata.fileTree = getters.buildInitiativeFileTree(
