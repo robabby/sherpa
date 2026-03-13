@@ -5,10 +5,12 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./*": "./src/*.tsx"
+    "./*": "./src/*.tsx",
+    "./catalog": "./src/catalog.ts"
   },
   "scripts": {
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@sherpa/studio-core": "workspace:*",
@@ -58,6 +60,7 @@
     "@types/d3-selection": "^3.0.11",
     "@types/d3-time": "^3.0.4",
     "@types/d3-transition": "^3.0.9",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^4.1.0"
   }
 }

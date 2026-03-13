@@ -1,0 +1,12 @@
+/* Google Fonts — replaces next/font/google in Storybook context */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+
+/* Canonical design tokens (source of truth) */
+@import "../../../../apps/studio/src/styles/globals.css";
+
+/* Override next/font CSS variables with Google Fonts equivalents */
+:root {
+  --font-fraunces: "Fraunces", Georgia, serif;
+  --font-dm-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-jetbrains: "JetBrains Mono", ui-monospace, monospace;
+}

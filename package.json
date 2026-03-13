@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "pnpm --filter @sherpa/studio-app dev",
     "build": "pnpm --filter @sherpa/studio-app build",
-    "check": "pnpm -r check"
+    "check": "pnpm -r check",
+    "storybook": "pnpm --filter @sherpa/storybook dev",
+    "build:storybook": "pnpm --filter @sherpa/storybook build && cp -r apps/storybook/storybook-static apps/studio/public/storybook",
+    "build:all": "pnpm build:storybook && pnpm build"
   }
 }

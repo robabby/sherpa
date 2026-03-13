@@ -5,7 +5,11 @@ node_modules/
 .next/
 dist/
 out/
+storybook-static/
 *.tsbuildinfo
+
+# Storybook build artifact (copied into Next.js public/)
+apps/studio/public/storybook/
 
 # Environment
 .env

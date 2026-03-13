@@ -11,7 +11,9 @@
   --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
   --font-heading: var(--font-fraunces), "Fraunces", Georgia, serif;
 
-  /* Legacy color tokens — warm palette */
+  /* @sherpa-tokens: typography */
+
+  /* @sherpa-tokens: palette */
   --color-obsidian: #08080a;
   --color-warm-charcoal: #18181b;
   --color-dark-bronze: #27272a;
@@ -28,11 +30,13 @@
 }
 
 @theme inline {
+  /* @sherpa-tokens: radii */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
+  /* @sherpa-tokens: sizing */
   --text-card-title: 1.25rem;
   --text-card-title--line-height: 1.4;
 
@@ -73,6 +77,7 @@
 :root {
   --radius: 0.625rem;
 
+  /* @sherpa-tokens: semantic */
   --background: #ffffff;
   --foreground: #09090b;
   --card: #ffffff;
@@ -91,6 +96,7 @@
   --border: #e4e4e7;
   --input: #e4e4e7;
   --ring: #18181b;
+  /* @sherpa-tokens: chart */
   --chart-1: #e76e50;
   --chart-2: #2a9d90;
   --chart-3: #274754;
@@ -105,13 +111,15 @@
   --sidebar-border: #e4e4e7;
   --sidebar-ring: #18181b;
 
-  /* Domain color tokens (studio-ui panels) */
+  /* @sherpa-tokens: glows */
   --glow-gold: rgba(24, 24, 27, 0.08);
   --glow-copper: rgba(24, 24, 27, 0.06);
+  /* @sherpa-tokens: borders */
   --border-gold: rgba(24, 24, 27, 0.15);
   --border-copper: rgba(24, 24, 27, 0.12);
   --glass-inner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
+  /* @sherpa-tokens: domain */
   --color-session: #6366f1;
   --color-session-bright: #818cf8;
   --color-session-muted: #4f46e5;
@@ -178,7 +186,7 @@
   --sidebar-border: #1e1e22;
   --sidebar-ring: #d4a574;
 
-  /* Domain color tokens (studio-ui panels) — reduced glow opacity */
+  /* @sherpa-tokens: glows (dark) */
   --glow-gold: rgba(212, 165, 116, 0.04);
   --glow-copper: rgba(196, 154, 108, 0.03);
   --border-gold: rgba(212, 165, 116, 0.10);
@@ -216,7 +224,7 @@
   --color-engaged: #e8e4e0;
   --color-not-engaged: rgba(232, 228, 224, 0.2);
 
-  /* Surface hierarchy */
+  /* @sherpa-tokens: surfaces */
   --surface-primary: rgba(255, 255, 255, 0.03);
   --surface-primary-border: rgba(255, 255, 255, 0.06);
   --surface-elevated: rgba(255, 255, 255, 0.05);
@@ -225,7 +233,7 @@
   --surface-hover: rgba(255, 255, 255, 0.06);
   --surface-hover-border: rgba(255, 255, 255, 0.10);
 
-  /* Glass tokens */
+  /* @sherpa-tokens: surfaces (glass) */
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-bg-hover: rgba(255, 255, 255, 0.05);
   --glass-border: rgba(255, 255, 255, 0.06);
