@@ -149,6 +149,139 @@ export function generateIntegrationPrompt(node: ProcessNode): string {
 }
 
 /**
+ * Generate a /shape prompt for setting appetite and constraints.
+ */
+export function generateShapePrompt(node: ProcessNode): string {
+  const initPath = node.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/shape ${node.title.toLowerCase().replace(/\s+/g, "-")}`,
+    ``,
+    `Shape the ${node.title} initiative.`,
+    `Set appetite, identify rabbit holes, mark no-gos, define kill criteria.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${node.source}`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+/**
+ * Generate a /stake prompt for thesis-based option evaluation.
+ */
+export function generateStakePrompt(node: ProcessNode): string {
+  const initPath = node.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/stake ${node.title.toLowerCase().replace(/\s+/g, "-")}`,
+    ``,
+    `Stake the ${node.title} initiative.`,
+    `Frame options as theses, evaluate, recommend a direction, define kill criteria.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${node.source}`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+/**
+ * Generate a /spike prompt for testing the riskiest assumption.
+ */
+export function generateSpikePrompt(node: ProcessNode): string {
+  const initPath = node.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/spike ${node.title.toLowerCase().replace(/\s+/g, "-")}`,
+    ``,
+    `Spike the riskiest assumption for ${node.title}.`,
+    `One question, one session, build the minimum thing that answers it.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${node.source}`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+/**
+ * Generate a /design prompt for architecture and UI design.
+ */
+export function generateDesignPrompt(node: ProcessNode): string {
+  const initPath = node.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/design ${node.title.toLowerCase().replace(/\s+/g, "-")}`,
+    ``,
+    `Design the ${node.title} initiative.`,
+    `Read the shape, design the architecture and UI, produce design.md and prototype.html.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${node.source}`,
+    `- Research: ${initPath}/research/`,
+    `- Shape: ${initPath}/shape.md`,
+  ].join("\n");
+}
+
+/**
+ * Generate a /premortem prompt for failure mode analysis.
+ */
+export function generatePremortemPrompt(node: ProcessNode): string {
+  const initPath = node.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/premortem ${node.title.toLowerCase().replace(/\s+/g, "-")}`,
+    ``,
+    `Run a pre-mortem on the ${node.title} initiative.`,
+    `Imagine failure, work backward, identify failure modes and mitigations.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${node.source}`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+/**
+ * Generate a /stress-test prompt for assumption falsification.
+ */
+export function generateStressTestPrompt(node: ProcessNode): string {
+  const initPath = node.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/stress-test ${node.title.toLowerCase().replace(/\s+/g, "-")}`,
+    ``,
+    `Stress-test the assumptions behind ${node.title}.`,
+    `Extract assumptions, design falsification tests, execute what's executable.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${node.source}`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+/**
+ * Generate a /memo prompt for strategic decision memos.
+ */
+export function generateMemoPrompt(node: ProcessNode): string {
+  return [
+    `/memo ${node.title.toLowerCase().replace(/\s+/g, "-")}`,
+    ``,
+    `Write a strategic memo for the ${node.title} initiative.`,
+    `Frame the strategic question, gather evidence across initiatives, recommend.`,
+    ``,
+    `Proposal: ${node.source}`,
+  ].join("\n");
+}
+
+/**
+ * Generate a /radar prompt for technology landscape classification.
+ */
+export function generateRadarPrompt(node: ProcessNode): string {
+  const initPath = node.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/radar ${node.title.toLowerCase().replace(/\s+/g, "-")}`,
+    ``,
+    `Build a technology radar for ${node.title}.`,
+    `Classify the surveyed landscape into Adopt/Trial/Assess/Hold.`,
+    ``,
+    `Context:`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+/**
  * Generate a standalone role prompt for an agent role.
  * Includes identity, context packages, rules, skills, tool permissions, and escalation.
  */
