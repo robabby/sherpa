@@ -19,7 +19,16 @@ import {
   buildSynthesizePrompt,
   buildSubInitiativePrompt,
   buildRrLaunchPrompt,
+  buildShapePrompt,
+  buildStakePrompt,
+  buildSpikePrompt,
+  buildDesignPrompt,
+  buildPremortemPrompt,
+  buildStressTestPrompt,
+  buildMemoPrompt,
+  buildRadarPrompt,
 } from "./lib/initiative-prompts";
+import type { PlaybookInfo } from "@/lib/studio/playbooks";
 import type { LifecycleData, ResearchData } from "./lib/process-detail-helpers";
 import { PromptCopyButton } from "./prompt-copy-button";
 
@@ -132,8 +141,11 @@ export function ActionBar({ node, agentRoles }: { node: ProcessNode; agentRoles?
     ((node.metadata.research as ResearchData).iterations.length > 0);
 
   const lifecycle = node.metadata.lifecycle as LifecycleData | undefined;
+  const playbook = node.kind === "initiative"
+    ? (node.metadata.playbook as PlaybookInfo | undefined) ?? null
+    : null;
   const suggested = node.kind === "initiative" && lifecycle
-    ? getSuggestedPrompt(promptContextFromNode(node), lifecycle.stage)
+    ? getSuggestedPrompt(promptContextFromNode(node), lifecycle.stage, playbook)
     : null;
 
   // Build role-prefixed prompts for workstreams with active role assignments
@@ -223,6 +235,23 @@ export function ActionBar({ node, agentRoles }: { node: ProcessNode; agentRoles?
             variant="rr"
             label="Sub-initiative"
           />
+          {/* Post-research skill buttons — show when approved/in-progress */}
+          {(node.status === "approved" || node.status === "in-progress") && (
+            <>
+              <PromptCopyButton prompt={buildStakePrompt(ctx)} variant="stake" />
+              <PromptCopyButton prompt={buildShapePrompt(ctx)} variant="shape" />
+              <PromptCopyButton prompt={buildDesignPrompt(ctx)} variant="design" />
+              <PromptCopyButton prompt={buildSpikePrompt(ctx)} variant="spike" />
+              <PromptCopyButton prompt={buildPremortemPrompt(ctx)} variant="premortem" />
+              <PromptCopyButton prompt={buildStressTestPrompt(ctx)} variant="stress-test" />
+            </>
+          )}
+          {hasResearch && (
+            <>
+              <PromptCopyButton prompt={buildRadarPrompt(ctx)} variant="radar" />
+              <PromptCopyButton prompt={buildMemoPrompt(ctx)} variant="memo" />
+            </>
+          )}
         </>
       )}
       {node.kind === "seed" && (

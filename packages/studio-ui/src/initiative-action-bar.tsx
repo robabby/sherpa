@@ -7,6 +7,14 @@ import {
   buildSynthesizePrompt,
   buildPlanTasksPrompt,
   buildSubInitiativePrompt,
+  buildShapePrompt,
+  buildStakePrompt,
+  buildSpikePrompt,
+  buildDesignPrompt,
+  buildPremortemPrompt,
+  buildStressTestPrompt,
+  buildMemoPrompt,
+  buildRadarPrompt,
   type InitiativePromptContext,
 } from "./lib/initiative-prompts";
 
@@ -68,6 +76,23 @@ export function InitiativeActionBar({
         variant="rr"
         label="Sub-initiative"
       />
+      {/* Post-research skill buttons — show when approved/in-progress */}
+      {canPlanTasks && (
+        <>
+          <PromptCopyButton prompt={buildStakePrompt(ctx)} variant="stake" />
+          <PromptCopyButton prompt={buildShapePrompt(ctx)} variant="shape" />
+          <PromptCopyButton prompt={buildDesignPrompt(ctx)} variant="design" />
+          <PromptCopyButton prompt={buildSpikePrompt(ctx)} variant="spike" />
+          <PromptCopyButton prompt={buildPremortemPrompt(ctx)} variant="premortem" />
+          <PromptCopyButton prompt={buildStressTestPrompt(ctx)} variant="stress-test" />
+        </>
+      )}
+      {hasResearch && (
+        <>
+          <PromptCopyButton prompt={buildRadarPrompt(ctx)} variant="radar" />
+          <PromptCopyButton prompt={buildMemoPrompt(ctx)} variant="memo" />
+        </>
+      )}
     </div>
   );
 }
