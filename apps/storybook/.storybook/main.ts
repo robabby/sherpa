@@ -16,6 +16,7 @@ const mocks = path.join(storybookRoot, "src/mocks")
 function sherpaAliasPlugin(): PluginOption {
   const exactMocks: Record<string, string> = {
     "@/lib/studio": path.join(mocks, "studio.ts"),
+    "@/app/workforce/actions": path.join(mocks, "workforce-actions.ts"),
     "server-only": path.join(mocks, "empty.ts"),
     "next/link": path.join(mocks, "next-link.tsx"),
     "next/navigation": path.join(mocks, "next-navigation.tsx"),
