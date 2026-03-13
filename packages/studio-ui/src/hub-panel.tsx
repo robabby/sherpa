@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "./lib/utils";
 
-type PanelVariant = "process" | "portfolio" | "activity" | "docs" | "conventions" | "skills" | "primitives" | "api" | "workforce" | "sessions" | "transit-content" | "tasks" | "mcp" | "workflow";
+type PanelVariant = "process" | "portfolio" | "activity" | "docs" | "conventions" | "skills" | "primitives" | "api" | "workforce" | "sessions" | "transit-content" | "tasks" | "mcp" | "workflow" | "playbooks";
 
 interface HubPanelProps {
   variant: PanelVariant;
@@ -133,6 +133,14 @@ const VARIANT_STYLES: Record<
     glow: "absolute -right-8 -top-8 h-40 w-40 rounded-full bg-[var(--color-copper)] opacity-[0.04] blur-[80px] panel-glow",
     accentBar:
       "absolute left-0 top-4 bottom-4 w-[2px] bg-gradient-to-b from-[var(--color-copper)]/50 to-transparent",
+  },
+  playbooks: {
+    borderTint: "border-[var(--color-gold)]/10",
+    label: "text-[var(--color-gold)]/80",
+    link: "text-[var(--color-gold)]",
+    glow: "absolute -right-8 -top-8 h-40 w-40 rounded-full bg-[var(--color-gold)] opacity-[0.04] blur-[80px] panel-glow",
+    accentBar:
+      "absolute left-0 top-4 bottom-4 w-[2px] bg-gradient-to-b from-[var(--color-gold)]/50 to-transparent",
   },
 };
 

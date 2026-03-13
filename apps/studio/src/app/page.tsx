@@ -17,6 +17,7 @@ import { HubSessionsPanel } from "@/components/studio/hub-sessions-panel"
 import { HubTasksPanel } from "@/components/studio/hub-tasks-panel"
 import { HubMcpPanel } from "@/components/studio/hub-mcp-panel"
 import { HubWorkflowPanel } from "@/components/studio/hub-workflow-panel"
+import { HubPlaybooksPanel } from "@/components/studio/hub-playbooks-panel"
 import type { AttentionItem, PendingReviewItem } from "@/components/studio/hub-process-panel"
 import {
   detectLifecycle,
@@ -35,6 +36,7 @@ import { readProjectFile } from "@/lib/studio/content"
 import type { HubStats, Initiative, Session } from "@/lib/studio"
 import { getTaskBoard } from "@/lib/studio/tasks"
 import { getMcpDashboard } from "@/lib/studio/mcp"
+import { detectPlaybook, PLAYBOOK_IDS } from "@/lib/studio/playbooks"
 
 function computeSessionStats(sessions: Session[]): HubStats["sessions"] {
   const now = new Date()
@@ -145,6 +147,28 @@ export default async function StudioPage() {
   const tasks = getTaskBoard()
   const mcpData = await getMcpDashboard()
 
+  // Compute playbook summaries
+  const playbookCounts = new Map<string, number>();
+  for (const init of initiatives) {
+    if (init.status === "archived" || init.status === "declined") continue;
+    const pbId = detectPlaybook(init.risk);
+    playbookCounts.set(pbId, (playbookCounts.get(pbId) ?? 0) + 1);
+  }
+
+  const PLAYBOOK_META = {
+    "fast-track": { label: "Fast Track", risk: "additive", playCount: 3 },
+    "standard": { label: "Standard", risk: "evolutionary", playCount: 5 },
+    "high-stakes": { label: "High Stakes", risk: "structural", playCount: 8 },
+  } as const;
+
+  const playbookSummaries = PLAYBOOK_IDS.map((id) => ({
+    id,
+    label: PLAYBOOK_META[id].label,
+    risk: PLAYBOOK_META[id].risk,
+    playCount: PLAYBOOK_META[id].playCount,
+    initiativeCount: playbookCounts.get(id) ?? 0,
+  }));
+
   const velocityInputs = initiatives.map((init) => {
     const linkedWs = workstreams.filter((ws) =>
       ws.initiative?.startsWith(init.slug),
@@ -207,6 +231,11 @@ export default async function StudioPage() {
           </HubStaggerItem>
           <HubStaggerItem variant="panel" className="lg:col-span-7">
             <HubSkillsPanel skills={skills} />
+          </HubStaggerItem>
+
+          {/* Row 3.5: playbooks */}
+          <HubStaggerItem variant="panel" className="lg:col-span-7">
+            <HubPlaybooksPanel playbooks={playbookSummaries} />
           </HubStaggerItem>
 
           {/* Row 4: tasks + workforce */}
