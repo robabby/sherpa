@@ -51,6 +51,8 @@ function sherpaAliasPlugin(): PluginOption {
   }
 }
 
+const isProduction = process.env.NODE_ENV === "production"
+
 const config: StorybookConfig = {
   stories: ["../src/stories/**/*.stories.@(ts|tsx)"],
   addons: [
@@ -61,6 +63,11 @@ const config: StorybookConfig = {
     name: "@storybook/react-vite",
     options: {},
   },
+  // Set <base href> so relative paths (./sb-addons/...) resolve under /storybook/
+  managerHead: (head) =>
+    isProduction
+      ? `${head}<base href="/storybook/" />`
+      : head,
   viteFinal(config) {
     // Storybook is served at /storybook/ in production
     config.base = process.env.NODE_ENV === "production" ? "/storybook/" : "/"
