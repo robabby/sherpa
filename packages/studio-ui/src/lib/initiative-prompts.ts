@@ -1,4 +1,5 @@
 import type { LifecycleStage } from "@/lib/studio/lifecycle";
+import type { PlaybookInfo } from "@/lib/studio/playbooks";
 
 // ---------------------------------------------------------------------------
 // Context interfaces — no ProcessNode dependency
@@ -124,6 +125,115 @@ export function buildPlanTasksPrompt(ctx: InitiativePromptContext): string {
   ].join("\n");
 }
 
+export function buildShapePrompt(ctx: InitiativePromptContext): string {
+  const initPath = ctx.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/shape ${ctx.slug}`,
+    ``,
+    `Shape the ${ctx.title} initiative.`,
+    `Set appetite, identify rabbit holes, mark no-gos, define kill criteria.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${ctx.source}`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+export function buildStakePrompt(ctx: InitiativePromptContext): string {
+  const initPath = ctx.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/stake ${ctx.slug}`,
+    ``,
+    `Stake the ${ctx.title} initiative.`,
+    `Frame options as theses, evaluate, recommend a direction, define kill criteria.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${ctx.source}`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+export function buildSpikePrompt(ctx: InitiativePromptContext): string {
+  const initPath = ctx.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/spike ${ctx.slug}`,
+    ``,
+    `Spike the riskiest assumption for ${ctx.title}.`,
+    `One question, one session, build the minimum thing that answers it.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${ctx.source}`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+export function buildDesignPrompt(ctx: InitiativePromptContext): string {
+  const initPath = ctx.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/design ${ctx.slug}`,
+    ``,
+    `Design the ${ctx.title} initiative.`,
+    `Read the shape, design the architecture and UI, produce design.md and prototype.html.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${ctx.source}`,
+    `- Research: ${initPath}/research/`,
+    `- Shape: ${initPath}/shape.md`,
+  ].join("\n");
+}
+
+export function buildPremortemPrompt(ctx: InitiativePromptContext): string {
+  const initPath = ctx.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/premortem ${ctx.slug}`,
+    ``,
+    `Run a pre-mortem on the ${ctx.title} initiative.`,
+    `Imagine failure, work backward, identify failure modes and mitigations.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${ctx.source}`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+export function buildStressTestPrompt(ctx: InitiativePromptContext): string {
+  const initPath = ctx.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/stress-test ${ctx.slug}`,
+    ``,
+    `Stress-test the assumptions behind ${ctx.title}.`,
+    `Extract assumptions, design falsification tests, execute what's executable.`,
+    ``,
+    `Context:`,
+    `- Proposal: ${ctx.source}`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
+export function buildMemoPrompt(ctx: InitiativePromptContext): string {
+  return [
+    `/memo ${ctx.slug}`,
+    ``,
+    `Write a strategic memo for the ${ctx.title} initiative.`,
+    `Frame the strategic question, gather evidence across initiatives, recommend.`,
+    ``,
+    `Proposal: ${ctx.source}`,
+  ].join("\n");
+}
+
+export function buildRadarPrompt(ctx: InitiativePromptContext): string {
+  const initPath = ctx.source.replace(/\/proposal\.md$/, "");
+  return [
+    `/radar ${ctx.slug}`,
+    ``,
+    `Build a technology radar for ${ctx.title}.`,
+    `Classify the surveyed landscape into Adopt/Trial/Assess/Hold.`,
+    ``,
+    `Context:`,
+    `- Research: ${initPath}/research/`,
+  ].join("\n");
+}
+
 // ---------------------------------------------------------------------------
 // Seed prompt builder
 // ---------------------------------------------------------------------------
@@ -158,7 +268,9 @@ export function buildRrLaunchPrompt(ctx: SeedPromptContext): string {
 export function getSuggestedPrompt(
   ctx: InitiativePromptContext,
   stage: LifecycleStage,
+  playbook?: PlaybookInfo | null,
 ): { prompt: string; label: string } | null {
+  // Pre-approval stages: use existing logic
   switch (stage) {
     case "needs-research":
       return { prompt: buildRrContinuePrompt(ctx), label: "Launch Research" };
@@ -166,12 +278,32 @@ export function getSuggestedPrompt(
       return { prompt: buildRrContinuePrompt(ctx), label: "Continue Research" };
     case "needs-review":
       return { prompt: buildReviewPrompt(ctx), label: "Review Proposal" };
+    case "ready-to-integrate":
+      return { prompt: buildIntegrationPrompt(ctx), label: "Integrate" };
+  }
+
+  // Post-approval: use playbook to determine next play
+  if (playbook?.nextPlay && (stage === "needs-plan" || stage === "ready-to-start")) {
+    const PLAY_PROMPT_MAP: Record<string, () => { prompt: string; label: string }> = {
+      "rr":          () => ({ prompt: buildRrContinuePrompt(ctx), label: "Continue Research" }),
+      "stake":       () => ({ prompt: buildStakePrompt(ctx), label: "Run /stake" }),
+      "premortem":   () => ({ prompt: buildPremortemPrompt(ctx), label: "Run /premortem" }),
+      "stress-test": () => ({ prompt: buildStressTestPrompt(ctx), label: "Run /stress-test" }),
+      "spike":       () => ({ prompt: buildSpikePrompt(ctx), label: "Run /spike" }),
+      "shape":       () => ({ prompt: buildShapePrompt(ctx), label: "Run /shape" }),
+      "design":      () => ({ prompt: buildDesignPrompt(ctx), label: "Run /design" }),
+      "plan-tasks":  () => ({ prompt: buildPlanTasksPrompt(ctx), label: "Plan Tasks" }),
+    };
+    const builder = PLAY_PROMPT_MAP[playbook.nextPlay];
+    if (builder) return builder();
+  }
+
+  // Fallback for post-approval without playbook
+  switch (stage) {
     case "needs-plan":
       return { prompt: buildPlanningPrompt(ctx), label: "Create Plan" };
     case "ready-to-start":
       return { prompt: buildStartPrompt(ctx), label: "Start Implementation" };
-    case "ready-to-integrate":
-      return { prompt: buildIntegrationPrompt(ctx), label: "Integrate" };
     default:
       return null;
   }
