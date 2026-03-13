@@ -6,11 +6,13 @@ import type { ChartSpec, WorkstreamRoleAssignment } from "@/lib/studio/types";
 import { cn } from "./lib/utils";
 import { MetadataRow, MonoList, type LifecycleData } from "./lib/process-detail-helpers";
 import { promptContextFromNode } from "./lib/initiative-prompts";
+import type { PlaybookInfo } from "@/lib/studio/playbooks";
 import { ArchiveButton, RestoreButton } from "./archive-restore-buttons";
 import { ChartRenderer } from "./chart-renderer";
 import { InitiativeFileTree } from "./initiative-file-tree";
 import { InitiativeLifecycleHero } from "./initiative-lifecycle-hero";
 import { InitiativeMetadataGrid } from "./initiative-metadata-grid";
+import { InitiativePlaybookSection } from "./initiative-playbook-section";
 import { InitiativeSessionsSection } from "./initiative-sessions-section";
 import { ProposalActions } from "./proposal-actions";
 
@@ -75,7 +77,15 @@ export function OverviewTab({ node, onStatusChange, onPostApproval, onArchive, o
           <InitiativeLifecycleHero
             lifecycle={lifecycle}
             promptContext={promptContextFromNode(node)}
+            playbook={(meta.playbook as PlaybookInfo) ?? null}
           />
+
+          {meta.playbook && (
+            <InitiativePlaybookSection
+              playbook={meta.playbook as PlaybookInfo}
+              promptContext={promptContextFromNode(node)}
+            />
+          )}
 
           {lifecycle.stage === "needs-review" && onStatusChange && (
             <div>

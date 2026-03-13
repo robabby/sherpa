@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import type { LifecycleStage } from "@/lib/studio/lifecycle";
 import { cn } from "./lib/utils";
 import { EASE_EMERGENCE, TIMING } from "./lib/animation-constants";
+import type { PlaybookInfo } from "@/lib/studio/playbooks";
 import {
   getSuggestedPrompt,
   type InitiativePromptContext,
@@ -34,14 +35,16 @@ function getVisualStepIndex(stage: LifecycleStage): number {
 interface InitiativeLifecycleHeroProps {
   lifecycle: LifecycleData;
   promptContext: InitiativePromptContext;
+  playbook?: PlaybookInfo | null;
 }
 
 export function InitiativeLifecycleHero({
   lifecycle,
   promptContext,
+  playbook,
 }: InitiativeLifecycleHeroProps) {
   const currentVisualStep = getVisualStepIndex(lifecycle.stage);
-  const suggested = getSuggestedPrompt(promptContext, lifecycle.stage);
+  const suggested = getSuggestedPrompt(promptContext, lifecycle.stage, playbook);
 
   return (
     <div className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-5">
