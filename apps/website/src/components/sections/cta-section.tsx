@@ -5,15 +5,11 @@ import { ScrollReveal } from "@/components/motion/scroll-reveal"
 
 export function CtaSection() {
   return (
-    <section className="px-6 py-20 md:py-28">
+    <section className="border-t border-border/40 px-6 py-20 md:py-28">
       <ScrollReveal>
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="font-heading text-3xl tracking-tight md:text-4xl">
-            Ready to get started?
-          </h2>
-          <p className="mt-4 text-muted-foreground">
-            Use the framework on your own, or bring us in as your guides. Either
-            way, you ship with confidence instead of chaos.
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-lg text-muted-foreground">
+            Use the framework on your own, or bring us in. Either way works.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/framework">

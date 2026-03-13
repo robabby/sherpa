@@ -4,13 +4,6 @@ import Link from "next/link"
 import { motion } from "motion/react"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, MessageCircle } from "lucide-react"
-
-const stats = [
-  { value: "91%", label: "of C-suite execs admit faking AI knowledge" },
-  { value: "95%", label: "of AI pilots fail to reach production" },
-  { value: "97%", label: "say AI will transform — only 9% have deployed" },
-]
-
 import type { Easing } from "motion"
 
 const ease: Easing = [0, 0, 0.2, 1]
@@ -26,8 +19,8 @@ const fadeUp = {
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden px-6 pb-20 pt-24 md:pb-28 md:pt-32">
-      <div className="mx-auto max-w-4xl text-center">
+    <section className="relative overflow-hidden px-6 pb-24 pt-28 md:pb-36 md:pt-40">
+      <div className="mx-auto max-w-3xl text-center">
         <motion.h1
           className="font-heading text-4xl tracking-tight sm:text-5xl md:text-6xl lg:text-7xl"
           variants={fadeUp}
@@ -35,19 +28,19 @@ export function HeroSection() {
           animate="visible"
           custom={0}
         >
-          AI Adoption Is Failing.{" "}
-          <span className="text-primary">It Doesn&apos;t Have To.</span>
+          Ship AI workflows you can{" "}
+          <span className="text-primary">actually trust.</span>
         </motion.h1>
 
         <motion.p
-          className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl"
+          className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground md:text-xl"
           variants={fadeUp}
           initial="hidden"
           animate="visible"
           custom={1}
         >
-          Behavioral governance for agentic workflows — and the guides who know
-          how to use it.
+          An open-source governance framework — and a team that knows how to use
+          it.
         </motion.p>
 
         <motion.div
@@ -69,23 +62,6 @@ export function HeroSection() {
               <MessageCircle data-icon="inline-end" />
             </Button>
           </Link>
-        </motion.div>
-
-        <motion.div
-          className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3"
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          custom={3}
-        >
-          {stats.map((stat) => (
-            <div key={stat.value} className="text-center">
-              <p className="font-heading text-3xl tracking-tight text-primary md:text-4xl">
-                {stat.value}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
-            </div>
-          ))}
         </motion.div>
       </div>
     </section>

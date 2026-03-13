@@ -1,55 +1,42 @@
 import { ScrollReveal } from "@/components/motion/scroll-reveal"
 
-const steps = [
-  {
-    number: "01",
-    title: "Understand where you are",
-    description:
-      "Honest assessment of your AI maturity, team readiness, and adoption gaps. No faking, no inflated benchmarks.",
-  },
-  {
-    number: "02",
-    title: "Get honest guidance",
-    description:
-      "A clear plan grounded in behavioral governance — not a pitch deck. We show you what works, what doesn't, and why.",
-  },
-  {
-    number: "03",
-    title: "Build capability with guardrails",
-    description:
-      "Ship AI workflows that are governed, auditable, and actually reliable. The framework ensures quality at every step.",
-  },
+const stats = [
+  { value: "91%", label: "of C-suite execs admit faking AI knowledge" },
+  { value: "95%", label: "of AI pilots never reach production" },
+  { value: "9%", label: "of organizations have fully deployed AI" },
 ]
 
-export function HowItWorksSection() {
+export function RealitySection() {
   return (
-    <section className="px-6 py-20 md:py-28">
-      <div className="mx-auto max-w-5xl">
+    <section className="border-t border-border/40 px-6 py-20 md:py-28">
+      <div className="mx-auto max-w-3xl">
         <ScrollReveal>
-          <h2 className="text-center font-heading text-3xl tracking-tight md:text-4xl">
-            How it works
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-            Whether you use the framework independently or work with our team,
-            the path is the same.
+          <p className="text-center text-sm font-medium uppercase tracking-widest text-muted-foreground">
+            Here&apos;s what we&apos;re seeing
           </p>
         </ScrollReveal>
 
-        <div className="mt-14 grid gap-12 md:grid-cols-3 md:gap-8">
-          {steps.map((step, i) => (
-            <ScrollReveal key={step.number} delay={i * 0.1}>
-              <div className="text-center md:text-left">
-                <span className="font-heading text-4xl text-primary/40">
-                  {step.number}
-                </span>
-                <h3 className="mt-2 text-lg font-semibold">{step.title}</h3>
+        <div className="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-8">
+          {stats.map((stat, i) => (
+            <ScrollReveal key={stat.value} delay={i * 0.08}>
+              <div className="text-center">
+                <p className="font-heading text-4xl tracking-tight text-foreground md:text-5xl">
+                  {stat.value}
+                </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {step.description}
+                  {stat.label}
                 </p>
               </div>
             </ScrollReveal>
           ))}
         </div>
+
+        <ScrollReveal delay={0.3}>
+          <p className="mx-auto mt-12 max-w-xl text-center text-muted-foreground">
+            The gap isn&apos;t talent or ambition. It&apos;s that most teams are
+            shipping AI workflows without governance — and hoping for the best.
+          </p>
+        </ScrollReveal>
       </div>
     </section>
   )
