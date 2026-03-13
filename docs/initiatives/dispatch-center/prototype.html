@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dispatch Center — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gold: '#d4a853',
+            copper: '#c47f3c',
+            bronze: '#a67c52',
+            primitive: '#6b9e78',
+            eclipse: '#7c82a8',
+            session: '#8b7ea8',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #0a0a0b;
+      color: #e4e4e7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+    .panel {
+      background: rgba(24, 24, 27, 0.6);
+      border: 1px solid rgba(196, 127, 60, 0.15);
+      border-radius: 0.75rem;
+      backdrop-filter: blur(2px);
+    }
+    .panel-header {
+      border-bottom: 1px solid rgba(196, 127, 60, 0.1);
+      padding: 0.75rem 1rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(228, 228, 231, 0.5);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      border: 1px solid;
+      padding: 0.125rem 0.5rem;
+      font-size: 0.65rem;
+      font-weight: 500;
+    }
+    .mono-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 0.25rem;
+      border: 1px solid rgba(228, 228, 231, 0.12);
+      padding: 0.125rem 0.375rem;
+      font-size: 0.6rem;
+      font-family: ui-monospace, monospace;
+      color: rgba(228, 228, 231, 0.5);
+    }
+    .health-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .health-dot.up { background: #34d399; box-shadow: 0 0 6px rgba(52, 211, 153, 0.4); }
+    .health-dot.down { background: #f87171; box-shadow: 0 0 6px rgba(248, 113, 113, 0.4); }
+    .task-row {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid rgba(196, 127, 60, 0.06);
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .task-row:hover { background: rgba(196, 127, 60, 0.04); }
+    .task-row:last-child { border-bottom: none; }
+    .task-row input[type="checkbox"] {
+      accent-color: #c47f3c;
+      width: 14px;
+      height: 14px;
+    }
+    .group-header {
+      padding: 0.5rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(196, 127, 60, 0.08);
+    }
+    .group-header:hover { background: rgba(196, 127, 60, 0.03); }
+    .assignment-card {
+      padding: 0.75rem;
+      border: 1px solid rgba(196, 127, 60, 0.12);
+      border-radius: 0.5rem;
+      background: rgba(24, 24, 27, 0.4);
+      margin-bottom: 0.5rem;
+    }
+    .agent-card {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid rgba(196, 127, 60, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .agent-card:last-child { border-bottom: none; }
+    .btn-primary {
+      background: rgba(196, 127, 60, 0.15);
+      border: 1px solid rgba(196, 127, 60, 0.3);
+      color: #c47f3c;
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary:hover {
+      background: rgba(196, 127, 60, 0.25);
+      border-color: rgba(196, 127, 60, 0.5);
+    }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid rgba(228, 228, 231, 0.12);
+      color: rgba(228, 228, 231, 0.6);
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-secondary:hover {
+      border-color: rgba(228, 228, 231, 0.25);
+      color: rgba(228, 228, 231, 0.8);
+    }
+    .mode-radio {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 0.375rem;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: rgba(228, 228, 231, 0.4);
+    }
+    .mode-radio.active {
+      background: rgba(196, 127, 60, 0.12);
+      color: #c47f3c;
+    }
+    .mode-radio:hover:not(.active) {
+      color: rgba(228, 228, 231, 0.6);
+    }
+    .guard-rail {
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.7rem;
+      color: rgba(248, 113, 113, 0.8);
+      display: none;
+    }
+    .guard-rail.visible { display: flex; align-items: center; gap: 0.5rem; }
+    .elapsed {
+      font-size: 0.65rem;
+      color: rgba(228, 228, 231, 0.35);
+      font-variant-numeric: tabular-nums;
+    }
+    .type-badge {
+      font-size: 0.6rem;
+      padding: 0.1rem 0.375rem;
+      border-radius: 0.25rem;
+      font-weight: 500;
+    }
+    .type-badge.code-review { background: rgba(107, 158, 120, 0.12); color: #6b9e78; border: 1px solid rgba(107, 158, 120, 0.2); }
+    .type-badge.research { background: rgba(124, 130, 168, 0.12); color: #7c82a8; border: 1px solid rgba(124, 130, 168, 0.2); }
+    .type-badge.audit { background: rgba(212, 168, 83, 0.12); color: #d4a853; border: 1px solid rgba(212, 168, 83, 0.2); }
+    .type-badge.content-generation { background: rgba(196, 127, 60, 0.12); color: #c47f3c; border: 1px solid rgba(196, 127, 60, 0.2); }
+    .type-badge.code-implementation { background: rgba(107, 158, 120, 0.12); color: #6b9e78; border: 1px solid rgba(107, 158, 120, 0.2); }
+    .type-badge.architect { background: rgba(212, 168, 83, 0.12); color: #d4a853; border: 1px solid rgba(212, 168, 83, 0.2); }
+    .status-dispatched {
+      border-color: rgba(196, 127, 60, 0.4);
+      background: rgba(196, 127, 60, 0.1);
+      color: #c47f3c;
+    }
+    .status-completed {
+      border-color: rgba(52, 211, 153, 0.4);
+      background: rgba(52, 211, 153, 0.1);
+      color: #34d399;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .pulse { animation: pulse-dot 2s ease-in-out infinite; }
+  </style>
+</head>
+<body class="p-6">
+  <div class="mx-auto max-w-7xl space-y-4">
+
+    <!-- Breadcrumb -->
+    <div class="text-xs text-zinc-500">
+      <span class="hover:text-zinc-300 cursor-pointer">Studio</span>
+      <span class="mx-1.5">/</span>
+      <span class="text-zinc-300">Dispatch</span>
+    </div>
+
+    <!-- Header: Mode + Stats -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-semibold text-zinc-100">Dispatch Center</h1>
+        <p class="text-xs text-zinc-500 mt-0.5">Assign tasks to backends, manage workforce</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Mode selector -->
+        <div class="flex items-center gap-1 rounded-lg border border-zinc-800 p-0.5">
+          <span class="mode-radio" onclick="setMode(this, 'interactive')">
+            <span style="font-size:10px">&#9711;</span> interactive
+          </span>
+          <span class="mode-radio active" onclick="setMode(this, 'supervised')">
+            <span style="font-size:10px">&#9679;</span> supervised
+          </span>
+          <span class="mode-radio" onclick="setMode(this, 'overnight')">
+            <span style="font-size:10px">&#9711;</span> overnight
+          </span>
+        </div>
+        <!-- Stats -->
+        <div class="flex items-center gap-3 text-xs">
+          <span class="text-zinc-500"><span class="text-copper font-medium">2</span> active</span>
+          <span class="text-zinc-500"><span class="text-zinc-300 font-medium">7</span> today</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guard rail banner (hidden by default, shown in overnight mode) -->
+    <div id="guard-rail" class="guard-rail">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Overnight mode: code-implementation and architect tasks are blocked
+    </div>
+
+    <!-- Three-panel layout -->
+    <div class="grid grid-cols-12 gap-4" style="min-height: 520px;">
+
+      <!-- LEFT: Backlog -->
+      <div class="col-span-3 panel flex flex-col">
+        <div class="panel-header flex items-center justify-between">
+          <span>Backlog</span>
+          <span class="text-copper" style="font-size:0.65rem; letter-spacing:0">10 pending</span>
+        </div>
+        <div class="flex-1 overflow-y-auto">
+          <!-- Code Review group -->
+          <div class="group-header" onclick="toggleGroup(this)">
+            <div class="flex items-center gap-2">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" class="text-zinc-500 transition-transform" style="transform: rotate(90deg)"><path d="M3 2l4 3-4 3z"/></svg>
+              <span class="type-badge code-review">code-review</span>
+            </div>
+            <span class="text-xs text-zinc-500">3</span>
+          </div>
+          <div class="group-tasks">
+            <div class="task-row">
+              <input type="checkbox" checked>
+              <div>
+                <div class="text-xs text-zinc-200">Review auth middleware</div>
+                <div class="text-[10px] text-zinc-600">studio-core · high</div>
+              </div>
+            </div>
+            <div class="task-row">
+              <input type="checkbox" checked>
+              <div>
+                <div class="text-xs text-zinc-200">Review token sync module</div>
+                <div class="text-[10px] text-zinc-600">studio-core · medium</div>
+              </div>
+            </div>
+            <div class="task-row">
+              <input type="checkbox">
+              <div>
+                <div class="text-xs text-zinc-200">Review MCP server handlers</div>
+                <div class="text-[10px] text-zinc-600">studio-mcp · medium</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Research group -->
+          <div class="group-header" onclick="toggleGroup(this)">
+            <div class="flex items-center gap-2">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" class="text-zinc-500" style="transform: rotate(90deg)"><path d="M3 2l4 3-4 3z"/></svg>
+              <span class="type-badge research">research</span>
+            </div>
+            <span class="text-xs text-zinc-500">4</span>
+          </div>
+          <div class="group-tasks">
+            <div class="task-row">
+              <input type="checkbox" checked>
+              <div>
+                <div class="text-xs text-zinc-200">Gemini content benchmarks</div>
+                <div class="text-[10px] text-zinc-600">dispatch-center · medium</div>
+              </div>
+            </div>
+            <div class="task-row">
+              <input type="checkbox">
+              <div>
+                <div class="text-xs text-zinc-200">OpenCode rate limit testing</div>
+                <div class="text-[10px] text-zinc-600">dispatch-center · low</div>
+              </div>
+            </div>
+            <div class="task-row">
+              <input type="checkbox">
+              <div>
+                <div class="text-xs text-zinc-200">Embedding model survey</div>
+                <div class="text-[10px] text-zinc-600">dispatch-center · low</div>
+              </div>
+            </div>
+            <div class="task-row">
+              <input type="checkbox">
+              <div>
+                <div class="text-xs text-zinc-200">Astrology API landscape</div>
+                <div class="text-[10px] text-zinc-600">vedic-research · medium</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audit group -->
+          <div class="group-header" onclick="toggleGroup(this)">
+            <div class="flex items-center gap-2">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" class="text-zinc-500" style="transform: rotate(90deg)"><path d="M3 2l4 3-4 3z"/></svg>
+              <span class="type-badge audit">audit</span>
+            </div>
+            <span class="text-xs text-zinc-500">2</span>
+          </div>
+          <div class="group-tasks">
+            <div class="task-row">
+              <input type="checkbox">
+              <div>
+                <div class="text-xs text-zinc-200">Convention coverage audit</div>
+                <div class="text-[10px] text-zinc-600">sherpa · low</div>
+              </div>
+            </div>
+            <div class="task-row">
+              <input type="checkbox">
+              <div>
+                <div class="text-xs text-zinc-200">CLAUDE.md token budget audit</div>
+                <div class="text-[10px] text-zinc-600">sherpa · low</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Code Implementation group -->
+          <div class="group-header" onclick="toggleGroup(this)">
+            <div class="flex items-center gap-2">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" class="text-zinc-500" style="transform: rotate(90deg)"><path d="M3 2l4 3-4 3z"/></svg>
+              <span class="type-badge code-implementation">code-impl</span>
+            </div>
+            <span class="text-xs text-zinc-500">1</span>
+          </div>
+          <div class="group-tasks">
+            <div class="task-row" style="opacity: 0.4" id="blocked-task">
+              <input type="checkbox" disabled id="blocked-checkbox">
+              <div>
+                <div class="text-xs text-zinc-200">Build dispatch scripts</div>
+                <div class="text-[10px] text-zinc-600">dispatch-center · high</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER: Assignments -->
+      <div class="col-span-5 panel flex flex-col">
+        <div class="panel-header flex items-center justify-between">
+          <span>Assignments</span>
+          <span class="text-copper" style="font-size:0.65rem; letter-spacing:0">2 active</span>
+        </div>
+        <div class="flex-1 overflow-y-auto p-3 space-y-2">
+          <!-- Active assignment 1 -->
+          <div class="assignment-card">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-medium text-zinc-200">Review config schema types</span>
+              <span class="badge status-dispatched pulse">dispatched</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="mono-badge">codex</span>
+              <span class="mono-badge">gpt-4.1</span>
+              <span class="type-badge code-review" style="font-size:0.55rem">code-review</span>
+              <span class="elapsed ml-auto">3m 42s</span>
+            </div>
+          </div>
+
+          <!-- Active assignment 2 -->
+          <div class="assignment-card">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-medium text-zinc-200">Vedic house system research</span>
+              <span class="badge status-dispatched pulse">dispatched</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="mono-badge">opencode</span>
+              <span class="mono-badge">minimax-m2.5</span>
+              <span class="type-badge research" style="font-size:0.55rem">research</span>
+              <span class="elapsed ml-auto">12m 08s</span>
+            </div>
+          </div>
+
+          <!-- Completed today -->
+          <div class="mt-4 mb-2 flex items-center gap-2">
+            <div class="h-px flex-1 bg-zinc-800"></div>
+            <span style="font-size: 0.6rem; color: rgba(228,228,231,0.3); text-transform: uppercase; letter-spacing: 0.1em;">completed today</span>
+            <div class="h-px flex-1 bg-zinc-800"></div>
+          </div>
+
+          <div class="assignment-card" style="opacity: 0.6; border-color: rgba(52,211,153,0.12)">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs text-zinc-400">Audit initiative lifecycle flow</span>
+              <span class="badge status-completed">completed</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="mono-badge">opencode</span>
+              <span class="mono-badge">nemotron-3-super</span>
+              <span class="type-badge audit" style="font-size:0.55rem">audit</span>
+              <span class="elapsed ml-auto">8m 31s</span>
+            </div>
+          </div>
+
+          <div class="assignment-card" style="opacity: 0.6; border-color: rgba(52,211,153,0.12)">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs text-zinc-400">Generate agent role descriptions</span>
+              <span class="badge status-completed">completed</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="mono-badge">gemini</span>
+              <span class="mono-badge">gemini-2.5-flash</span>
+              <span class="type-badge content-generation" style="font-size:0.55rem">content</span>
+              <span class="elapsed ml-auto">2m 14s</span>
+            </div>
+          </div>
+
+          <div class="assignment-card" style="opacity: 0.6; border-color: rgba(52,211,153,0.12)">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs text-zinc-400">Review patterns module</span>
+              <span class="badge status-completed">completed</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="mono-badge">codex</span>
+              <span class="mono-badge">gpt-4.1</span>
+              <span class="type-badge code-review" style="font-size:0.55rem">code-review</span>
+              <span class="elapsed ml-auto">5m 47s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Workforce -->
+      <div class="col-span-4 panel flex flex-col">
+        <div class="panel-header">Workforce</div>
+        <div class="flex-1 overflow-y-auto">
+
+          <!-- Backends section -->
+          <div class="p-3 space-y-2">
+            <div class="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">Backends</div>
+
+            <div class="flex items-center justify-between py-1">
+              <div class="flex items-center gap-2">
+                <span class="health-dot up"></span>
+                <span class="text-xs text-zinc-300">Claude</span>
+              </div>
+              <span class="mono-badge">opus-4.6 · sonnet-4.6</span>
+            </div>
+            <div class="flex items-center justify-between py-1">
+              <div class="flex items-center gap-2">
+                <span class="health-dot up"></span>
+                <span class="text-xs text-zinc-300">OpenCode</span>
+              </div>
+              <span class="mono-badge">nemotron · minimax · mimo</span>
+            </div>
+            <div class="flex items-center justify-between py-1">
+              <div class="flex items-center gap-2">
+                <span class="health-dot up"></span>
+                <span class="text-xs text-zinc-300">Codex</span>
+              </div>
+              <span class="mono-badge">gpt-4.1</span>
+            </div>
+            <div class="flex items-center justify-between py-1">
+              <div class="flex items-center gap-2">
+                <span class="health-dot up"></span>
+                <span class="text-xs text-zinc-300">Gemini</span>
+              </div>
+              <span class="mono-badge">2.5-pro · 2.5-flash</span>
+            </div>
+            <div class="flex items-center justify-between py-1">
+              <div class="flex items-center gap-2">
+                <span class="health-dot down"></span>
+                <span class="text-xs text-zinc-500">LM Studio</span>
+              </div>
+              <span class="mono-badge" style="opacity:0.4">offline</span>
+            </div>
+          </div>
+
+          <div class="border-t border-zinc-800/60 mx-3"></div>
+
+          <!-- Agents section -->
+          <div class="p-3">
+            <div class="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">Agents</div>
+
+            <div class="agent-card">
+              <div>
+                <div class="text-xs text-zinc-300">engineer</div>
+                <div class="flex items-center gap-1 mt-0.5">
+                  <span class="type-badge code-implementation" style="font-size:0.5rem">code-impl</span>
+                  <span class="type-badge code-review" style="font-size:0.5rem">code-review</span>
+                </div>
+              </div>
+              <button class="btn-secondary" style="font-size:0.6rem; padding: 0.2rem 0.5rem;">Assign</button>
+            </div>
+
+            <div class="agent-card">
+              <div>
+                <div class="text-xs text-zinc-300">code-reviewer</div>
+                <div class="flex items-center gap-1 mt-0.5">
+                  <span class="type-badge code-review" style="font-size:0.5rem">code-review</span>
+                  <span class="type-badge audit" style="font-size:0.5rem">audit</span>
+                </div>
+              </div>
+              <button class="btn-secondary" style="font-size:0.6rem; padding: 0.2rem 0.5rem;">Assign</button>
+            </div>
+
+            <div class="agent-card">
+              <div>
+                <div class="text-xs text-zinc-300">research-lead</div>
+                <div class="flex items-center gap-1 mt-0.5">
+                  <span class="type-badge research" style="font-size:0.5rem">research</span>
+                </div>
+              </div>
+              <button class="btn-secondary" style="font-size:0.6rem; padding: 0.2rem 0.5rem;">Assign</button>
+            </div>
+
+            <div class="agent-card">
+              <div>
+                <div class="text-xs text-zinc-300">architect</div>
+                <div class="flex items-center gap-1 mt-0.5">
+                  <span class="type-badge architect" style="font-size:0.5rem">architect</span>
+                </div>
+              </div>
+              <button class="btn-secondary" style="font-size:0.6rem; padding: 0.2rem 0.5rem;">Assign</button>
+            </div>
+
+            <div class="agent-card">
+              <div>
+                <div class="text-xs text-zinc-300">technical-writer</div>
+                <div class="flex items-center gap-1 mt-0.5">
+                  <span class="type-badge content-generation" style="font-size:0.5rem">content</span>
+                </div>
+              </div>
+              <button class="btn-secondary" style="font-size:0.6rem; padding: 0.2rem 0.5rem;">Assign</button>
+            </div>
+
+            <div class="agent-card">
+              <div>
+                <div class="text-xs text-zinc-300">judge</div>
+                <div class="flex items-center gap-1 mt-0.5">
+                  <span class="type-badge code-review" style="font-size:0.5rem">code-review</span>
+                </div>
+              </div>
+              <button class="btn-secondary" style="font-size:0.6rem; padding: 0.2rem 0.5rem;">Assign</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom bar: Queue controls -->
+    <div class="panel flex items-center justify-between px-4 py-3">
+      <div class="flex items-center gap-3">
+        <button class="btn-primary" id="dispatch-btn">Dispatch Selected (3)</button>
+        <button class="btn-secondary">Auto-Dispatch</button>
+      </div>
+      <div class="flex items-center gap-4 text-xs text-zinc-500">
+        <span><span class="text-copper font-medium">3</span> selected</span>
+        <span><span class="text-zinc-300 font-medium">2</span> active</span>
+        <span><span class="text-emerald-400 font-medium">5</span> completed today</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function setMode(el, mode) {
+      document.querySelectorAll('.mode-radio').forEach(r => {
+        r.classList.remove('active');
+        r.innerHTML = r.innerHTML.replace('&#9679;', '&#9711;');
+      });
+      el.classList.add('active');
+      el.innerHTML = el.innerHTML.replace('&#9711;', '&#9679;');
+
+      const guardrail = document.getElementById('guard-rail');
+      const blockedTask = document.getElementById('blocked-task');
+      const blockedCb = document.getElementById('blocked-checkbox');
+
+      if (mode === 'overnight') {
+        guardrail.classList.add('visible');
+        blockedTask.style.opacity = '0.2';
+        blockedCb.disabled = true;
+        blockedCb.checked = false;
+      } else {
+        guardrail.classList.remove('visible');
+        blockedTask.style.opacity = mode === 'interactive' ? '1' : '0.4';
+        blockedCb.disabled = mode !== 'interactive';
+      }
+    }
+
+    function toggleGroup(header) {
+      const tasks = header.nextElementSibling;
+      const arrow = header.querySelector('svg');
+      if (tasks.style.display === 'none') {
+        tasks.style.display = 'block';
+        arrow.style.transform = 'rotate(90deg)';
+      } else {
+        tasks.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // Update selected count when checkboxes change
+    document.addEventListener('change', function(e) {
+      if (e.target.type === 'checkbox') {
+        const count = document.querySelectorAll('.task-row input[type="checkbox"]:checked').length;
+        document.getElementById('dispatch-btn').textContent = `Dispatch Selected (${count})`;
+      }
+    });
+  </script>
+</body>
+</html>

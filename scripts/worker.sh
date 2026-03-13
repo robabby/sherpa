@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# scripts/worker.sh — Unified headless worker
+#
+# Reads a task file, validates mode guard rails, sets SHERPA_* env vars,
+# and delegates to the appropriate backend module.
+#
+# Usage: ./scripts/worker.sh <task-slug>
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# ── Usage ──────────────────────────────────────────────────────────────
+if [[ $# -lt 1 ]]; then
+  echo "Usage: worker.sh <task-slug>" >&2
+  echo "  Dispatches a task from docs/tasks/ to the configured backend." >&2
+  exit 1
+fi
+
+TASK_SLUG="$1"
+
+# ── Resolve task ───────────────────────────────────────────────────────
+TASK_JSON=$(node "$SCRIPT_DIR/task-scanner.mjs" --id "$TASK_SLUG")
+
+# task-scanner returns a JSON array — check if empty
+TASK_COUNT=$(echo "$TASK_JSON" | node -e "
+  let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{
+    const arr=JSON.parse(d); console.log(arr.length);
+  });
+")
+
+if [[ "$TASK_COUNT" -eq 0 ]]; then
+  echo "ERROR: Task not found: $TASK_SLUG" >&2
+  exit 1
+fi
+
+# Extract first (only) match
+extract() {
+  echo "$TASK_JSON" | node -e "
+    let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{
+      const arr=JSON.parse(d); console.log(arr[0]['$1'] ?? '');
+    });
+  "
+}
+
+# Extract body (may contain quotes/newlines — use base64 round-trip)
+extract_body() {
+  echo "$TASK_JSON" | node -e "
+    let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{
+      const arr=JSON.parse(d);
+      process.stdout.write(arr[0].body ?? '');
+    });
+  "
+}
+
+BACKEND=$(extract backend)
+MODEL=$(extract model)
+TASK_TYPE=$(extract task-type)
+MODE=$(extract mode)
+BUDGET_USD=$(extract budget-usd)
+TASK_FILE="$REPO_ROOT/docs/tasks/${TASK_SLUG}.md"
+WORKTREE=$(extract worktree)
+
+# Fallback defaults
+BACKEND="${BACKEND:-claude}"
+MODEL="${MODEL:-claude-sonnet-4-6}"
+MODE="${MODE:-headless}"
+BUDGET_USD="${BUDGET_USD:-1.00}"
+
+# ── Mode guard rails ──────────────────────────────────────────────────
+if [[ "$MODE" == "overnight" ]]; then
+  if [[ "$TASK_TYPE" == "code-implementation" || "$TASK_TYPE" == "architect" ]]; then
+    echo "ERROR: Mode 'overnight' cannot run task-type '$TASK_TYPE'. These types require interactive oversight." >&2
+    exit 1
+  fi
+fi
+
+# ── Build worker prompt ───────────────────────────────────────────────
+TASK_BODY=$(extract_body)
+
+WORKER_PROMPT="You are a Sherpa agent dispatched to complete a task autonomously.
+
+Read the task below carefully. Complete ALL acceptance criteria. Commit your work with descriptive messages. Do NOT create a PR.
+
+CONSTRAINTS:
+- Stay within the scope. Do not make changes outside the deliverables.
+- If blocked, write a note to docs/tasks/logs/${TASK_SLUG}-blockers.md explaining the issue.
+- When finished, create docs/tasks/logs/${TASK_SLUG}-report.md summarizing: what you did, files changed, and any notes.
+
+TASK:
+
+${TASK_BODY}"
+
+# ── Ensure logs directory ─────────────────────────────────────────────
+mkdir -p "$REPO_ROOT/docs/tasks/logs"
+
+# ── Export SHERPA_* env vars ──────────────────────────────────────────
+export SHERPA_TASK_SLUG="$TASK_SLUG"
+export SHERPA_TASK_FILE="$TASK_FILE"
+export SHERPA_TASK_PROMPT="$WORKER_PROMPT"
+export SHERPA_LOG_FILE="$REPO_ROOT/docs/tasks/logs/${TASK_SLUG}.log"
+export SHERPA_MODEL="$MODEL"
+export SHERPA_BUDGET_USD="$BUDGET_USD"
+export SHERPA_WORKTREE="${WORKTREE:-}"
+export SHERPA_MODE="$MODE"
+export SHERPA_SYSTEM_PROMPT="You are executing task $TASK_SLUG for the Sherpa framework. Follow all instructions precisely."
+
+# ── Update status to dispatched ───────────────────────────────────────
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S")
+node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" status dispatched
+node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" dispatched-at "$TIMESTAMP"
+
+echo "[worker] Dispatching task=$TASK_SLUG backend=$BACKEND model=$MODEL mode=$MODE" >&2
+
+# ── Resolve backend module ────────────────────────────────────────────
+if [[ "$BACKEND" == "lm-studio" ]]; then
+  BACKEND_SCRIPT="$SCRIPT_DIR/backends/lm-studio.mjs"
+else
+  BACKEND_SCRIPT="$SCRIPT_DIR/backends/${BACKEND}.sh"
+fi
+
+if [[ ! -f "$BACKEND_SCRIPT" ]]; then
+  echo "ERROR: Backend not found: $BACKEND_SCRIPT" >&2
+  node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" status failed
+  exit 1
+fi
+
+# ── Delegate to backend ───────────────────────────────────────────────
+EXIT_CODE=0
+if [[ "$BACKEND_SCRIPT" == *.mjs ]]; then
+  node "$BACKEND_SCRIPT" || EXIT_CODE=$?
+else
+  bash "$BACKEND_SCRIPT" || EXIT_CODE=$?
+fi
+
+# ── Update final status ──────────────────────────────────────────────
+COMPLETED_AT=$(date -u +"%Y-%m-%dT%H:%M:%S")
+if [[ "$EXIT_CODE" -eq 0 ]]; then
+  node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" status completed
+  node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" completed-at "$COMPLETED_AT"
+  echo "[worker] Task $TASK_SLUG completed successfully." >&2
+else
+  node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" status failed
+  echo "[worker] Task $TASK_SLUG failed with exit code $EXIT_CODE." >&2
+fi
+
+exit "$EXIT_CODE"
