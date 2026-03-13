@@ -4,6 +4,7 @@ export * from "./schemas"
 
 // Pure logic
 export * from "./lifecycle"
+export * from "./playbooks"
 export * from "./process-nodes-shared"
 
 // Self-contained modules
@@ -17,6 +18,12 @@ export * from "./prompts"
 
 // Catalogs
 export * from "./catalog"
+
+// Design tokens
+export * from "./tokens"
+
+// Design patterns
+export * from "./patterns"
 
 // I/O
 export * from "./content"
