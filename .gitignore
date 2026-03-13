@@ -8,8 +8,9 @@ out/
 storybook-static/
 *.tsbuildinfo
 
-# Storybook build artifact (copied into Next.js public/)
+# Storybook build artifact (copied into public/ for deployment)
 apps/studio/public/storybook/
+apps/website/public/storybook/
 
 # Environment
 .env
