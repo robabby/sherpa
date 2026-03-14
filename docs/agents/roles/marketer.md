@@ -18,8 +18,10 @@ quality-bar:
 context-packages:
   - docs/ux/vision.md
   - docs/ux/voice-and-tone.md
-  - docs/architecture/intelligence-native.md
   - docs/ux/personas.md
+  - docs/ux/messaging-framework.md
+  - docs/ux/agent-voice.md
+  - docs/architecture/intelligence-native.md
 rules:
   - intelligence-native.md
   - modern-mystic-web.md

@@ -20,6 +20,8 @@ context-packages:
   - apps/web/CLAUDE.md
   - apps/web/src/lib/CLAUDE.md
   - docs/ux/voice-and-tone.md
+  - docs/ux/content-guidelines.md
+  - docs/ux/agent-voice.md
 rules:
   - claude-md-standards.md
   - intelligence-native.md

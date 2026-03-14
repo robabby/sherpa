@@ -130,6 +130,7 @@ export const DOC_CATEGORIES = [
   "ux",
   "architecture",
   "curation",
+  "templates",
 ] as const;
 
 // Derived types

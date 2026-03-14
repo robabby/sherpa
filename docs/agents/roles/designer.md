@@ -19,6 +19,7 @@ context-packages:
   - docs/ux/vision.md
   - docs/ux/design-principles.md
   - docs/ux/voice-and-tone.md
+  - docs/ux/component-content.md
   - docs/ux/interaction-patterns.md
   - apps/web/src/components/CLAUDE.md
 rules:
