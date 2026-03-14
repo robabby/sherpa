@@ -37,4 +37,24 @@ worktree: null
 - Updated marketer, technical-writer, designer role context-packages
 - Added "templates" to DOC_CATEGORIES in studio-core
 
-**Status:** Implementation complete. Session 3 (validation against real website content) deferred until website Sessions 2-3 produce content to test against.
+## 2026-03-14 — Session 3: Validation against website content
+
+Validated all guidelines against 8 website pages + 4 homepage sections (hero, dual-value, trust, CTA).
+
+**Where guidelines helped (strong alignment):**
+- Avoid-list: 100% clean across all website copy
+- Headline Test: All headlines pass
+- Voice attributes: Consistent across every page
+- Tone shifts by context: Correct per tone matrix
+- Persona alignment: Clear framework→Practitioner, consulting→buyer mapping
+- "We use what we ship" correctly positioned as loudest structural claim (appears 3x)
+
+**Where guidelines went silent (gaps filled):**
+- CTA button copy patterns ("Talk to a Guide") — noted, not critical
+- Meta description conventions — added to grammar-and-mechanics.md
+- "Guide" capitalization as brand metaphor — added to grammar-and-mechanics.md
+
+**Where guidelines and website disagreed (resolved):**
+- Case study format: website uses Context/Challenge/What We Did/Results but template specifies the distinctive "What Was Hard" section. Resolved: web summary cards can abbreviate; long-form case studies must include "What Was Hard."
+
+**Status:** Initiative complete. Guidelines validated against real content, minor refinements applied.

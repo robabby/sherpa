@@ -1,6 +1,8 @@
 # Case Study Template
 
-> Sherpa case studies use a distinctive four-section format. The "What Was Hard" section is a differentiator. Every competitor publishes sanitized success stories. Sherpa includes friction because honesty is a design principle.
+> Sherpa case studies use a distinctive four-section format. The "What Was Hard" section is a differentiator — every competitor publishes sanitized success stories. Sherpa includes friction because honesty is a design principle.
+>
+> **Web summary cards** (like `/work`) may use an abbreviated format (Context, Challenge, What we did, Results) for scannability. The full template below is for long-form case studies, blog posts, and downloadable PDFs — always include "What Was Hard."
 
 ```yaml
 ---

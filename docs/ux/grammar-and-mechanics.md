@@ -9,6 +9,7 @@ Rules for capitalization, numbers, punctuation, and formatting — so every cont
 - **Headings:** Sentence case ("Define behavioral constraints," not "Define Behavioral Constraints")
 - **Product names:** Title case for proper nouns only — Sherpa, Studio, WavePoint
 - **Framework concepts:** Lowercase — "initiative," "behavioral constraint," "quality gate," "open source"
+- **Brand metaphors:** Capitalize when used as a title or role — "Talk to a Guide," "Guide, not guru"
 - **Acronyms:** All caps, no periods — AI, CLI, MCP, API
 
 ## Numbers
@@ -39,6 +40,13 @@ Rules for capitalization, numbers, punctuation, and formatting — so every cont
 - **Bullet lists** for unordered items
 - Capitalize the first word of each item
 - Parallel structure — all items start with the same part of speech
+
+## Meta descriptions
+
+- 120-155 characters (Google truncates at ~155)
+- Lead with what the page does, not who Sherpa is
+- Match the page's tone variant — marketing pages warmer, docs pages more direct
+- No avoid-list words
 
 ## Technical formatting
 
