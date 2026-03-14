@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, MotionConfig } from "motion/react";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -320,9 +321,13 @@ function BacklogPanel({
                         className="h-3.5 w-3.5 shrink-0 accent-[var(--color-copper)]"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs text-foreground">
+                        <Link
+                          href={`/tasks/${task.id}`}
+                          className="block truncate text-xs text-foreground transition-colors hover:text-[var(--color-copper)]"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {task.title}
-                        </p>
+                        </Link>
                         <p className="text-[10px] text-muted-foreground/40">
                           {task.initiative ?? "general"} &middot; {task.priority}
                         </p>
@@ -380,9 +385,12 @@ function AssignmentsPanel({
               className="rounded-lg border border-[var(--color-copper)]/12 bg-card/40 p-3"
             >
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-xs font-medium text-foreground">
+                <Link
+                  href={`/tasks/${task.id}`}
+                  className="text-xs font-medium text-foreground transition-colors hover:text-[var(--color-copper)]"
+                >
                   {task.title}
-                </span>
+                </Link>
                 <span
                   className={cn(
                     "inline-flex animate-pulse items-center rounded-full border px-2 py-0.5 text-[10px]",
@@ -444,9 +452,12 @@ function AssignmentsPanel({
                   className="rounded-lg border border-emerald-500/12 bg-card/40 p-3 opacity-60"
                 >
                   <div className="mb-1.5 flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
+                    <Link
+                      href={`/tasks/${task.id}`}
+                      className="text-xs text-muted-foreground transition-colors hover:text-[var(--color-copper)]"
+                    >
                       {task.title}
-                    </span>
+                    </Link>
                     <span
                       className={cn(
                         "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px]",
@@ -832,6 +843,17 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
           </div>
         </motion.div>
 
+        {/* Queue controls — above the panels */}
+        <motion.div variants={fadeVariant}>
+          <QueueControls
+            selectedCount={selectedCount}
+            activeCount={activeCount}
+            completedTodayCount={completedTodayCount}
+            dispatching={dispatching}
+            onDispatch={handleDispatch}
+          />
+        </motion.div>
+
         {/* Guard rail banner */}
         <GuardRailBanner visible={mode === "overnight"} />
 
@@ -852,17 +874,6 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
             completedToday={completedToday}
           />
           <WorkforcePanel health={health} roles={roles} />
-        </motion.div>
-
-        {/* Bottom bar: Queue controls */}
-        <motion.div variants={fadeVariant}>
-          <QueueControls
-            selectedCount={selectedCount}
-            activeCount={activeCount}
-            completedTodayCount={completedTodayCount}
-            dispatching={dispatching}
-            onDispatch={handleDispatch}
-          />
         </motion.div>
       </motion.div>
     </MotionConfig>
