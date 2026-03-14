@@ -22,6 +22,9 @@ const DEFAULT_ROUTES = {
 const FALLBACK = { backend: 'opencode', model: 'minimax-m2.5-free' }
 const OVERNIGHT_BLOCKED = ['code-implementation', 'architect']
 
+// Paths that force Claude backend regardless of task-type routing
+const CLAUDE_ONLY_PATTERNS = ['CLAUDE.md', '.claude/', 'docs/agents/roles/']
+
 const args = process.argv.slice(2)
 
 if (args.length === 0 || args[0] === '--help') {
@@ -34,10 +37,12 @@ let taskType = null
 let mode = 'supervised'
 let backendOverride = null
 let modelOverride = null
+let targets = []
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--backend') { backendOverride = args[++i]; continue }
   if (args[i] === '--model') { modelOverride = args[++i]; continue }
+  if (args[i] === '--targets') { targets = args[++i]?.split(',').filter(Boolean) ?? []; continue }
   if (!taskType) { taskType = args[i]; continue }
   mode = args[i]
 }
@@ -53,8 +58,14 @@ if (mode === 'overnight' && OVERNIGHT_BLOCKED.includes(taskType)) {
   process.exit(1)
 }
 
+// Claude-only constraint: governance files force Claude backend
+const needsClaude = targets.length > 0 &&
+  targets.some(t => CLAUDE_ONLY_PATTERNS.some(p => t.includes(p)))
+
 // Resolve
-if (backendOverride) {
+if (needsClaude) {
+  console.log(JSON.stringify({ backend: 'claude', model: modelOverride || 'claude-sonnet-4-6' }))
+} else if (backendOverride) {
   console.log(JSON.stringify({ backend: backendOverride, model: modelOverride || null }))
 } else {
   const route = DEFAULT_ROUTES[taskType] || FALLBACK

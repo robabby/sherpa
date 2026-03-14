@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   ChevronRight,
   Play,
+  RotateCcw,
   Zap,
 } from "lucide-react";
 
@@ -355,10 +356,14 @@ function BacklogPanel({
 
 function AssignmentsPanel({
   active,
+  failed,
   completedToday,
+  onResetTask,
 }: {
   active: TaskBoardEntry[];
+  failed: TaskBoardEntry[];
   completedToday: TaskBoardEntry[];
+  onResetTask: (taskId: string) => void;
 }) {
   return (
     <div className="col-span-5 flex flex-col overflow-hidden rounded-lg border border-[var(--color-copper)]/15 bg-card/30 backdrop-blur-[2px]">
@@ -429,6 +434,71 @@ function AssignmentsPanel({
           <div className="py-6 text-center text-xs text-muted-foreground/40">
             No active assignments
           </div>
+        )}
+
+        {/* Failed tasks */}
+        {failed.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 py-2">
+              <div className="h-px flex-1 bg-rose-500/15" />
+              <span className="text-[10px] uppercase tracking-[0.1em] text-rose-500/50">
+                failed
+              </span>
+              <div className="h-px flex-1 bg-rose-500/15" />
+            </div>
+
+            {failed.map((task) => {
+              const statusBadge = STATUS_STYLES.failed!;
+              const typeStyle = getTaskTypeStyle(task.taskType);
+
+              return (
+                <div
+                  key={task.id}
+                  className="rounded-lg border border-rose-500/15 bg-card/40 p-3"
+                >
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <Link
+                      href={`/tasks/${task.id}`}
+                      className="text-xs font-medium text-foreground transition-colors hover:text-rose-400"
+                    >
+                      {task.title}
+                    </Link>
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px]",
+                        statusBadge.className
+                      )}
+                    >
+                      {statusBadge.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">
+                      {task.backend}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] font-medium",
+                        typeStyle.className
+                      )}
+                    >
+                      {typeStyle.label}
+                    </span>
+                    <span className="ml-auto text-[10px] tabular-nums text-muted-foreground/35">
+                      {formatElapsed(task.dispatchedAt)}
+                    </span>
+                    <button
+                      onClick={() => onResetTask(task.id)}
+                      className="flex items-center gap-1 rounded border border-rose-500/20 bg-rose-500/8 px-2 py-0.5 text-[10px] text-rose-400 transition-colors hover:border-rose-500/40 hover:bg-rose-500/15"
+                    >
+                      <RotateCcw className="h-2.5 w-2.5" />
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </>
         )}
 
         {/* Completed today divider */}
@@ -802,6 +872,11 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
     [tasks]
   );
 
+  const failedTasks = useMemo(
+    () => tasks.filter((t) => t.status === "failed"),
+    [tasks]
+  );
+
   const completedToday = useMemo(
     () => tasks.filter((t) => t.status === "completed" && isToday(t.completedAt)),
     [tasks]
@@ -908,18 +983,29 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
     setDispatching(false);
   }, [selectedIds, mode, selectedAgent, selectedBackend, router]);
 
+  // Reset a failed task back to pending
+  const handleResetTask = useCallback(async (taskId: string) => {
+    await fetch("/api/dispatch/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taskId }),
+    });
+    router.refresh();
+  }, [router]);
+
   // Polling: refresh when there are dispatched tasks
   useEffect(() => {
-    if (activeTasks.length === 0) return;
+    if (activeTasks.length === 0 && !dispatching) return;
     const interval = setInterval(() => {
       router.refresh();
     }, 5000);
     return () => clearInterval(interval);
-  }, [activeTasks.length, router]);
+  }, [activeTasks.length, dispatching, router]);
 
   // Stats
   const selectedCount = selectedIds.size;
   const activeCount = activeTasks.length;
+  const failedCount = failedTasks.length;
   const completedTodayCount = completedToday.length;
 
   return (
@@ -950,6 +1036,14 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
                 </span>{" "}
                 active
               </span>
+              {failedCount > 0 && (
+                <span className="text-muted-foreground/50">
+                  <span className="font-medium text-rose-400">
+                    {failedCount}
+                  </span>{" "}
+                  failed
+                </span>
+              )}
               <span className="text-muted-foreground/50">
                 <span className="font-medium text-foreground">
                   {completedTodayCount}
@@ -990,7 +1084,9 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
           />
           <AssignmentsPanel
             active={activeTasks}
+            failed={failedTasks}
             completedToday={completedToday}
+            onResetTask={handleResetTask}
           />
           <WorkforcePanel
             health={health}

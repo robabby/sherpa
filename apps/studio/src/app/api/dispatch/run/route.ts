@@ -44,8 +44,12 @@ export async function POST(request: Request) {
     source: "studio-ui",
   })
 
-  // Update task frontmatter with selections
-  const updates: [string, string][] = []
+  // Update task frontmatter with selections + status
+  const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "")
+  const updates: [string, string][] = [
+    ["status", "dispatched"],
+    ["dispatched-at", timestamp],
+  ]
   if (mode) updates.push(["mode", mode])
   if (backend) updates.push(["backend", backend])
 

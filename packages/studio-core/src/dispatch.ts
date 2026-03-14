@@ -49,9 +49,30 @@ export const DEFAULT_DISPATCH: DispatchConfig = {
   },
 }
 
+/**
+ * File paths that require the Claude backend regardless of task-type routing.
+ * Governance files need Claude's full capabilities.
+ */
+const CLAUDE_ONLY_PATTERNS = [
+  'CLAUDE.md',
+  '.claude/',
+  'docs/agents/roles/',
+]
+
+/**
+ * Check if any target paths require the Claude backend.
+ */
+export function requiresClaude(targets: string[]): boolean {
+  return targets.some(target =>
+    CLAUDE_ONLY_PATTERNS.some(pattern => target.includes(pattern))
+  )
+}
+
 export interface RouteOverrides {
   backend?: Backend
   model?: string
+  /** File paths the task targets — used for Claude-only constraint. */
+  targets?: string[]
 }
 
 /**
@@ -68,6 +89,11 @@ export function resolveRoute(
   _mode: DispatchMode,
   overrides?: RouteOverrides,
 ): BackendRoute {
+  // Claude-only constraint: governance files force Claude backend
+  if (overrides?.targets && requiresClaude(overrides.targets)) {
+    return { backend: 'claude', model: overrides?.model ?? 'claude-sonnet-4-6' }
+  }
+
   if (overrides?.backend) {
     return { backend: overrides.backend, model: overrides.model }
   }
