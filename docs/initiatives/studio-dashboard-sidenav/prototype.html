@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Dashboard & Side-Nav — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Fraunces', 'serif'],
+            sans: ['DM Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            sidebar: {
+              DEFAULT: '#0e0e10',
+              foreground: '#e8e4e0',
+              primary: '#e8e4e0',
+              accent: '#1a1a1e',
+              border: '#1e1e22',
+              ring: '#d4a574',
+              muted: '#6b6560',
+            },
+            obsidian: '#0a0a0c',
+            charcoal: '#141416',
+            gold: '#d4a574',
+            copper: '#c49a6c',
+            bronze: '#8b7355',
+            cream: '#e8e4e0',
+            eclipse: '#7c3aed',
+            session: '#6366f1',
+            mcp: '#0891b2',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #0a0a0c; color: #e8e4e0; font-family: 'DM Sans', sans-serif; }
+
+    /* Sidebar */
+    .sidebar { width: 240px; background: #0e0e10; border-right: 1px solid rgba(255,255,255,0.04); transition: width 200ms ease; }
+    .sidebar.collapsed { width: 48px; }
+    .sidebar.collapsed .sidebar-label,
+    .sidebar.collapsed .sidebar-text,
+    .sidebar.collapsed .sidebar-header-text,
+    .sidebar.collapsed .group-label { display: none; }
+    .sidebar.collapsed .sidebar-icon { margin: 0 auto; }
+    .sidebar.collapsed .nav-item { justify-content: center; padding: 8px 0; }
+
+    /* Nav items */
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px; border-radius: 6px; cursor: pointer;
+      transition: all 150ms ease; position: relative;
+      font-size: 13.5px; font-weight: 400; color: #8a857f;
+    }
+    .nav-item:hover { background: #1a1a1e; color: #c4bfb8; }
+    .nav-item.active {
+      background: #1a1a1e; color: #e8e4e0;
+      border-left: 2px solid #d4a574;
+      padding-left: 10px;
+    }
+    .nav-item .sidebar-icon { width: 18px; height: 18px; opacity: 0.55; flex-shrink: 0; }
+    .nav-item:hover .sidebar-icon { opacity: 0.8; }
+    .nav-item.active .sidebar-icon { opacity: 1; }
+
+    /* Group labels */
+    .group-label {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      color: #4a4540; padding: 16px 12px 6px;
+    }
+
+    /* Glass border */
+    .glass-border { border-color: rgba(255,255,255,0.04); }
+
+    /* Tier glow */
+    .tier-1-glow {
+      background: radial-gradient(ellipse 600px 120px at 50% 0%, rgba(212,165,116,0.06), transparent);
+    }
+
+    /* Dashboard widgets */
+    .widget {
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 10px; padding: 16px; transition: border-color 150ms;
+    }
+    .widget:hover { border-color: rgba(255,255,255,0.08); }
+
+    /* Action card */
+    .action-card {
+      background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px; padding: 12px 14px; display: flex;
+      align-items: center; justify-content: space-between;
+      transition: all 150ms;
+    }
+    .action-card:hover { background: rgba(255,255,255,0.04); border-color: rgba(212,165,116,0.15); }
+
+    /* Badge */
+    .badge {
+      font-size: 11px; font-weight: 500; padding: 2px 8px;
+      border-radius: 4px; font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-review { background: rgba(212,165,116,0.12); color: #d4a574; }
+    .badge-failed { background: rgba(239,68,68,0.12); color: #f87171; }
+    .badge-stale { background: rgba(234,179,8,0.12); color: #facc15; }
+    .badge-running { background: rgba(99,102,241,0.12); color: #818cf8; }
+    .badge-progress { background: rgba(34,197,94,0.12); color: #4ade80; }
+
+    /* Status dots */
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .dot-green { background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,0.4); }
+    .dot-amber { background: #facc15; box-shadow: 0 0 6px rgba(250,204,21,0.3); }
+
+    /* All-clear state */
+    .all-clear {
+      text-align: center; padding: 32px; color: #6b6560;
+      background: radial-gradient(ellipse 400px 80px at 50% 50%, rgba(212,165,116,0.04), transparent);
+      border-radius: 10px;
+    }
+
+    /* Collapsible trigger */
+    .collapse-trigger {
+      display: flex; align-items: center; gap: 8px;
+      cursor: pointer; color: #6b6560; font-size: 13px;
+      padding: 8px 0; transition: color 150ms;
+    }
+    .collapse-trigger:hover { color: #a09890; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+    /* Tooltip for collapsed sidebar */
+    .sidebar.collapsed .nav-item { position: relative; }
+    .sidebar.collapsed .nav-item:hover::after {
+      content: attr(data-label); position: absolute; left: 52px; top: 50%;
+      transform: translateY(-50%); background: #1e1e22; color: #e8e4e0;
+      padding: 4px 10px; border-radius: 5px; font-size: 12.5px;
+      white-space: nowrap; z-index: 50; border: 1px solid rgba(255,255,255,0.06);
+    }
+  </style>
+</head>
+<body class="h-screen overflow-hidden">
+  <div class="flex h-full">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar" class="sidebar flex flex-col h-full overflow-hidden flex-shrink-0">
+      <!-- Header -->
+      <div class="flex items-center gap-3 px-3 py-4 border-b glass-border">
+        <div class="w-7 h-7 rounded-md bg-gradient-to-br from-gold/30 to-copper/20 flex items-center justify-center flex-shrink-0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4a574" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 13v-2z"/></svg>
+        </div>
+        <div class="sidebar-header-text">
+          <div class="font-display text-sm font-semibold text-cream tracking-wide">Sherpa</div>
+          <div class="text-[10px] font-mono text-sidebar-muted uppercase tracking-widest">Studio</div>
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <nav class="flex-1 overflow-y-auto px-2 py-2">
+        <!-- Operations -->
+        <div class="group-label">Operations</div>
+        <div class="nav-item active" data-label="Process">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          <span class="sidebar-text">Process</span>
+        </div>
+        <div class="nav-item" data-label="Tasks">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span class="sidebar-text">Tasks</span>
+        </div>
+        <div class="nav-item" data-label="Dispatch">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span class="sidebar-text">Dispatch</span>
+        </div>
+        <div class="nav-item" data-label="Workflow">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="10" y="3" width="4" height="18" rx="1"/><rect x="18" y="8" width="4" height="8" rx="1"/></svg>
+          <span class="sidebar-text">Workflow</span>
+        </div>
+
+        <!-- Knowledge -->
+        <div class="group-label">Knowledge</div>
+        <div class="nav-item" data-label="Docs">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span class="sidebar-text">Docs</span>
+        </div>
+        <div class="nav-item" data-label="Conventions">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <span class="sidebar-text">Conventions</span>
+        </div>
+        <div class="nav-item" data-label="Skills">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span class="sidebar-text">Skills</span>
+        </div>
+        <div class="nav-item" data-label="Playbooks">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span class="sidebar-text">Playbooks</span>
+        </div>
+
+        <!-- System -->
+        <div class="group-label">System</div>
+        <div class="nav-item" data-label="Workforce">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="sidebar-text">Workforce</span>
+        </div>
+        <div class="nav-item" data-label="Sessions">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="sidebar-text">Sessions</span>
+        </div>
+        <div class="nav-item" data-label="MCP">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m2 12 5.45 2.73M12 2v4.64M22 12l-5.45 2.73"/><path d="m12 22-3.27-6.55M12 22l3.27-6.55M7.45 14.73 12 6.64l4.55 8.09"/></svg>
+          <span class="sidebar-text">MCP</span>
+        </div>
+
+        <!-- Activity -->
+        <div class="group-label">Activity</div>
+        <div class="nav-item" data-label="Activity">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span class="sidebar-text">Activity</span>
+        </div>
+      </nav>
+
+      <!-- Footer -->
+      <div class="px-3 py-3 border-t glass-border">
+        <button onclick="toggleSidebar()" class="nav-item w-full" data-label="Collapse">
+          <svg id="collapse-icon" class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          <span class="sidebar-text text-[12px]">Collapse <span class="text-sidebar-muted ml-1">⌘B</span></span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+      <!-- Shell Header -->
+      <header class="flex items-center gap-3 px-4 py-3 border-b glass-border flex-shrink-0" style="background: rgba(10,10,12,0.8); backdrop-filter: blur(12px);">
+        <button class="hidden" id="mobile-trigger">☰</button>
+        <div style="width:1px; height:16px; background: rgba(255,255,255,0.06);"></div>
+        <nav class="flex items-center gap-1.5 text-[13px]">
+          <a href="#" class="text-sidebar-muted hover:text-cream transition-colors">Studio</a>
+          <span class="text-sidebar-muted/40">/</span>
+          <span class="text-cream font-medium">Dashboard</span>
+        </nav>
+      </header>
+
+      <!-- Scrollable Dashboard -->
+      <main class="flex-1 overflow-y-auto">
+        <div class="mx-auto max-w-6xl px-6 py-6 space-y-8">
+
+          <!-- Operational Pulse -->
+          <div class="flex items-center gap-6 text-sm">
+            <span class="font-mono text-[10px] uppercase tracking-widest text-sidebar-muted">Studio</span>
+            <span class="font-display text-lg text-cream font-semibold">Mission Control</span>
+            <div class="flex-1"></div>
+            <div class="flex items-center gap-4 text-[13px] text-sidebar-muted">
+              <span><strong class="text-gold">8</strong> pending review</span>
+              <span class="text-sidebar-muted/30">·</span>
+              <span><strong class="text-cream">12</strong> skills</span>
+              <span class="text-sidebar-muted/30">·</span>
+              <span>last activity <strong class="text-cream">2m ago</strong></span>
+            </div>
+          </div>
+
+          <!-- ===== TIER 1: ACTION REQUIRED ===== -->
+          <section class="tier-1-glow rounded-xl py-1">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-2 h-2 rounded-full bg-gold animate-pulse"></div>
+              <h2 class="font-mono text-[11px] uppercase tracking-widest text-gold/80">Action Required</h2>
+              <span class="badge badge-review">5 items</span>
+            </div>
+
+            <div class="space-y-2">
+              <div class="action-card">
+                <div class="flex items-center gap-3">
+                  <div class="w-1 h-8 rounded-full bg-gold/40"></div>
+                  <div>
+                    <div class="text-sm text-cream font-medium">Section-Level Prose Sync</div>
+                    <div class="text-[12px] text-sidebar-muted">Proposal awaiting review</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="badge badge-review">Review</span>
+                  <span class="text-[12px] text-sidebar-muted">3d</span>
+                </div>
+              </div>
+
+              <div class="action-card">
+                <div class="flex items-center gap-3">
+                  <div class="w-1 h-8 rounded-full bg-gold/40"></div>
+                  <div>
+                    <div class="text-sm text-cream font-medium">SQLite as Sherpa's Agentic State Store</div>
+                    <div class="text-[12px] text-sidebar-muted">Proposal awaiting review</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="badge badge-review">Review</span>
+                  <span class="text-[12px] text-sidebar-muted">3d</span>
+                </div>
+              </div>
+
+              <div class="action-card">
+                <div class="flex items-center gap-3">
+                  <div class="w-1 h-8 rounded-full bg-red-500/40"></div>
+                  <div>
+                    <div class="text-sm text-cream font-medium">vedic-time-cycles-research</div>
+                    <div class="text-[12px] text-sidebar-muted">Task dispatch failed — lm-studio backend unavailable</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="badge badge-failed">Failed</span>
+                  <span class="text-[12px] text-sidebar-muted">1d</span>
+                </div>
+              </div>
+
+              <div class="action-card">
+                <div class="flex items-center gap-3">
+                  <div class="w-1 h-8 rounded-full bg-yellow-500/40"></div>
+                  <div>
+                    <div class="text-sm text-cream font-medium">Agentic Organization Model</div>
+                    <div class="text-[12px] text-sidebar-muted">No activity in 5 days — may be stale</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="badge badge-stale">Stale</span>
+                  <span class="text-[12px] text-sidebar-muted">5d</span>
+                </div>
+              </div>
+
+              <div class="action-card">
+                <div class="flex items-center gap-3">
+                  <div class="w-1 h-8 rounded-full bg-gold/40"></div>
+                  <div>
+                    <div class="text-sm text-cream font-medium">MCP Agent Delegation Framework</div>
+                    <div class="text-[12px] text-sidebar-muted">Ready for integration review</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="badge badge-review">Integrate</span>
+                  <span class="text-[12px] text-sidebar-muted">2d</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== TIER 2: ACTIVE WORK ===== -->
+          <section>
+            <h2 class="font-mono text-[11px] uppercase tracking-widest text-sidebar-muted mb-4">Active Work</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Left: In-Progress Initiatives -->
+              <div class="widget">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-[13px] font-medium text-cream">In-Progress Initiatives</h3>
+                  <span class="text-[12px] text-sidebar-muted">5 active</span>
+                </div>
+                <div class="space-y-2.5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-progress">Active</span>
+                      <span class="text-[13px] text-cream/90">Studio Dashboard & Side-Nav</span>
+                    </div>
+                    <span class="text-[11px] text-sidebar-muted">today</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-progress">Active</span>
+                      <span class="text-[13px] text-cream/90">Voice & Tone Guidelines</span>
+                    </div>
+                    <span class="text-[11px] text-sidebar-muted">1d</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-progress">Active</span>
+                      <span class="text-[13px] text-cream/90">MDX Blog Pipeline</span>
+                    </div>
+                    <span class="text-[11px] text-sidebar-muted">2d</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-progress">Active</span>
+                      <span class="text-[13px] text-cream/90">Post-Research Skill Suite</span>
+                    </div>
+                    <span class="text-[11px] text-sidebar-muted">3d</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-progress">Active</span>
+                      <span class="text-[13px] text-cream/90">Dispatch Center</span>
+                    </div>
+                    <span class="text-[11px] text-sidebar-muted">4d</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Tasks + Dispatch -->
+              <div class="widget">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-[13px] font-medium text-cream">Tasks & Dispatch</h3>
+                  <span class="text-[12px] text-sidebar-muted">3 running</span>
+                </div>
+                <div class="space-y-2.5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-running">Running</span>
+                      <span class="text-[13px] text-cream/90">blog-content-audit</span>
+                    </div>
+                    <span class="text-[11px] font-mono text-sidebar-muted">claude</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-running">Running</span>
+                      <span class="text-[13px] text-cream/90">case-study-template</span>
+                    </div>
+                    <span class="text-[11px] font-mono text-sidebar-muted">claude</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-running">Running</span>
+                      <span class="text-[13px] text-cream/90">component-content-patterns</span>
+                    </div>
+                    <span class="text-[11px] font-mono text-sidebar-muted">lm-studio</span>
+                  </div>
+                  <div style="height: 1px; background: rgba(255,255,255,0.04); margin: 8px 0;"></div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="text-[12px] text-sidebar-muted">Backend Health</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="flex items-center gap-1 text-[11px] text-sidebar-muted"><span class="status-dot dot-green"></span> claude</span>
+                      <span class="flex items-center gap-1 text-[11px] text-sidebar-muted"><span class="status-dot dot-green"></span> opencode</span>
+                      <span class="flex items-center gap-1 text-[11px] text-sidebar-muted"><span class="status-dot dot-amber"></span> lm-studio</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== TIER 3: CONTEXT ===== -->
+          <section>
+            <div class="collapse-trigger" onclick="toggleTier3()">
+              <svg id="tier3-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 200ms;"><polyline points="9 18 15 12 9 6"/></svg>
+              <span class="font-mono text-[11px] uppercase tracking-widest">System Status</span>
+              <div class="flex items-center gap-1.5 ml-2">
+                <span class="status-dot dot-green"></span>
+                <span class="status-dot dot-green"></span>
+                <span class="status-dot dot-amber"></span>
+              </div>
+            </div>
+            <div id="tier3-content" style="display: none; margin-top: 12px;">
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="widget">
+                  <div class="text-[12px] font-mono uppercase tracking-widest text-sidebar-muted mb-2">MCP Server</div>
+                  <div class="text-sm text-cream">7 tools registered</div>
+                  <div class="text-[12px] text-sidebar-muted mt-1">stdio transport · pid 48291</div>
+                </div>
+                <div class="widget">
+                  <div class="text-[12px] font-mono uppercase tracking-widest text-sidebar-muted mb-2">Sessions</div>
+                  <div class="text-sm text-cream">142 total · 8 this week</div>
+                  <div class="text-[12px] text-sidebar-muted mt-1">2.4M tokens weekly</div>
+                </div>
+                <div class="widget">
+                  <div class="text-[12px] font-mono uppercase tracking-widest text-sidebar-muted mb-2">Backends</div>
+                  <div class="space-y-1 mt-1">
+                    <div class="flex items-center justify-between text-[12px]"><span class="text-cream/80">claude</span><span class="text-green-400">available</span></div>
+                    <div class="flex items-center justify-between text-[12px]"><span class="text-cream/80">opencode</span><span class="text-green-400">available</span></div>
+                    <div class="flex items-center justify-between text-[12px]"><span class="text-cream/80">lm-studio</span><span class="text-amber-400">degraded</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Spacer -->
+          <div class="h-8"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ===== ALL-CLEAR VARIANT (hidden, toggle with button) ===== -->
+  <template id="all-clear-template">
+    <div class="all-clear">
+      <div class="font-display text-lg text-cream/60 mb-1">Nothing needs attention</div>
+      <div class="text-[13px] text-sidebar-muted">All proposals reviewed · No failed tasks · No stale work</div>
+    </div>
+  </template>
+
+  <script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('collapsed');
+    }
+
+    function toggleTier3() {
+      const content = document.getElementById('tier3-content');
+      const chevron = document.getElementById('tier3-chevron');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        chevron.style.transform = 'rotate(90deg)';
+      } else {
+        content.style.display = 'none';
+        chevron.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // Keyboard shortcut: Cmd+B to toggle sidebar
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -18,6 +18,19 @@ The discovery engine for Sherpa's initiative system. Each invocation reads prior
 5. **Propose** — Every cycle must produce at least one actionable proposal.
 6. **Seed** — Write the questions that the next cycle should investigate.
 
+## Modes
+
+| | **Lean** (default) | **Deep** (`--deep`) |
+|---|---|---|
+| Agent prompts | Tight — answer the question, cite key sources | Heavy — capture every link, exhaustive trail |
+| Vector file persistence | Yes — same format, same archive | Yes — same format, same archive |
+| Iteration length | 500-1000 words | 1500-3000 words |
+| Source tracking | Key sources inline, links persisted in vector files | Master bibliography in iteration file + raw links per vector |
+| Deliverables | Only if requested | Autonomous — produce when data warrants |
+| Branch seeding | Note threads in open questions | Full seed files created |
+
+**Lean is the default.** It runs the same 6-step cycle with the same quality bar — fewer tokens, not lower standards. Use `--deep` when the topic requires exhaustive sourcing, when dispatching overnight to free-model agents, or when a prior lean cycle revealed the topic needs more depth.
+
 ## The Protocol
 
 ### Step 0: Bootstrap
@@ -81,15 +94,22 @@ For iteration 1, use the seed questions provided in the invocation prompt.
 
 ### Step 3: Fan Out
 
-Dispatch 3-5 subagents IN PARALLEL using the Agent tool. Each agent gets:
+Dispatch 3-5 subagents IN PARALLEL using the Agent tool.
 
-- Its specific vector question
-- Relevant context from the orient phase (2-3 sentences)
-- Instructions to use WebSearch and WebFetch liberally
-- The output format below
-- Explicit rule: every claim needs a source, no hallucinated data
+**Lean agent prompt:**
 
-**Agent prompt template:**
+> Research this question: [vector question]
+>
+> Context: [relevant prior findings, 1-2 sentences]
+>
+> Find concrete, sourced answers. Use WebSearch and WebFetch. Prefer specific examples over abstract frameworks. Cite sources inline.
+>
+> Return:
+> - Key discoveries (bulleted, with source URLs inline)
+> - Implications for [initiative context]
+> - Open questions that emerged
+
+**Deep agent prompt** (`--deep` only):
 
 > Research this question: [vector question]
 >
@@ -108,13 +128,9 @@ Dispatch 3-5 subagents IN PARALLEL using the Agent tool. Each agent gets:
 
 ### Step 3b: Persist Agent Reports
 
-**Every agent's full output must be saved before synthesis.**
-
-For each returning agent, write the complete raw output to:
+**Every agent's full output must be saved before synthesis.** Both lean and deep modes persist vector files — the research archive matters regardless of iteration weight.
 
 `docs/initiatives/<slug>/research/iteration-N/vector-M-<kebab-title>.md`
-
-Use this format:
 
 ```markdown
 # Vector M: [Title]
@@ -129,14 +145,11 @@ Use this format:
 ## Sources
 
 - [URL](URL) — description of what was found
-- [URL](URL) — description of what was found
 
 ## Raw Links
 
-[Every URL the agent encountered, even tangentially relevant ones,
-as a flat list — these are the breadcrumbs for future iterations]
+[Every URL the agent encountered, even tangentially relevant ones]
 
-- URL
 - URL
 
 ## Implications
@@ -148,11 +161,11 @@ as a flat list — these are the breadcrumbs for future iterations]
 [Questions the agent surfaced]
 ```
 
-**Why:** Agent context is ephemeral — once the synthesis compresses findings, raw detail and links are lost forever. These files are the research archive. Future iterations and humans need the full trail.
+**Why:** Agent context is ephemeral — once the synthesis compresses findings, raw detail and links are lost forever. These files are the research archive regardless of mode.
 
 ### Step 4: Converge
 
-After all agents return AND their reports are saved, synthesize ACROSS vectors:
+After all agents return (and reports are saved if deep), synthesize ACROSS vectors:
 
 - What patterns appear in multiple vectors?
 - What contradictions emerged?
@@ -178,23 +191,53 @@ If the proposal already exists, update it — add proposed changes, refine exist
 
 ### Step 6: Seed
 
-Write the iteration to `docs/initiatives/<slug>/research/iteration-N.md`.
+Write the iteration file and update the README.
 
-Update or create `docs/initiatives/<slug>/research/README.md` with:
+**Lean iteration file** (`docs/initiatives/<slug>/research/iteration-N.md`):
 
-- Summary of what this iteration covered
-- The 3-5 most important open questions for the next cycle
-- Cross-references to related initiatives or research
+```markdown
+# Iteration N — YYYY-MM-DD
 
-These open questions are the input for the next invocation's Step 2.
+## What We Already Knew
+[2-3 sentences. Skip for iteration 1.]
 
-**Branch identification:** During synthesis, look for threads that meet ALL three criteria:
+## Findings
 
-1. **Distinct domain** — the question belongs to a different knowledge area than the parent
-2. **Independent pursuit** — it can be researched without blocking or being blocked by the parent
-3. **Own lifecycle** — it would benefit from its own iteration sequence rather than being a vector
+### Vector 1: [Title]
+**Question:** [What we investigated]
+**Full report:** [iteration-N/vector-1-<kebab-title>.md](iteration-N/vector-1-<kebab-title>.md)
 
-For each qualifying thread, create a seed file at `docs/initiatives/<slug>/branches/<branch-slug>.md`:
+- [Key discovery with source URL]
+- [Key discovery with source URL]
+
+**Implications:** [1-2 sentences]
+
+### Vector 2: [Title]
+[Same structure...]
+
+## Synthesis
+[Cross-cutting patterns, contradictions, connections. The insight no single vector produced alone.]
+
+## Proposals Generated
+[Proposals written/updated this iteration with one-line summaries.]
+
+## Open Questions for Next Iteration
+1. [Question — why it matters]
+2. [Question — why it matters]
+3. [Question — why it matters]
+```
+
+**Deep iteration file** (`--deep`) adds:
+
+- `## All Sources` — deduplicated master bibliography grouped by topic, in addition to the per-vector sources
+
+**Branch seeding (deep only):** During synthesis, look for threads that meet ALL three criteria:
+
+1. **Distinct domain** — belongs to a different knowledge area than the parent
+2. **Independent pursuit** — can be researched without blocking the parent
+3. **Own lifecycle** — benefits from its own iteration sequence
+
+Create seed files at `docs/initiatives/<slug>/branches/<branch-slug>.md`:
 
 ```yaml
 ---
@@ -208,72 +251,19 @@ priority: high | medium | low
 
 With sections: `# Title`, `## Context`, `## Question`, `## Suggested Vectors` (numbered), `## Links`.
 
-## Iteration Output Format
+In **lean mode**, note promising threads in the Open Questions section for future deep research. Don't create seed files.
 
-The iteration file is the **synthesis layer**. Raw agent reports live alongside it in a subdirectory.
+Update or create `docs/initiatives/<slug>/research/README.md` with:
 
-**Directory structure per iteration:**
+- Summary of what this iteration covered
+- The 3-5 most important open questions for the next cycle
+- Cross-references to related initiatives or research
 
-```
-research/
-  iteration-N.md                          # Synthesis (this format)
-  iteration-N/
-    vector-1-<kebab-title>.md             # Full agent report
-    vector-2-<kebab-title>.md             # Full agent report
-    vector-3-<kebab-title>.md             # Full agent report
-```
-
-**Iteration file format:**
-
-```markdown
-# Iteration N — YYYY-MM-DD
-
-## What We Already Knew
-[2-3 sentence summary of prior iterations. Skip for iteration 1.]
-
-## Research Vectors
-
-### Vector 1: [Title]
-**Question:** [What we investigated]
-**Full report:** [iteration-N/vector-1-<kebab-title>.md](iteration-N/vector-1-<kebab-title>.md)
-
-**Key discoveries:**
-- [Finding with source URL]
-
-**Implications:**
-- [Actionable takeaway]
-
-### Vector 2: [Title]
-[Same structure...]
-
-## Synthesis
-[Cross-cutting patterns, contradictions, connections. Insights no single
-vector produced alone.]
-
-## All Sources
-
-[Deduplicated master list of every URL from every vector, grouped by topic.
-This is the iteration's complete bibliography.]
-
-### [Topic/Domain]
-- [URL](URL) — description
-- [URL](URL) — description
-
-### [Topic/Domain]
-- [URL](URL) — description
-
-## Proposals Generated
-[Proposals written/updated this iteration with one-line summaries.]
-
-## Open Questions for Next Iteration
-1. [Question — why it matters]
-2. [Question — why it matters]
-3. [Question — why it matters]
-```
-
-## Deliverables
+## Deliverables (Deep only)
 
 Research iterations may produce **deliverables** — structured JSON artifacts that render as charts or presentations in Studio. Write them to `docs/initiatives/<slug>/deliverables/`.
+
+In lean mode, skip deliverables unless the user explicitly requests them.
 
 ### When to Produce
 
@@ -336,7 +326,7 @@ Slide types: `title`, `content` (markdown body: bold, bullets, links), `chart` (
 
 ### Guidelines
 
-- Deliverables are **autonomous** — produce them when the data warrants it, don't wait for a flag
+- In deep mode, deliverables are **autonomous** — produce them when the data warrants it, don't wait for a flag
 - Every deliverable needs a descriptive `title` — it may render without surrounding context
 - Set `sourceIteration` to tie the deliverable to its research cycle
 - Charts summarize; raw data stays in vector reports
@@ -348,18 +338,20 @@ Slide types: `title`, `content` (markdown body: bold, bullets, links), `chart` (
 - **Concrete over abstract.** Specific examples beat frameworks.
 - **"Actionable" = leads to a concrete next step.** For technical initiatives: buildable within sessions. For business initiatives: a decision, a design, or a plan you can act on.
 - **Don't describe what exists** — focus on what could change.
-- **1500-3000 words per iteration.** Dense, not padded.
+- **Lean: 500-1000 words per iteration. Deep: 1500-3000 words.** Dense, not padded.
 - **WebSearch and WebFetch liberally.** This is a research task.
 - **Parallel agents only.** Never run vectors sequentially.
 - **Thin results are honest.** Flag gaps for next iteration, don't pad.
 - **Never repeat prior iterations.** Repetition = failed orient step.
 - **The proposal is not optional.** No proposals = vectors weren't focused enough.
-- **Save raw agent reports BEFORE synthesizing.** Step 3b is not optional. Write each agent's full output to its own file immediately. The synthesis in Step 4 compresses — the raw files are the permanent record.
-- **Every URL survives.** The iteration file's "All Sources" section is a deduplicated master bibliography. The raw vector files keep every link the agent touched, even tangential ones. A link lost is a research trail gone cold.
+- **Save raw agent reports BEFORE synthesizing.** Step 3b is not optional. Write each agent's full output to its own file immediately — in both lean and deep modes.
+- **Every URL survives in vector files.** The raw vector files keep every link the agent found. In deep mode, the iteration file also gets a deduplicated "All Sources" master bibliography.
 
 ## Invocation
 
-**As a skill:** `/rr` or pass the initiative slug: `/rr behavioral-agents`
+**Default (lean):** `/rr` or `/rr behavioral-agents`
+
+**Deep mode:** `/rr --deep` or `/rr --deep behavioral-agents`
 
 **From a seed:** `/rr --seed mmo-patterns-for-agents/doi-model`
 
@@ -368,6 +360,8 @@ This reads the seed file at `docs/initiatives/mmo-patterns-for-agents/branches/d
 **From a nested seed:** `/rr --seed mmo-patterns-for-agents/game-authority/heartbeat-protocol`
 
 This reads the seed at `docs/initiatives/mmo-patterns-for-agents/sub-initiatives/game-authority/branches/heartbeat-protocol.md` and creates a sub-initiative at `docs/initiatives/mmo-patterns-for-agents/sub-initiatives/game-authority/sub-initiatives/heartbeat-protocol/`.
+
+**Seeds are always deep.** Seed-launched research uses deep mode by default (creating a sub-initiative warrants full persistence). Override with `--lean` if needed.
 
 **As a standalone prompt:**
 

@@ -1,8 +1,8 @@
 ---
-status: pending
+status: approved
 initiative: mcp-coordination-layer
-created: 2026-03-11
-updated: 2026-03-12
+created: 2026-03-11T00:00:00.000Z
+updated: '2026-03-14'
 type: research-synthesis
 risk: structural
 targets:

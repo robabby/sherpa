@@ -1,9 +1,9 @@
 ---
-status: in-progress
+status: approved
 initiative: studio-state-machine
-created: 2026-03-06
-updated: 2026-03-06
-started: 2026-03-06
+created: 2026-03-06T00:00:00.000Z
+updated: '2026-03-14'
+started: 2026-03-06T00:00:00.000Z
 type: roadmap-update
 risk: evolutionary
 targets:
