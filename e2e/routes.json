@@ -1,0 +1,23 @@
+{
+  "$schema": "sherpa/route-manifest@1",
+  "description": "Studio routes for screenshot sweep. Dynamic routes use example slugs.",
+  "routes": [
+    { "path": "/", "label": "Home" },
+    { "path": "/activity", "label": "Activity" },
+    { "path": "/conventions", "label": "Conventions" },
+    { "path": "/dispatch", "label": "Dispatch" },
+    { "path": "/docs", "label": "Docs" },
+    { "path": "/mcp", "label": "MCP" },
+    { "path": "/playbooks", "label": "Playbooks" },
+    { "path": "/process", "label": "Process" },
+    { "path": "/sessions", "label": "Sessions" },
+    { "path": "/skills", "label": "Skills" },
+    { "path": "/tasks", "label": "Tasks" },
+    { "path": "/workflow", "label": "Workflow" },
+    { "path": "/workforce", "label": "Workforce" }
+  ],
+  "viewports": {
+    "desktop": { "width": 1280, "height": 800 },
+    "mobile": { "width": 390, "height": 844 }
+  }
+}
