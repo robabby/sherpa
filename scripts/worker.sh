@@ -66,8 +66,9 @@ WORKTREE=$(extract worktree)
 MODE="${MODE:-supervised}"
 BUDGET_USD="${BUDGET_USD:-1.00}"
 
-# Resolve backend via config bridge if not explicitly set on task
+# Resolve backend+model via config bridge
 if [[ -z "$BACKEND" || "$BACKEND" == "null" ]]; then
+  # No explicit backend — resolve from task-type
   ROUTE_JSON=$(node "$SCRIPT_DIR/resolve-route.mjs" "${TASK_TYPE:-general}" "$MODE" 2>&1) || {
     echo "ERROR: Route resolution failed: $ROUTE_JSON" >&2
     exit 1
@@ -75,9 +76,19 @@ if [[ -z "$BACKEND" || "$BACKEND" == "null" ]]; then
   BACKEND=$(echo "$ROUTE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>console.log(JSON.parse(d).backend))")
   RESOLVED_MODEL=$(echo "$ROUTE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>console.log(JSON.parse(d).model||''))")
   MODEL="${RESOLVED_MODEL:-${MODEL:-}}"
+elif [[ -z "$MODEL" || "$MODEL" == "null" || "$MODEL" == "claude-sonnet-4-6" ]]; then
+  # Backend set explicitly but model is missing/default — resolve model from config
+  ROUTE_JSON=$(node "$SCRIPT_DIR/resolve-route.mjs" "${TASK_TYPE:-general}" "$MODE" --backend "$BACKEND" 2>&1) || true
+  if [[ -n "$ROUTE_JSON" ]]; then
+    RESOLVED_MODEL=$(echo "$ROUTE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>console.log(JSON.parse(d).model||''))" 2>/dev/null)
+    [[ -n "$RESOLVED_MODEL" ]] && MODEL="$RESOLVED_MODEL"
+  fi
 fi
 BACKEND="${BACKEND:-claude}"
-MODEL="${MODEL:-claude-sonnet-4-6}"
+# Only default model for Claude — other backends use their own defaults
+if [[ "$BACKEND" == "claude" ]]; then
+  MODEL="${MODEL:-claude-sonnet-4-6}"
+fi
 
 # ── Mode guard rails ──────────────────────────────────────────────────
 if [[ "$MODE" == "overnight" ]]; then

@@ -36,12 +36,13 @@ if ! command -v gemini &>/dev/null; then
   exit 2
 fi
 
-ARGS=(-p)
+ARGS=()
 if [[ -n "${SHERPA_MODEL:-}" ]]; then
   ARGS+=(-m "$SHERPA_MODEL")
 fi
 ARGS+=(--approval-mode=yolo)
+ARGS+=(-p "$SHERPA_TASK_PROMPT")
 
 echo "[gemini] Dispatching: model=${SHERPA_MODEL:-default}" >&2
 
-gemini "${ARGS[@]}" "$SHERPA_TASK_PROMPT" > "${SHERPA_LOG_FILE:-/dev/stdout}" 2>&1
+gemini "${ARGS[@]}" > "${SHERPA_LOG_FILE:-/dev/stdout}" 2>&1
