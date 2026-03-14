@@ -4,6 +4,7 @@
 
 import { execSync } from "child_process"
 import path from "path"
+import type { TaskBoardEntry } from "./tasks"
 
 export type Backend = 'claude' | 'opencode' | 'codex' | 'gemini' | 'lm-studio'
 export type DispatchMode = 'interactive' | 'supervised' | 'overnight'
@@ -126,4 +127,50 @@ export function getBackendHealth(projectRoot?: string): BackendHealth[] {
       return { backend, available: false, error: 'health check failed' }
     }
   })
+}
+
+export interface ProposedAssignment {
+  taskId: string
+  taskTitle: string
+  taskType: string
+  agentSlug: string
+  backend: Backend
+  model?: string
+}
+
+/**
+ * Match pending tasks to eligible agents based on task-type.
+ * Returns proposed assignments respecting mode guard rails.
+ */
+export function matchTasksToAgents(
+  tasks: TaskBoardEntry[],
+  agents: WorkforceAgent[],
+  config: DispatchConfig,
+  mode: DispatchMode,
+): ProposedAssignment[] {
+  const pending = tasks.filter(t => t.status === 'pending')
+  const assignments: ProposedAssignment[] = []
+
+  for (const task of pending) {
+    if (!isTaskTypeAllowed(config, task.taskType, mode)) continue
+
+    // Prefer agent whose primary task-type matches, fall back to eligible
+    const primary = agents.find(a => a.taskType === task.taskType)
+    const eligible = agents.find(a => a.eligibleTaskTypes.includes(task.taskType))
+    const agent = primary ?? eligible
+
+    if (!agent) continue
+
+    const route = resolveRoute(config, task.taskType, mode)
+    assignments.push({
+      taskId: task.id,
+      taskTitle: task.title,
+      taskType: task.taskType,
+      agentSlug: agent.slug,
+      backend: route.backend,
+      model: route.model,
+    })
+  }
+
+  return assignments
 }

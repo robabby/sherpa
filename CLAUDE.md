@@ -64,6 +64,19 @@ Cross-cutting conventions auto-load from `.claude/rules/` based on file globs:
 - `claude-md-standards.md` — CLAUDE.md authoring rules
 - `worktree-conventions.md` — naming, lifecycle, cleanup
 
+## Dispatch
+
+```bash
+./scripts/dispatch.sh <role-slug>       # Interactive: launch CLI for a role
+./scripts/worker.sh <task-slug>         # Headless: dispatch a task to its backend
+./scripts/auto-judge.sh <task-slug>     # Judge: review completed task
+./scripts/dispatch-queue.sh --pending   # Queue: dispatch all pending tasks
+./scripts/task-board.sh list            # List tasks
+./scripts/task-board.sh add <slug> "description" --task-type research
+```
+
+5 backends: `claude`, `opencode`, `codex`, `gemini`, `lm-studio`. Routing configured in `sherpa.config.ts` dispatch section. Task-type determines backend.
+
 ## Skills
 
 - `/rr` — Recursive research. The discovery engine for initiatives.

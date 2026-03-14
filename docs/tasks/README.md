@@ -15,8 +15,10 @@ status: pending | dispatched | completed | failed | reviewed
 role: engineer | research-lead | technical-writer | code-reviewer | designer
 priority: low | medium | high | urgent
 initiative: <initiative-slug or null>
-backend: claude | lm-studio
-model: <model name — e.g. claude-sonnet-4-6, qwen-3.5-9b>
+backend: claude | opencode | codex | gemini | lm-studio
+model: <model name — e.g. claude-opus-4-6, minimax-m2.5-free, gpt-4.1>
+task-type: code-implementation | code-review | architect | research | content-generation | audit | embeddings | general
+mode: interactive | supervised | overnight
 budget-usd: <max dollar amount for claude backend, default 1.00>
 worktree: <worktree name or null, set by dispatcher>
 branch: <branch name or null, set by dispatcher>
@@ -60,13 +62,25 @@ Artifacts the worker must produce (files, commits, etc).
 
 ## Backends
 
-| Type | Use For | Description |
-|------|---------|-------------|
-| CLI agent | Code implementation, multi-file changes, complex reasoning | CLI-based AI agents (Claude Code, Codex, etc.) invoked with task prompt |
-| API-based LLM | Content generation, research synthesis, structured extraction | Script calling an OpenAI-compatible API (local or cloud) |
-| Review agent | Code review, audit tasks | Lightweight agents optimized for evaluation, not generation |
+| Backend | CLI | Use For | Auth |
+|---------|-----|---------|------|
+| `claude` | `claude --print` | Code implementation, architecture | `ANTHROPIC_API_KEY` |
+| `opencode` | `opencode run` | Research, audits, overnight batch | None (free models) |
+| `codex` | `codex exec` | Code review, code-heavy tasks | `OPENAI_API_KEY` |
+| `gemini` | `gemini -p` | Content generation, utility | `GEMINI_API_KEY` |
+| `lm-studio` | HTTP API | Offline fallback | None (localhost) |
 
 Backend configuration is organization-specific. Configure available backends in `sherpa.config.ts`.
+
+## Dispatch Modes
+
+| Mode | Human response | Code tasks | Budget |
+|------|---------------|------------|--------|
+| `interactive` | Immediate | Allowed | You're watching |
+| `supervised` | Minutes to hours | Allowed | Per-task budget cap |
+| `overnight` | 6-8 hours | Blocked | Free models only |
+
+Overnight mode rejects `code-implementation` and `architect` task types.
 
 ## Lifecycle
 

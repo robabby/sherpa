@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" style="background:#08080a; color-scheme:dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playbooks UI — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#08080a',
+            'warm-charcoal': '#18181b',
+            'dark-bronze': '#27272a',
+            gold: '#d4a574',
+            'gold-bright': '#e8c49a',
+            'gold-muted': '#b08a5e',
+            copper: '#c49a6c',
+            bronze: '#8b7355',
+            tarnished: '#6b5a42',
+            cream: '#f5f0e8',
+            'warm-gray': '#9a8e80',
+            dim: '#71665a',
+          },
+          fontFamily: {
+            sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+            heading: ['"Fraunces"', 'Georgia', 'serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Fraunces:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      background: #08080a !important;
+      color: #e8e4e0 !important;
+    }
+    .atmosphere {
+      background:
+        radial-gradient(ellipse 60% 40% at 30% 20%, rgba(212,165,116,0.025), transparent),
+        radial-gradient(ellipse 50% 50% at 70% 60%, rgba(196,154,108,0.02), transparent);
+    }
+    .glass {
+      background: #0d0d0f;
+      border: 1px solid #1a1a1e;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
+    }
+    .glass:hover {
+      background: #111113;
+      border-color: #222228;
+    }
+
+    /* Rail node styles */
+    .rail-node { position: relative; }
+    .rail-node::before {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 24px;
+      bottom: -8px;
+      width: 1px;
+      background: linear-gradient(to bottom, rgba(212,165,116,0.2), #151517);
+    }
+    .rail-node:last-child::before { display: none; }
+    .rail-node.completed::before {
+      background: linear-gradient(to bottom, rgba(212,165,116,0.4), rgba(212,165,116,0.15));
+    }
+
+    /* Suggested pulse */
+    @keyframes node-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(212,165,116,0); }
+      50% { box-shadow: 0 0 12px 4px rgba(212,165,116,0.25); }
+    }
+    .pulse-ring { animation: node-pulse 2.5s ease-in-out infinite; }
+
+    /* Stepper styles for process detail view */
+    .stepper-track {
+      height: 2px;
+      background: #1a1a1e;
+      position: relative;
+    }
+    .stepper-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #d4a574, #e8c49a);
+      border-radius: 1px;
+      transition: width 0.6s ease;
+    }
+
+    /* Mini rail for hub panel */
+    .mini-rail {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .mini-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .mini-line {
+      width: 8px;
+      height: 1px;
+      flex-shrink: 0;
+    }
+
+    /* Section dividers */
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: rgba(154,142,128,0.5);
+    }
+
+    /* Copy button simulation */
+    .copy-btn {
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .play-row:hover .copy-btn { opacity: 1; }
+
+    /* Playbook card accent bars */
+    .accent-fast { border-left: 2px solid rgba(212,165,116,0.3); }
+    .accent-standard { border-left: 2px solid rgba(212,165,116,0.5); }
+    .accent-high { border-left: 2px solid rgba(212,165,116,0.8); }
+
+    /* Initiative chip */
+    .init-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #1a1a1e;
+      font-size: 12px;
+      color: #b0aaa2;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .init-chip:hover {
+      border-color: rgba(212,165,116,0.3);
+      color: #d4a574;
+      background: rgba(212,165,116,0.05);
+    }
+    .init-chip .step-indicator {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: rgba(212,165,116,0.1);
+      color: #d4a574;
+    }
+  </style>
+</head>
+<body class="atmosphere min-h-screen">
+  <div class="mx-auto max-w-6xl px-6 py-12 space-y-20">
+
+    <!-- ================================================================== -->
+    <!-- SURFACE 1: /playbooks page                                          -->
+    <!-- ================================================================== -->
+
+    <section>
+      <div class="mb-3">
+        <span class="text-xs text-warm-gray/50">Studio &rsaquo; Playbooks</span>
+      </div>
+      <div class="mb-1">
+        <span class="section-label text-gold/80">Process</span>
+      </div>
+      <h1 class="font-heading text-3xl font-semibold text-cream mb-2">Playbooks</h1>
+      <p class="text-sm text-warm-gray/70 max-w-xl mb-10">
+        Three tracks for moving from research to implementation. The initiative's risk level determines the default playbook.
+      </p>
+
+      <!-- Playbook cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+
+        <!-- Fast Track -->
+        <div class="glass rounded-xl p-0 overflow-hidden">
+          <div class="accent-fast pl-5 pr-5 pt-5 pb-5">
+            <!-- Header -->
+            <div class="flex items-start justify-between mb-1">
+              <div>
+                <h2 class="font-heading text-lg font-semibold text-cream">Fast Track</h2>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="inline-flex items-center rounded-full bg-gold/10 border border-gold/20 px-2 py-0.5 font-mono text-[10px] text-gold">additive</span>
+                  <span class="font-mono text-[10px] text-warm-gray/40">3 plays</span>
+                </div>
+              </div>
+              <span class="font-mono text-[10px] text-warm-gray/30 mt-1">1-2 sessions</span>
+            </div>
+            <p class="text-xs text-warm-gray/50 mt-2 mb-5">The cost of being wrong is a wasted session, not a wasted quarter.</p>
+
+            <!-- Play rail -->
+            <div class="space-y-0">
+              <div class="rail-node completed pb-5">
+                <div class="play-row flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-3 h-3 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-2">
+                      <span class="text-sm font-medium text-gold/70">Research</span>
+                      <span class="font-mono text-[10px] text-warm-gray/30">/rr</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rail-node pb-5">
+                <div class="play-row flex items-start gap-3">
+                  <div class="pulse-ring mt-1 w-[22px] h-[22px] rounded-full bg-gold/10 border-2 border-gold/60 flex items-center justify-center flex-shrink-0">
+                    <div class="w-2 h-2 rounded-full bg-gold"></div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-2">
+                      <span class="text-sm font-semibold text-gold">Shape</span>
+                      <span class="font-mono text-[10px] text-gold/50">/shape</span>
+                      <button class="copy-btn ml-auto font-mono text-[10px] text-gold/60 hover:text-gold border border-gold/20 rounded px-1.5 py-0.5">copy</button>
+                    </div>
+                    <p class="text-[11px] text-warm-gray/50 mt-0.5">Set appetite and boundaries</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rail-node">
+                <div class="play-row flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full border border-[#1e1e22] flex items-center justify-center flex-shrink-0">
+                    <div class="w-1.5 h-1.5 rounded-full bg-[#222228]"></div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-2">
+                      <span class="text-sm font-medium text-warm-gray/40">Plan Tasks</span>
+                      <span class="font-mono text-[10px] text-warm-gray/20">/plan-tasks</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Initiatives -->
+          <div class="border-t border-[#1a1a1e] px-5 py-4 bg-[#0b0b0d]">
+            <div class="flex items-center justify-between mb-3">
+              <span class="section-label">Initiatives</span>
+              <span class="font-mono text-[10px] text-warm-gray/30">8 active</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <span class="init-chip">Agent Framework <span class="step-indicator">rr</span></span>
+              <span class="init-chip">Consulting Landscape <span class="step-indicator">rr</span></span>
+              <span class="init-chip">Design System <span class="step-indicator">shape</span></span>
+              <span class="init-chip text-warm-gray/40">+5 more</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Standard -->
+        <div class="glass rounded-xl p-0 overflow-hidden">
+          <div class="accent-standard pl-5 pr-5 pt-5 pb-5">
+            <div class="flex items-start justify-between mb-1">
+              <div>
+                <h2 class="font-heading text-lg font-semibold text-cream">Standard</h2>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="inline-flex items-center rounded-full bg-gold/10 border border-gold/20 px-2 py-0.5 font-mono text-[10px] text-gold">evolutionary</span>
+                  <span class="font-mono text-[10px] text-warm-gray/40">5 plays</span>
+                </div>
+              </div>
+              <span class="font-mono text-[10px] text-warm-gray/30 mt-1">3-4 sessions</span>
+            </div>
+            <p class="text-xs text-warm-gray/50 mt-2 mb-5">Multiple approaches exist or the solution isn't obvious.</p>
+
+            <div class="space-y-0">
+              <div class="rail-node completed pb-4">
+                <div class="play-row flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-3 h-3 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <div class="flex-1"><span class="text-sm font-medium text-gold/70">Research</span> <span class="font-mono text-[10px] text-warm-gray/30">/rr</span></div>
+                </div>
+              </div>
+              <div class="rail-node completed pb-4">
+                <div class="play-row flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-3 h-3 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <div class="flex-1"><span class="text-sm font-medium text-gold/70">Stake</span> <span class="font-mono text-[10px] text-warm-gray/30">/stake</span></div>
+                </div>
+              </div>
+              <div class="rail-node pb-4">
+                <div class="play-row flex items-start gap-3">
+                  <div class="pulse-ring mt-1 w-[22px] h-[22px] rounded-full bg-gold/10 border-2 border-gold/60 flex items-center justify-center flex-shrink-0">
+                    <div class="w-2 h-2 rounded-full bg-gold"></div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-2">
+                      <span class="text-sm font-semibold text-gold">Shape</span>
+                      <span class="font-mono text-[10px] text-gold/50">/shape</span>
+                      <button class="copy-btn ml-auto font-mono text-[10px] text-gold/60 hover:text-gold border border-gold/20 rounded px-1.5 py-0.5">copy</button>
+                    </div>
+                    <p class="text-[11px] text-warm-gray/50 mt-0.5">Set appetite and boundaries</p>
+                  </div>
+                </div>
+              </div>
+              <div class="rail-node pb-4">
+                <div class="play-row flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full border border-[#1e1e22] flex items-center justify-center flex-shrink-0">
+                    <div class="w-1.5 h-1.5 rounded-full bg-[#222228]"></div>
+                  </div>
+                  <div class="flex-1"><span class="text-sm font-medium text-warm-gray/40">Design</span> <span class="font-mono text-[10px] text-warm-gray/20">/design</span></div>
+                </div>
+              </div>
+              <div class="rail-node">
+                <div class="play-row flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full border border-[#1e1e22] flex items-center justify-center flex-shrink-0">
+                    <div class="w-1.5 h-1.5 rounded-full bg-[#222228]"></div>
+                  </div>
+                  <div class="flex-1"><span class="text-sm font-medium text-warm-gray/40">Plan Tasks</span> <span class="font-mono text-[10px] text-warm-gray/20">/plan-tasks</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-[#1a1a1e] px-5 py-4 bg-[#0b0b0d]">
+            <div class="flex items-center justify-between mb-3">
+              <span class="section-label">Initiatives</span>
+              <span class="font-mono text-[10px] text-warm-gray/30">3 active</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <span class="init-chip">Studio Platform <span class="step-indicator">shape</span></span>
+              <span class="init-chip">Playbook UI <span class="step-indicator">design</span></span>
+              <span class="init-chip">Studio State Machine <span class="step-indicator">rr</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- High Stakes -->
+        <div class="glass rounded-xl p-0 overflow-hidden">
+          <div class="accent-high pl-5 pr-5 pt-5 pb-5">
+            <div class="flex items-start justify-between mb-1">
+              <div>
+                <h2 class="font-heading text-lg font-semibold text-cream">High Stakes</h2>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="inline-flex items-center rounded-full bg-gold/10 border border-gold/20 px-2 py-0.5 font-mono text-[10px] text-gold">structural</span>
+                  <span class="font-mono text-[10px] text-warm-gray/40">8 plays</span>
+                </div>
+              </div>
+              <span class="font-mono text-[10px] text-warm-gray/30 mt-1">5+ sessions</span>
+            </div>
+            <p class="text-xs text-warm-gray/50 mt-2 mb-5">Touches shared artifacts, changes architecture, has dependencies.</p>
+
+            <div class="space-y-0">
+              <div class="rail-node completed pb-3">
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-3 h-3 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <div class="flex-1"><span class="text-sm font-medium text-gold/70">Research</span> <span class="font-mono text-[10px] text-warm-gray/30">/rr</span></div>
+                </div>
+              </div>
+              <div class="rail-node pb-3">
+                <div class="flex items-start gap-3">
+                  <div class="pulse-ring mt-1 w-[22px] h-[22px] rounded-full bg-gold/10 border-2 border-gold/60 flex items-center justify-center flex-shrink-0">
+                    <div class="w-2 h-2 rounded-full bg-gold"></div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <span class="text-sm font-semibold text-gold">Stake</span> <span class="font-mono text-[10px] text-gold/50">/stake</span>
+                    <button class="copy-btn ml-2 font-mono text-[10px] text-gold/60 hover:text-gold border border-gold/20 rounded px-1.5 py-0.5">copy</button>
+                  </div>
+                </div>
+              </div>
+              <div class="rail-node pb-3">
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full border border-[#1e1e22] flex items-center justify-center flex-shrink-0"><div class="w-1.5 h-1.5 rounded-full bg-[#222228]"></div></div>
+                  <div class="flex-1"><span class="text-sm text-warm-gray/40">Pre-mortem</span> <span class="font-mono text-[10px] text-warm-gray/20">/premortem</span></div>
+                </div>
+              </div>
+              <div class="rail-node pb-3">
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full border border-[#1e1e22] flex items-center justify-center flex-shrink-0"><div class="w-1.5 h-1.5 rounded-full bg-[#222228]"></div></div>
+                  <div class="flex-1"><span class="text-sm text-warm-gray/40">Stress Test</span> <span class="font-mono text-[10px] text-warm-gray/20">/stress-test</span></div>
+                </div>
+              </div>
+              <div class="rail-node pb-3">
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full border border-[#1e1e22] flex items-center justify-center flex-shrink-0"><div class="w-1.5 h-1.5 rounded-full bg-[#222228]"></div></div>
+                  <div class="flex-1"><span class="text-sm text-warm-gray/40">Spike</span> <span class="font-mono text-[10px] text-warm-gray/20">/spike</span></div>
+                </div>
+              </div>
+              <div class="rail-node pb-3">
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full border border-[#1e1e22] flex items-center justify-center flex-shrink-0"><div class="w-1.5 h-1.5 rounded-full bg-[#222228]"></div></div>
+                  <div class="flex-1"><span class="text-sm text-warm-gray/40">Shape</span> <span class="font-mono text-[10px] text-warm-gray/20">/shape</span></div>
+                </div>
+              </div>
+              <div class="rail-node pb-3">
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full border border-[#1e1e22] flex items-center justify-center flex-shrink-0"><div class="w-1.5 h-1.5 rounded-full bg-[#222228]"></div></div>
+                  <div class="flex-1"><span class="text-sm text-warm-gray/40">Design</span> <span class="font-mono text-[10px] text-warm-gray/20">/design</span></div>
+                </div>
+              </div>
+              <div class="rail-node">
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 w-[22px] h-[22px] rounded-full border border-[#1e1e22] flex items-center justify-center flex-shrink-0"><div class="w-1.5 h-1.5 rounded-full bg-[#222228]"></div></div>
+                  <div class="flex-1"><span class="text-sm text-warm-gray/40">Plan Tasks</span> <span class="font-mono text-[10px] text-warm-gray/20">/plan-tasks</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-[#1a1a1e] px-5 py-4 bg-[#0b0b0d]">
+            <div class="flex items-center justify-between mb-3">
+              <span class="section-label">Initiatives</span>
+              <span class="font-mono text-[10px] text-warm-gray/30">11 active</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <span class="init-chip">Agentic Org Model <span class="step-indicator">stake</span></span>
+              <span class="init-chip">Behavioral Agents <span class="step-indicator">rr</span></span>
+              <span class="init-chip">MCP Coordination <span class="step-indicator">rr</span></span>
+              <span class="init-chip text-warm-gray/40">+8 more</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cross-cutting plays -->
+      <div class="mt-6 glass rounded-xl px-5 py-4">
+        <div class="flex items-center gap-4">
+          <span class="section-label text-warm-gray/40 shrink-0">Available anytime</span>
+          <div class="flex items-center gap-4">
+            <button class="flex items-center gap-2 text-xs text-warm-gray/50 hover:text-gold transition-colors">
+              <div class="w-1.5 h-1.5 rounded-full bg-gold/30"></div>
+              <span class="font-medium">Memo</span>
+              <span class="font-mono text-[10px] text-warm-gray/30">/memo</span>
+            </button>
+            <span class="text-warm-gray/10">|</span>
+            <button class="flex items-center gap-2 text-xs text-warm-gray/50 hover:text-gold transition-colors">
+              <div class="w-1.5 h-1.5 rounded-full bg-gold/30"></div>
+              <span class="font-medium">Radar</span>
+              <span class="font-mono text-[10px] text-warm-gray/30">/radar</span>
+            </button>
+            <span class="text-warm-gray/10">|</span>
+            <button class="flex items-center gap-2 text-xs text-warm-gray/50 hover:text-gold transition-colors">
+              <div class="w-1.5 h-1.5 rounded-full bg-gold/30"></div>
+              <span class="font-medium">Retro</span>
+              <span class="font-mono text-[10px] text-warm-gray/30">/retro</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SURFACE 2: PlaybookSection in Process detail pane                   -->
+    <!-- ================================================================== -->
+
+    <section>
+      <div class="mb-3">
+        <span class="section-label text-gold/60">Surface 2</span>
+      </div>
+      <h2 class="font-heading text-2xl font-semibold text-cream mb-2">Process Detail — Playbook Section</h2>
+      <p class="text-sm text-warm-gray/70 max-w-xl mb-8">Compact horizontal stepper replacing the pill strip. Shows below the lifecycle hero bar.</p>
+
+      <!-- Simulated detail pane width -->
+      <div class="max-w-2xl space-y-4">
+        <!-- Lifecycle hero (simplified placeholder) -->
+        <div class="glass rounded-xl p-5">
+          <div class="flex h-3 gap-0.5 rounded-full overflow-hidden">
+            <div class="flex-1 bg-gold rounded-sm"></div>
+            <div class="flex-1 bg-gold rounded-sm"></div>
+            <div class="flex-1 bg-gold/60 rounded-sm" style="animation: segment-pulse 2s ease-in-out infinite"></div>
+            <div class="flex-1 bg-[#151517] rounded-sm"></div>
+            <div class="flex-1 bg-[#151517] rounded-sm"></div>
+          </div>
+          <div class="flex mt-1.5">
+            <span class="flex-1 font-mono text-[9px] uppercase tracking-[0.2em] text-gold/50">Research</span>
+            <span class="flex-1 font-mono text-[9px] uppercase tracking-[0.2em] text-gold/50">Proposal</span>
+            <span class="flex-1 font-mono text-[9px] uppercase tracking-[0.2em] text-gold">Plan</span>
+            <span class="flex-1 font-mono text-[9px] uppercase tracking-[0.2em] text-[#2a2a2e]">Active</span>
+            <span class="flex-1 font-mono text-[9px] uppercase tracking-[0.2em] text-[#2a2a2e]">Integrated</span>
+          </div>
+        </div>
+
+        <!-- Playbook section — the redesigned compact stepper -->
+        <div class="glass rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="section-label text-warm-gray/40">Playbook</span>
+              <span class="rounded-full bg-gold/10 border border-gold/20 px-2 py-0.5 font-mono text-[10px] text-gold font-medium">Standard</span>
+            </div>
+            <span class="font-mono text-[10px] text-warm-gray/30">2/5 complete</span>
+          </div>
+
+          <!-- Horizontal stepper -->
+          <div class="relative">
+            <!-- Track -->
+            <div class="stepper-track rounded-full">
+              <div class="stepper-fill rounded-full" style="width: 40%"></div>
+            </div>
+
+            <!-- Nodes positioned along the track -->
+            <div class="flex justify-between mt-[-5px] relative z-10">
+              <!-- Completed: Research -->
+              <div class="flex flex-col items-center" style="width: 20%">
+                <div class="w-3 h-3 rounded-full bg-gold border-2 border-gold"></div>
+                <span class="font-mono text-[9px] text-gold/60 mt-1.5">rr</span>
+              </div>
+              <!-- Completed: Stake -->
+              <div class="flex flex-col items-center" style="width: 20%">
+                <div class="w-3 h-3 rounded-full bg-gold border-2 border-gold"></div>
+                <span class="font-mono text-[9px] text-gold/60 mt-1.5">stake</span>
+              </div>
+              <!-- Current: Shape -->
+              <div class="flex flex-col items-center" style="width: 20%">
+                <div class="pulse-ring w-4 h-4 rounded-full bg-obsidian border-2 border-gold flex items-center justify-center">
+                  <div class="w-1.5 h-1.5 rounded-full bg-gold"></div>
+                </div>
+                <span class="font-mono text-[9px] text-gold font-medium mt-1">shape</span>
+              </div>
+              <!-- Future: Design -->
+              <div class="flex flex-col items-center" style="width: 20%">
+                <div class="w-3 h-3 rounded-full bg-obsidian border border-white/10"></div>
+                <span class="font-mono text-[9px] text-warm-gray/25 mt-1.5">design</span>
+              </div>
+              <!-- Future: Plan Tasks -->
+              <div class="flex flex-col items-center" style="width: 20%">
+                <div class="w-3 h-3 rounded-full bg-obsidian border border-white/10"></div>
+                <span class="font-mono text-[9px] text-warm-gray/25 mt-1.5">plan</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggested action -->
+          <div class="mt-4 flex items-center gap-3 rounded-lg border border-gold/20 bg-gold/5 px-3 py-2.5">
+            <div class="flex-1 min-w-0">
+              <span class="text-xs font-medium text-gold">Run /shape</span>
+              <span class="ml-2 rounded-full bg-copper/10 px-1.5 py-0.5 text-[9px] text-copper">Agent</span>
+            </div>
+            <button class="flex items-center gap-1.5 rounded border border-gold/30 bg-gold/10 px-2.5 py-1 font-mono text-[10px] text-gold hover:bg-gold/20 transition-colors">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10"/></svg>
+              Copy
+            </button>
+          </div>
+
+          <!-- Cross-cutting -->
+          <div class="mt-3 flex items-center gap-3 border-t border-[#1a1a1e] pt-2.5">
+            <span class="font-mono text-[9px] text-warm-gray/30 shrink-0">anytime</span>
+            <div class="flex gap-2">
+              <button class="font-mono text-[10px] text-warm-gray/35 hover:text-gold transition-colors">/memo</button>
+              <button class="font-mono text-[10px] text-warm-gray/35 hover:text-gold transition-colors">/radar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- SURFACE 3: Hub panel on home page                                   -->
+    <!-- ================================================================== -->
+
+    <section>
+      <div class="mb-3">
+        <span class="section-label text-gold/60">Surface 3</span>
+      </div>
+      <h2 class="font-heading text-2xl font-semibold text-cream mb-2">Hub Panel — Home Page</h2>
+      <p class="text-sm text-warm-gray/70 max-w-xl mb-8">Compact summary card with micro-rails showing each track's length.</p>
+
+      <!-- Simulated hub panel -->
+      <div class="max-w-md">
+        <div class="glass rounded-xl p-7 relative overflow-hidden group cursor-pointer transition-all hover:-translate-y-px">
+          <!-- Accent bar -->
+          <div class="absolute left-0 top-4 bottom-4 w-[2px] bg-gradient-to-b from-gold/50 to-transparent"></div>
+          <!-- Glow -->
+          <div class="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-gold opacity-[0.04] blur-[80px]"></div>
+
+          <div class="relative">
+            <span class="block font-mono text-[11px] uppercase tracking-[0.35em] text-gold/80 mb-1.5">Playbooks</span>
+            <h3 class="font-heading text-xl text-cream">Process Playbooks</h3>
+          </div>
+
+          <div class="relative mt-5 space-y-3.5">
+            <!-- Fast Track micro-rail -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-medium text-cream/80 w-24">Fast Track</span>
+                <div class="mini-rail">
+                  <div class="mini-dot bg-gold"></div>
+                  <div class="mini-line bg-gold/30"></div>
+                  <div class="mini-dot bg-gold/40"></div>
+                  <div class="mini-line bg-[#181818]"></div>
+                  <div class="mini-dot bg-[#222228]"></div>
+                </div>
+              </div>
+              <span class="font-mono text-[10px] text-warm-gray/40">8</span>
+            </div>
+
+            <!-- Standard micro-rail -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-medium text-cream/80 w-24">Standard</span>
+                <div class="mini-rail">
+                  <div class="mini-dot bg-gold"></div>
+                  <div class="mini-line bg-gold/30"></div>
+                  <div class="mini-dot bg-gold"></div>
+                  <div class="mini-line bg-gold/30"></div>
+                  <div class="mini-dot bg-gold/40 pulse-ring" style="box-shadow: 0 0 6px 2px rgba(212,165,116,0.2)"></div>
+                  <div class="mini-line bg-[#181818]"></div>
+                  <div class="mini-dot bg-[#222228]"></div>
+                  <div class="mini-line bg-[#181818]"></div>
+                  <div class="mini-dot bg-[#222228]"></div>
+                </div>
+              </div>
+              <span class="font-mono text-[10px] text-warm-gray/40">3</span>
+            </div>
+
+            <!-- High Stakes micro-rail -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-medium text-cream/80 w-24">High Stakes</span>
+                <div class="mini-rail">
+                  <div class="mini-dot bg-gold"></div>
+                  <div class="mini-line bg-gold/20"></div>
+                  <div class="mini-dot bg-gold/40"></div>
+                  <div class="mini-line bg-[#181818]"></div>
+                  <div class="mini-dot bg-[#222228]"></div>
+                  <div class="mini-line bg-[#181818]"></div>
+                  <div class="mini-dot bg-[#222228]"></div>
+                  <div class="mini-line bg-[#181818]"></div>
+                  <div class="mini-dot bg-[#222228]"></div>
+                  <div class="mini-line bg-[#181818]"></div>
+                  <div class="mini-dot bg-[#222228]"></div>
+                  <div class="mini-line bg-[#181818]"></div>
+                  <div class="mini-dot bg-[#222228]"></div>
+                  <div class="mini-line bg-[#181818]"></div>
+                  <div class="mini-dot bg-[#222228]"></div>
+                </div>
+              </div>
+              <span class="font-mono text-[10px] text-warm-gray/40">11</span>
+            </div>
+          </div>
+
+          <!-- Footer link -->
+          <div class="relative mt-6">
+            <span class="text-sm text-gold opacity-70 group-hover:opacity-100 transition-opacity">
+              View playbooks <span class="inline-block transition-transform duration-200 group-hover:translate-x-[3px]">&rarr;</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>

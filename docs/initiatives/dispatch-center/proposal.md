@@ -1,5 +1,5 @@
 ---
-status: approved
+status: integrated
 initiative: dispatch-center
 created: 2026-03-13
 updated: 2026-03-13
