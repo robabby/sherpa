@@ -35,8 +35,11 @@ import {
 } from "@/lib/studio"
 import { readProjectFile } from "@/lib/studio/content"
 import type { HubStats, Initiative, Session } from "@/lib/studio"
+import path from "path"
 import { getTaskBoard } from "@/lib/studio/tasks"
 import { getBackendHealth } from "@sherpa/studio-core"
+
+const PROJECT_ROOT = path.resolve(process.cwd(), "../..")
 import { getMcpDashboard } from "@/lib/studio/mcp"
 import { detectPlaybook, PLAYBOOK_IDS } from "@/lib/studio/playbooks"
 
@@ -146,8 +149,8 @@ export default async function StudioPage() {
   const skills = getSkills()
   const agentRoles = getAgentRoles()
   const sessions = getSessions()
-  const tasks = getTaskBoard()
-  const health = getBackendHealth()
+  const tasks = getTaskBoard({ projectRoot: PROJECT_ROOT })
+  const health = getBackendHealth(PROJECT_ROOT)
   const mcpData = await getMcpDashboard()
 
   // Compute playbook summaries

@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "taskId required" }, { status: 400 })
   }
 
-  const projectRoot = process.cwd()
+  const projectRoot = path.resolve(process.cwd(), "../..")
   const workerScript = path.join(projectRoot, "scripts/worker.sh")
   const scannerScript = path.join(projectRoot, "scripts/task-scanner.mjs")
 
