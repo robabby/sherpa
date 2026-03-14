@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { getInitiatives, getSkills } from "@/lib/studio";
 import {
   detectPlaybook,
@@ -472,8 +472,6 @@ export default function PlaybooksPage() {
 
   return (
     <div className="flex flex-col gap-10">
-      <StudioBreadcrumb segments={[{ label: "Playbooks" }]} />
-
       <div>
         <SectionHeader label="Process" title="Playbooks" />
         <p className="mb-10 max-w-xl text-sm text-muted-foreground">

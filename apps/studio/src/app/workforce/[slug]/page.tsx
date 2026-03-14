@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Text } from "@radix-ui/themes";
 
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { PromptCopyButton } from "@/components/studio/prompt-copy-button";
 import { RoleEditor } from "@/components/studio/role-editor";
 import { getAgentRoles, generateRolePrompt } from "@/lib/studio";
@@ -93,13 +93,6 @@ export default async function WorkforceDetailPage({
 
   return (
     <div className="space-y-8">
-      <StudioBreadcrumb
-        segments={[
-          { label: "Workforce", href: "/workforce" },
-          { label: role.displayName },
-        ]}
-      />
-
       <div>
         <SectionHeader label={role.category} title={role.displayName} />
         <div className="flex items-center gap-3">

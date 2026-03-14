@@ -4,7 +4,7 @@ import { ActivityFullTimeline } from "@/components/studio/activity-full-timeline
 import { ActivityStatsBar } from "@/components/studio/activity-stats-bar";
 import { ScopeFilterBar } from "@/components/studio/scope-filter-bar";
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { getPortfolio, processActivityData } from "@/lib/studio";
 
 export const metadata: Metadata = {
@@ -27,8 +27,6 @@ export default async function ActivityPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-8">
-      <StudioBreadcrumb segments={[{ label: "Activity" }]} />
-
       <SectionHeader
         label="Timeline"
         title={

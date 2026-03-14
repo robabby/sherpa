@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Text } from "@radix-ui/themes";
 
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { DocRenderer } from "@/components/studio/doc-renderer";
 import { getDocument } from "@/lib/studio";
 
@@ -17,21 +17,6 @@ function resolveSlugToPath(slug: string[]): string {
   }
   // Default: docs/ prefix
   return `docs/${joined}.md`;
-}
-
-function slugToSegments(
-  slug: string[]
-): { label: string; href?: string }[] {
-  return [
-    { label: "Docs", href: "/docs" },
-    ...slug.map((s, i) => ({
-      label: s.replace(/-/g, " "),
-      href:
-        i < slug.length - 1
-          ? `/docs/${slug.slice(0, i + 1).join("/")}`
-          : undefined,
-    })),
-  ];
 }
 
 export async function generateMetadata({
@@ -58,8 +43,6 @@ export default async function DocViewerPage({
 
   return (
     <div className="space-y-6">
-      <StudioBreadcrumb segments={slugToSegments(slug)} />
-
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <Text size="1" className="font-mono">
           {doc.relativePath}

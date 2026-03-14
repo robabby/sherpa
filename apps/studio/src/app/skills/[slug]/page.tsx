@@ -3,7 +3,7 @@ import { Text } from "@radix-ui/themes";
 
 import { DocRenderer } from "@/components/studio/doc-renderer";
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { getDocument, getSkills } from "@/lib/studio";
 
 export async function generateMetadata({
@@ -34,13 +34,6 @@ export default async function SkillDetailPage({
 
   return (
     <div className="space-y-6">
-      <StudioBreadcrumb
-        segments={[
-          { label: "Skills", href: "/skills" },
-          { label: skill.name },
-        ]}
-      />
-
       <SectionHeader
         label={skill.isProjectSkill ? "Project Skill" : "Third-Party Skill"}
         title={skill.name}

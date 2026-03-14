@@ -4,7 +4,7 @@ import { Text } from "@radix-ui/themes";
 import { CornerDownRight, ArrowUpLeft, ArrowLeft } from "lucide-react";
 
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { StatusBadge } from "@/components/studio/status-badge";
 import { DocRenderer } from "@/components/studio/doc-renderer";
 import { ResearchTree } from "@/components/studio/research-tree";
@@ -217,18 +217,6 @@ export default async function InitiativeDetailPage({
       (x): x is NonNullable<typeof x> => x !== null,
     );
 
-  // Build breadcrumb chain
-  const breadcrumbSegments = [
-    { label: "Process", href: "/process" },
-    ...slugs.map((seg: string, i: number) => {
-      const isLast = i === slugs.length - 1;
-      return {
-        label: slugToLabel(seg),
-        ...(isLast ? {} : { href: `/process/${slugs.slice(0, i + 1).join("/")}` }),
-      };
-    }),
-  ];
-
   // Parent lineage for sub-initiatives (all ancestors)
   const parentSlugs = isSubInitiative ? slugs.slice(0, -1) : [];
   const immediateParentSlug = parentSlugs[parentSlugs.length - 1];
@@ -238,8 +226,6 @@ export default async function InitiativeDetailPage({
 
   return (
     <div className="space-y-8">
-      <StudioBreadcrumb segments={breadcrumbSegments} />
-
       {/* Parent context banner for sub-initiatives */}
       {isSubInitiative && parentHref && (
         <Link

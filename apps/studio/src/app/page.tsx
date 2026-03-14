@@ -171,7 +171,11 @@ export default async function StudioPage() {
     return days >= 7
   }).length
   const sessionStats = computeSessionStats(sessions)
-  const actionCount = attentionNeeded.length + pendingReview.length + failedTasks.length
+
+  // Deduplicate: remove pendingReview items already covered by attentionNeeded
+  const attentionSlugs = new Set(attentionNeeded.map((a) => a.slug))
+  const uniquePendingReview = pendingReview.filter((p) => !attentionSlugs.has(p.slug))
+  const actionCount = attentionNeeded.length + uniquePendingReview.length + failedTasks.length
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-6">
@@ -221,8 +225,8 @@ export default async function StudioPage() {
                   days={item.days}
                 />
               ))}
-              {/* Pending review items */}
-              {pendingReview.map((item) => (
+              {/* Pending review items (deduplicated) */}
+              {uniquePendingReview.map((item) => (
                 <ActionCard key={item.slug} href={`/process/${item.slug}`}
                   title={item.title}
                   description="Proposal awaiting review"

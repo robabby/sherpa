@@ -4,7 +4,7 @@ import { Text } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import type { Session } from "@/lib/studio";
 
 // Client component — sessions data passed via search params would be unwieldy.
@@ -214,7 +214,6 @@ export default function SessionsPage() {
 
   return (
     <div className="space-y-8">
-      <StudioBreadcrumb segments={[{ label: "Sessions" }]} />
       <SectionHeader
         label="sessions"
         title={`${filtered.length} Sessions`}

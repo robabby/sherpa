@@ -3,7 +3,7 @@ import { Text } from "@radix-ui/themes";
 
 import { DocRenderer } from "@/components/studio/doc-renderer";
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { getDocument, getConventions } from "@/lib/studio";
 
 function resolveConventionSlug(slug: string): string | null {
@@ -52,13 +52,6 @@ export default async function ConventionDetailPage({
 
   return (
     <div className="space-y-6">
-      <StudioBreadcrumb
-        segments={[
-          { label: "Conventions", href: "/conventions" },
-          { label: doc.title },
-        ]}
-      />
-
       <SectionHeader
         label={rule ? "Rule" : "CLAUDE.md"}
         title={doc.title}

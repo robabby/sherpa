@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Text } from "@radix-ui/themes";
 
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { StatusBadge } from "@/components/studio/status-badge";
 import { DocRenderer } from "@/components/studio/doc-renderer";
 import { InitiativeActionBar } from "@/components/studio/initiative-action-bar";
@@ -67,13 +67,6 @@ export default async function InitiativeDetailPage({
 
   return (
     <div className="space-y-8">
-      <StudioBreadcrumb
-        segments={[
-          { label: "Process", href: "/process" },
-          { label: initiative.title },
-        ]}
-      />
-
       <div className="space-y-3">
         <SectionHeader label="Initiative" title={initiative.title} />
         <div className="flex flex-wrap gap-2">

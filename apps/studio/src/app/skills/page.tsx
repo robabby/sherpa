@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { getSkills } from "@/lib/studio";
 
 export const metadata: Metadata = {
@@ -18,8 +18,6 @@ export default function SkillsPage() {
 
   return (
     <div className="space-y-10">
-      <StudioBreadcrumb segments={[{ label: "Skills" }]} />
-
       {projectSkills.length > 0 && (
         <div>
           <SectionHeader

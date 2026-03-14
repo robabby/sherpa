@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import { ProcessWorkspace } from "@/components/studio/process-workspace";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
 
 import { archiveInitiative, restoreInitiative, updateNodeStatus } from "./actions";
 import { runPostApproval } from "./post-approval";
@@ -84,24 +83,19 @@ export default async function ProcessPage({ searchParams }: ProcessPageProps) {
   });
 
   return (
-    <div>
-      <StudioBreadcrumb segments={[{ label: "Process" }]} />
-      <div className="mt-2">
-        <ProcessWorkspace
-          allNodes={allNodes}
-          initialKind={kind}
-          initialStatus={params.status ?? null}
-          initialSort={sort}
-          initialSearch={params.q ?? ""}
-          initialSelectedId={params.node ?? null}
-          onNodeStatusChange={updateNodeStatus}
-          onPostApproval={runPostApproval}
-          onArchive={archiveInitiative}
-          onRestore={restoreInitiative}
-          archivedCount={archivedCount}
-          agentRoles={getAgentRoles()}
-        />
-      </div>
-    </div>
+    <ProcessWorkspace
+      allNodes={allNodes}
+      initialKind={kind}
+      initialStatus={params.status ?? null}
+      initialSort={sort}
+      initialSearch={params.q ?? ""}
+      initialSelectedId={params.node ?? null}
+      onNodeStatusChange={updateNodeStatus}
+      onPostApproval={runPostApproval}
+      onArchive={archiveInitiative}
+      onRestore={restoreInitiative}
+      archivedCount={archivedCount}
+      agentRoles={getAgentRoles()}
+    />
   );
 }

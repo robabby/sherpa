@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { MermaidDiagram } from "@/components/studio/mermaid-diagram";
 
 export const metadata: Metadata = {
@@ -96,7 +96,6 @@ const WORKFLOW_DIAGRAM = `flowchart TB
 export default function WorkflowPage() {
   return (
     <div className="space-y-10">
-      <StudioBreadcrumb segments={[{ label: "Workflow" }]} />
       <SectionHeader label="Process" title="Product Workflow" />
       <div className="rounded-lg border border-[var(--border-gold)]/30 bg-background p-6">
         <MermaidDiagram definition={WORKFLOW_DIAGRAM} />

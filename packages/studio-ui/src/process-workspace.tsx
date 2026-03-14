@@ -352,7 +352,7 @@ export function ProcessWorkspace({
     <div
       ref={wrapperRef}
       tabIndex={0}
-      className="flex h-[calc(100vh-100px)] min-h-[400px] overflow-hidden rounded-lg border border-[var(--color-dark-bronze)] outline-none"
+      className="flex h-[calc(100vh-53px)] min-h-[400px] overflow-hidden border-t border-[var(--color-dark-bronze)] outline-none"
     >
       {/* Kind rail — hidden on mobile */}
       <div className="hidden md:block">

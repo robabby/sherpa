@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { SectionHeader } from "@/components/studio/section-header";
-import { StudioBreadcrumb } from "@/components/studio/studio-breadcrumb";
+
 import { DocSearch } from "@/components/studio/doc-search";
 import { getDocsByCategory, getResearchByTrack, type ContentFile } from "@/lib/studio";
 
@@ -49,8 +49,6 @@ export default function DocsPage() {
 
   return (
     <div className="space-y-10">
-      <StudioBreadcrumb segments={[{ label: "Docs" }]} />
-
       <DocSearch
         items={allDocs.map((f) => ({
           relativePath: f.relativePath,
