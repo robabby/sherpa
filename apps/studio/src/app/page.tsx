@@ -1,35 +1,13 @@
 export const dynamic = "force-dynamic"
 
-import { StudioHeader } from "@/components/studio/studio-header"
-import {
-  HubAmbientGlow,
-  HubStagger,
-  HubStaggerItem,
-} from "@/components/studio/hub-stagger"
 import { HubOperationalPulse } from "@/components/studio/hub-operational-pulse"
-import { HubProcessPanel } from "@/components/studio/hub-process-panel"
-import { HubDocsPanel } from "@/components/studio/hub-docs-panel"
-import { HubConventionsPanel } from "@/components/studio/hub-conventions-panel"
-import { HubActivityPanel } from "@/components/studio/hub-activity-panel"
-import { HubSkillsPanel } from "@/components/studio/hub-skills-panel"
-import { HubWorkforcePanel } from "@/components/studio/hub-workforce-panel"
-import { HubSessionsPanel } from "@/components/studio/hub-sessions-panel"
-import { HubTasksPanel } from "@/components/studio/hub-tasks-panel"
-import { HubMcpPanel } from "@/components/studio/hub-mcp-panel"
-import { HubDispatchPanel } from "@/components/studio/hub-dispatch-panel"
-import { HubWorkflowPanel } from "@/components/studio/hub-workflow-panel"
-import { HubPlaybooksPanel } from "@/components/studio/hub-playbooks-panel"
 import type { AttentionItem, PendingReviewItem } from "@/components/studio/hub-process-panel"
 import {
   detectLifecycle,
-  getAllVelocity,
-  getAgentRoles,
   getInitiatives,
   getResearchIterations,
   getWorkstreams,
   getPortfolio,
-  getDocsByCategory,
-  getConventions,
   getSkills,
   getSessions,
 } from "@/lib/studio"
@@ -41,7 +19,6 @@ import { getBackendHealth } from "@sherpa/studio-core"
 
 const PROJECT_ROOT = path.resolve(process.cwd(), "../..")
 import { getMcpDashboard } from "@/lib/studio/mcp"
-import { detectPlaybook, PLAYBOOK_IDS } from "@/lib/studio/playbooks"
 
 function computeSessionStats(sessions: Session[]): HubStats["sessions"] {
   const now = new Date()
@@ -140,140 +117,241 @@ function buildAttentionNeeded(
   return items.sort((a, b) => b.days - a.days)
 }
 
+function ActionCard({ href, title, description, badge, badgeVariant, days }: {
+  href: string; title: string; description: string; badge: string;
+  badgeVariant: "review" | "integrate" | "failed" | "stale"; days: number;
+}) {
+  const badgeColors = {
+    review: "bg-[var(--color-gold)]/10 text-[var(--color-gold)]",
+    integrate: "bg-[var(--color-gold)]/10 text-[var(--color-gold)]",
+    failed: "bg-red-500/10 text-red-400",
+    stale: "bg-amber-500/10 text-amber-400",
+  }
+  const accentColors = {
+    review: "bg-[var(--color-gold)]/40",
+    integrate: "bg-[var(--color-gold)]/40",
+    failed: "bg-red-500/40",
+    stale: "bg-amber-500/40",
+  }
+  return (
+    <a href={href} className="flex items-center justify-between rounded-lg border border-border/50 bg-card/30 px-3.5 py-3 transition-colors hover:border-[var(--color-gold)]/15 hover:bg-card/50">
+      <div className="flex items-center gap-3">
+        <div className={`w-1 self-stretch rounded-full ${accentColors[badgeVariant]}`} />
+        <div>
+          <div className="text-sm font-medium text-foreground">{title}</div>
+          <div className="text-[12px] text-muted-foreground">{description}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className={`rounded px-2 py-0.5 font-mono text-[11px] ${badgeColors[badgeVariant]}`}>{badge}</span>
+        <span className="text-[12px] text-muted-foreground">{days}d</span>
+      </div>
+    </a>
+  )
+}
+
 export default async function StudioPage() {
   const initiatives = getInitiatives()
   const workstreams = getWorkstreams()
   const portfolio = getPortfolio()
-  const docsByCategory = getDocsByCategory()
-  const conventions = getConventions()
   const skills = getSkills()
-  const agentRoles = getAgentRoles()
   const sessions = getSessions()
   const tasks = getTaskBoard({ projectRoot: PROJECT_ROOT })
   const health = getBackendHealth(PROJECT_ROOT)
   const mcpData = await getMcpDashboard()
 
-  // Compute playbook summaries
-  const playbookCounts = new Map<string, number>();
-  for (const init of initiatives) {
-    if (init.status === "archived" || init.status === "declined") continue;
-    const pbId = detectPlaybook(init.risk);
-    playbookCounts.set(pbId, (playbookCounts.get(pbId) ?? 0) + 1);
-  }
-
-  const PLAYBOOK_META = {
-    "fast-track": { label: "Fast Track", risk: "additive", playCount: 3 },
-    "standard": { label: "Standard", risk: "evolutionary", playCount: 5 },
-    "high-stakes": { label: "High Stakes", risk: "structural", playCount: 8 },
-  } as const;
-
-  const playbookSummaries = PLAYBOOK_IDS.map((id) => ({
-    id,
-    label: PLAYBOOK_META[id].label,
-    risk: PLAYBOOK_META[id].risk,
-    playCount: PLAYBOOK_META[id].playCount,
-    initiativeCount: playbookCounts.get(id) ?? 0,
-  }));
-
-  const velocityInputs = initiatives.map((init) => {
-    const linkedWs = workstreams.filter((ws) =>
-      ws.initiative?.startsWith(init.slug),
-    )
-    return {
-      slug: init.slug,
-      activityLog: linkedWs.flatMap((ws) => ws.activityLog),
-    }
-  })
-  const velocityMap = getAllVelocity(velocityInputs)
-
-  const staleCount = [...velocityMap.values()].filter(
-    (v) => v.staleDays != null && v.staleDays >= 7,
-  ).length
+  const attentionNeeded = buildAttentionNeeded(initiatives, workstreams)
+  const pendingReview = buildPendingReview(initiatives)
+  const failedTasks = tasks.filter((t) => t.status === "failed")
+  const activeTasks = tasks.filter((t) => t.status === "dispatched" || t.status === "running")
+  const inProgressInitiatives = initiatives.filter((i) => i.status === "in-progress")
+  const staleCount = initiatives.filter((i) => {
+    if (i.status !== "in-progress" && i.status !== "approved") return false
+    const days = daysSinceDate(i.updated, Date.now())
+    return days >= 7
+  }).length
+  const sessionStats = computeSessionStats(sessions)
+  const actionCount = attentionNeeded.length + pendingReview.length + failedTasks.length
 
   return (
-    <div className="relative mx-auto max-w-6xl">
-      <div className="atmosphere-mesh" />
-      <HubAmbientGlow className="pointer-events-none absolute left-1/2 top-12 h-[200px] w-[400px] -translate-x-1/2 blur-[120px]" />
+    <div className="mx-auto max-w-6xl px-6 py-6">
+      {/* Operational Pulse — unchanged */}
+      <HubOperationalPulse
+        initiatives={initiatives}
+        workstreams={workstreams}
+        portfolio={portfolio}
+        skillCount={skills.length}
+        primitiveCount={0}
+        endpointCount={0}
+        staleCount={staleCount}
+      />
 
-      <HubStagger className="relative space-y-8">
-        <HubStaggerItem variant="fade">
-          <StudioHeader />
-        </HubStaggerItem>
-        <HubStaggerItem variant="fade">
-          <HubOperationalPulse
-            initiatives={initiatives}
-            workstreams={workstreams}
-            portfolio={portfolio}
-            skillCount={skills.length}
-            primitiveCount={0}
-            endpointCount={0}
-            staleCount={staleCount}
-          />
-        </HubStaggerItem>
+      <div className="mt-8 space-y-8">
+        {/* ===== TIER 1: ACTION REQUIRED ===== */}
+        <section>
+          <div className="mb-4 flex items-center gap-2">
+            <div className="size-2 animate-pulse rounded-full bg-[var(--color-gold)]" />
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-gold)]/80">
+              Action Required
+            </h2>
+            {actionCount > 0 && (
+              <span className="rounded bg-[var(--color-gold)]/10 px-2 py-0.5 font-mono text-[11px] text-[var(--color-gold)]">
+                {actionCount} {actionCount === 1 ? "item" : "items"}
+              </span>
+            )}
+          </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
-          {/* Row 1: process + docs */}
-          <HubStaggerItem variant="panel" className="lg:col-span-5">
-            <HubProcessPanel
-              initiatives={initiatives}
-              workstreams={workstreams}
-              velocityMap={velocityMap}
-              pendingReview={buildPendingReview(initiatives)}
-              attentionNeeded={buildAttentionNeeded(initiatives, workstreams)}
-            />
-          </HubStaggerItem>
-          <HubStaggerItem variant="panel" className="lg:col-span-7">
-            <HubDocsPanel docsByCategory={docsByCategory} />
-          </HubStaggerItem>
+          {actionCount === 0 ? (
+            /* All-clear empty state */
+            <div className="rounded-xl py-8 text-center" style={{ background: "radial-gradient(ellipse 400px 80px at 50% 50%, rgba(212,165,116,0.04), transparent)" }}>
+              <p className="font-display text-lg text-foreground/60">Nothing needs attention</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                All proposals reviewed · No failed tasks · No stale work
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {/* Attention items (Review/Integrate actions) */}
+              {attentionNeeded.map((item) => (
+                <ActionCard key={item.slug} href={`/process/${item.slug}`}
+                  title={item.title}
+                  description={item.action === "Review" ? "Proposal awaiting review" : "Ready for integration"}
+                  badge={item.action}
+                  badgeVariant={item.action === "Review" ? "review" : "integrate"}
+                  days={item.days}
+                />
+              ))}
+              {/* Pending review items */}
+              {pendingReview.map((item) => (
+                <ActionCard key={item.slug} href={`/process/${item.slug}`}
+                  title={item.title}
+                  description="Proposal awaiting review"
+                  badge="Review"
+                  badgeVariant="review"
+                  days={item.days}
+                />
+              ))}
+              {/* Failed tasks */}
+              {failedTasks.map((task) => (
+                <ActionCard key={task.id} href={`/tasks/${task.id}`}
+                  title={task.title || task.id}
+                  description={`Task dispatch failed — ${task.backend} backend`}
+                  badge="Failed"
+                  badgeVariant="failed"
+                  days={daysSinceDate(task.created, Date.now())}
+                />
+              ))}
+            </div>
+          )}
+        </section>
 
-          {/* Row 2: activity feed */}
-          <HubStaggerItem variant="panel" className="lg:col-span-12">
-            <HubActivityPanel recentActivity={portfolio.recentActivity} />
-          </HubStaggerItem>
+        {/* ===== TIER 2: ACTIVE WORK ===== */}
+        <section>
+          <h2 className="mb-4 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+            Active Work
+          </h2>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* Left column: In-progress initiatives */}
+            <div className="rounded-xl border border-border/50 bg-card/30 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-[13px] font-medium text-foreground">In-Progress Initiatives</h3>
+                <span className="text-[12px] text-muted-foreground">{inProgressInitiatives.length} active</span>
+              </div>
+              <div className="space-y-2.5">
+                {inProgressInitiatives.slice(0, 8).map((init) => (
+                  <a key={init.slug} href={`/process/${init.slug}`} className="flex items-center justify-between group">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] text-emerald-400">Active</span>
+                      <span className="text-[13px] text-foreground/90 group-hover:text-foreground transition-colors">{init.title}</span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">{daysSinceDate(init.updated, Date.now())}d</span>
+                  </a>
+                ))}
+                {inProgressInitiatives.length === 0 && (
+                  <p className="text-[13px] text-muted-foreground">No initiatives in progress</p>
+                )}
+              </div>
+            </div>
 
-          {/* Row 3: conventions + skills */}
-          <HubStaggerItem variant="panel" className="lg:col-span-5">
-            <HubConventionsPanel conventions={conventions} />
-          </HubStaggerItem>
-          <HubStaggerItem variant="panel" className="lg:col-span-7">
-            <HubSkillsPanel skills={skills} />
-          </HubStaggerItem>
+            {/* Right column: Active tasks + dispatches */}
+            <div className="rounded-xl border border-border/50 bg-card/30 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-[13px] font-medium text-foreground">Tasks &amp; Dispatch</h3>
+                <span className="text-[12px] text-muted-foreground">{activeTasks.length} running</span>
+              </div>
+              <div className="space-y-2.5">
+                {activeTasks.slice(0, 6).map((task) => (
+                  <a key={task.id} href={`/tasks/${task.id}`} className="flex items-center justify-between group">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-indigo-500/10 px-2 py-0.5 font-mono text-[11px] text-indigo-400">Running</span>
+                      <span className="text-[13px] text-foreground/90 group-hover:text-foreground transition-colors">{task.title || task.id}</span>
+                    </div>
+                    <span className="font-mono text-[11px] text-muted-foreground">{task.backend}</span>
+                  </a>
+                ))}
+                {activeTasks.length === 0 && (
+                  <p className="text-[13px] text-muted-foreground">No tasks running</p>
+                )}
+                {/* Backend health row */}
+                <div className="mt-2 border-t border-border/30 pt-2">
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="text-muted-foreground">Backend Health</span>
+                    <div className="flex items-center gap-2">
+                      {health.map((b) => (
+                        <span key={b.backend} className="flex items-center gap-1">
+                          <span className={`inline-block size-1.5 rounded-full ${b.available ? "bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.4)]" : "bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.3)]"}`} />
+                          <span className="text-muted-foreground">{b.backend}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-          {/* Row 3.5: playbooks */}
-          <HubStaggerItem variant="panel" className="lg:col-span-7">
-            <HubPlaybooksPanel playbooks={playbookSummaries} />
-          </HubStaggerItem>
-
-          {/* Row 4: tasks + workforce */}
-          <HubStaggerItem variant="panel" className="lg:col-span-5">
-            <HubTasksPanel tasks={tasks} />
-          </HubStaggerItem>
-          <HubStaggerItem variant="panel" className="lg:col-span-7">
-            <HubWorkforcePanel roles={agentRoles} workstreams={workstreams} />
-          </HubStaggerItem>
-
-          {/* Row 4.5: dispatch center */}
-          <HubStaggerItem variant="panel" className="lg:col-span-12">
-            <HubDispatchPanel tasks={tasks} health={health} />
-          </HubStaggerItem>
-
-          {/* Row 5: sessions + MCP */}
-          <HubStaggerItem variant="panel" className="lg:col-span-7">
-            <HubSessionsPanel
-              sessions={sessions}
-              stats={computeSessionStats(sessions)}
-            />
-          </HubStaggerItem>
-          <HubStaggerItem variant="panel" className="lg:col-span-5">
-            <HubMcpPanel data={mcpData} />
-          </HubStaggerItem>
-
-          {/* Row 6: workflow */}
-          <HubStaggerItem variant="panel" className="lg:col-span-5">
-            <HubWorkflowPanel />
-          </HubStaggerItem>
-        </div>
-      </HubStagger>
+        {/* ===== TIER 3: CONTEXT (collapsed by default) ===== */}
+        <section>
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-muted-foreground">
+              <svg className="size-3.5 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              <span className="font-mono text-[11px] uppercase tracking-[0.12em]">System Status</span>
+              <div className="flex items-center gap-1.5 ml-1">
+                {health.map((b) => (
+                  <span key={b.backend} className={`inline-block size-1.5 rounded-full ${b.available ? "bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.4)]" : "bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.3)]"}`} />
+                ))}
+              </div>
+            </summary>
+            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              {/* MCP */}
+              <div className="rounded-xl border border-border/50 bg-card/30 p-4">
+                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">MCP Server</div>
+                <div className="text-sm text-foreground">{mcpData.tools?.length ?? 0} tools registered</div>
+                <div className="mt-1 text-[12px] text-muted-foreground">{mcpData.server?.command ? "stdio" : mcpData.server?.url ? "sse" : "unknown"} transport</div>
+              </div>
+              {/* Sessions */}
+              <div className="rounded-xl border border-border/50 bg-card/30 p-4">
+                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Sessions</div>
+                <div className="text-sm text-foreground">{sessionStats.total} total · {sessionStats.thisWeek} this week</div>
+                <div className="mt-1 text-[12px] text-muted-foreground">{(sessionStats.weeklyTokens / 1_000_000).toFixed(1)}M tokens weekly</div>
+              </div>
+              {/* Backends */}
+              <div className="rounded-xl border border-border/50 bg-card/30 p-4">
+                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Backends</div>
+                <div className="space-y-1 mt-1">
+                  {health.map((b) => (
+                    <div key={b.backend} className="flex items-center justify-between text-[12px]">
+                      <span className="text-foreground/80">{b.backend}</span>
+                      <span className={b.available ? "text-emerald-400" : "text-amber-400"}>{b.available ? "available" : "unavailable"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+      </div>
     </div>
   )
 }
