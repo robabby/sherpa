@@ -506,14 +506,21 @@ function WorkforcePanel({
   health,
   roles,
   selectedTaskTypes,
+  selectedAgent,
+  selectedBackend,
   onAssignAgent,
+  onSelectBackend,
 }: {
   health: BackendHealth[];
   roles: AgentRole[];
   selectedTaskTypes: Set<string>;
+  selectedAgent: string | null;
+  selectedBackend: string | null;
   onAssignAgent?: (agentSlug: string) => void;
+  onSelectBackend?: (backend: string) => void;
 }) {
   const hasSelection = selectedTaskTypes.size > 0;
+  const hasAgent = selectedAgent !== null;
   return (
     <div className="col-span-4 flex flex-col overflow-hidden rounded-lg border border-[var(--color-copper)]/15 bg-card/30 backdrop-blur-[2px]">
       {/* Panel header */}
@@ -529,43 +536,57 @@ function WorkforcePanel({
           <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground/40">
             Backends
           </p>
-          {health.map((b) => (
-            <div
-              key={b.backend}
-              className="flex items-center justify-between py-1"
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    "inline-block h-1.5 w-1.5 rounded-full",
-                    b.available
-                      ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]"
-                      : "bg-rose-400 shadow-[0_0_6px_rgba(248,113,113,0.4)]"
-                  )}
-                />
-                <span
-                  className={cn(
-                    "text-xs",
-                    b.available ? "text-foreground" : "text-muted-foreground/50"
-                  )}
-                >
-                  {b.backend === "lm-studio"
-                    ? "LM Studio"
-                    : b.backend.charAt(0).toUpperCase() + b.backend.slice(1)}
-                </span>
-              </div>
-              <span
+          {health.map((b) => {
+            const isSelected = selectedBackend === b.backend;
+            const isClickable = hasAgent && b.available;
+
+            return (
+              <button
+                key={b.backend}
+                disabled={!isClickable}
+                onClick={() => isClickable && onSelectBackend?.(b.backend)}
                 className={cn(
-                  "inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50",
-                  !b.available && "opacity-40"
+                  "flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 transition-all duration-200",
+                  isSelected && "bg-[var(--color-copper)]/12 border border-[var(--color-copper)]/25",
+                  !isSelected && "border border-transparent",
+                  isClickable && !isSelected && "hover:bg-[var(--color-copper)]/5 cursor-pointer",
+                  !isClickable && "cursor-default"
                 )}
               >
-                {b.available
-                  ? b.models?.join(" \u00b7 ") ?? "ready"
-                  : "offline"}
-              </span>
-            </div>
-          ))}
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "inline-block h-1.5 w-1.5 rounded-full",
+                      b.available
+                        ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]"
+                        : "bg-rose-400 shadow-[0_0_6px_rgba(248,113,113,0.4)]"
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "text-xs",
+                      isSelected ? "font-medium text-[var(--color-copper)]" : b.available ? "text-foreground" : "text-muted-foreground/50"
+                    )}
+                  >
+                    {b.backend === "lm-studio"
+                      ? "LM Studio"
+                      : b.backend.charAt(0).toUpperCase() + b.backend.slice(1)}
+                  </span>
+                </div>
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50",
+                    !b.available && "opacity-40",
+                    isSelected && "border-[var(--color-copper)]/25 text-[var(--color-copper)]"
+                  )}
+                >
+                  {b.available
+                    ? b.models?.join(" \u00b7 ") ?? "ready"
+                    : "offline"}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Divider */}
@@ -587,20 +608,22 @@ function WorkforcePanel({
             // Is this agent eligible for any currently selected task?
             const isEligible = hasSelection && allTypes.some((t) => selectedTaskTypes.has(t));
             const isIneligible = hasSelection && !isEligible;
+            const isAssigned = selectedAgent === role.slug;
 
             return (
               <div
                 key={role.slug}
                 className={cn(
                   "flex items-center justify-between border-b border-[var(--color-copper)]/6 py-2 transition-all duration-200 last:border-0",
-                  isEligible && "rounded-md bg-[var(--color-copper)]/8 px-2 -mx-2 border-[var(--color-copper)]/20",
+                  isAssigned && "rounded-md bg-[var(--color-copper)]/15 px-2 -mx-2 border-[var(--color-copper)]/30 shadow-[0_0_12px_rgba(196,127,60,0.15)]",
+                  isEligible && !isAssigned && "rounded-md bg-[var(--color-copper)]/5 px-2 -mx-2 border-[var(--color-copper)]/15",
                   isIneligible && "opacity-30"
                 )}
               >
                 <div>
                   <p className={cn(
                     "text-xs",
-                    isEligible ? "font-medium text-[var(--color-copper)]" : "text-foreground"
+                    isAssigned ? "font-semibold text-[var(--color-copper)]" : isEligible ? "font-medium text-[var(--color-copper)]" : "text-foreground"
                   )}>
                     {role.displayName || role.slug}
                   </p>
@@ -628,13 +651,15 @@ function WorkforcePanel({
                   disabled={hasSelection && !isEligible}
                   className={cn(
                     "rounded border px-2 py-0.5 text-[10px] transition-colors",
-                    isEligible
-                      ? "border-[var(--color-copper)]/30 bg-[var(--color-copper)]/10 text-[var(--color-copper)] hover:bg-[var(--color-copper)]/20"
-                      : "border-muted-foreground/12 text-muted-foreground/60 hover:border-muted-foreground/25 hover:text-muted-foreground/80",
+                    isAssigned
+                      ? "border-[var(--color-copper)]/50 bg-[var(--color-copper)]/20 text-[var(--color-copper)] font-medium"
+                      : isEligible
+                        ? "border-[var(--color-copper)]/30 bg-[var(--color-copper)]/10 text-[var(--color-copper)] hover:bg-[var(--color-copper)]/20"
+                        : "border-muted-foreground/12 text-muted-foreground/60 hover:border-muted-foreground/25 hover:text-muted-foreground/80",
                     hasSelection && !isEligible && "pointer-events-none"
                   )}
                 >
-                  {isEligible ? "Assign" : "Assign"}
+                  {isAssigned ? "Assigned" : "Assign"}
                 </button>
               </div>
             );
@@ -657,35 +682,67 @@ function WorkforcePanel({
 
 function QueueControls({
   selectedCount,
+  selectedAgent,
+  selectedBackend,
   activeCount,
   completedTodayCount,
   dispatching,
   onDispatch,
 }: {
   selectedCount: number;
+  selectedAgent: string | null;
+  selectedBackend: string | null;
   activeCount: number;
   completedTodayCount: number;
   dispatching: boolean;
   onDispatch: () => void;
 }) {
+  const isReady = selectedCount > 0 && selectedAgent && selectedBackend;
+
+  // Pipeline step indicators
+  const steps = [
+    { label: `${selectedCount} task${selectedCount !== 1 ? "s" : ""}`, done: selectedCount > 0 },
+    { label: selectedAgent ?? "agent", done: !!selectedAgent },
+    { label: selectedBackend ?? "backend", done: !!selectedBackend },
+  ];
+
   return (
     <div className="flex items-center justify-between rounded-lg border border-[var(--color-copper)]/15 bg-card/30 px-4 py-3 backdrop-blur-[2px]">
       <div className="flex items-center gap-3">
+        {/* Pipeline steps */}
+        <div className="flex items-center gap-1.5">
+          {steps.map((step, i) => (
+            <span key={i} className="flex items-center gap-1.5">
+              {i > 0 && <span className="text-muted-foreground/20">→</span>}
+              <span
+                className={cn(
+                  "rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  step.done
+                    ? "border-[var(--color-copper)]/30 bg-[var(--color-copper)]/10 text-[var(--color-copper)]"
+                    : "border-muted-foreground/12 text-muted-foreground/30"
+                )}
+              >
+                {step.label}
+              </span>
+            </span>
+          ))}
+        </div>
+
+        {/* Dispatch button */}
         <button
           onClick={onDispatch}
-          disabled={selectedCount === 0 || dispatching}
+          disabled={!isReady || dispatching}
           className={cn(
             "flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-all",
-            selectedCount > 0 && !dispatching
+            isReady && !dispatching
               ? "border-[var(--color-copper)]/30 bg-[var(--color-copper)]/15 text-[var(--color-copper)] hover:border-[var(--color-copper)]/50 hover:bg-[var(--color-copper)]/25"
               : "border-muted-foreground/15 bg-muted/30 text-muted-foreground/40 cursor-not-allowed"
           )}
         >
           <Play className="h-3 w-3" />
-          {dispatching
-            ? "Dispatching..."
-            : `Dispatch Selected (${selectedCount})`}
+          {dispatching ? "Dispatching..." : "Dispatch"}
         </button>
+
         <button className="rounded-md border border-muted-foreground/12 px-3 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:border-muted-foreground/25 hover:text-muted-foreground/80">
           <span className="flex items-center gap-1.5">
             <Zap className="h-3 w-3" />
@@ -730,6 +787,8 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
   const router = useRouter();
   const [mode, setMode] = useState<DispatchMode>("supervised");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+  const [selectedBackend, setSelectedBackend] = useState<string | null>(null);
   const [dispatching, setDispatching] = useState(false);
 
   // Derived task lists
@@ -796,7 +855,7 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
     [pendingTasks]
   );
 
-  // Toggle task selection
+  // Toggle task selection — clears agent/backend when selection changes
   const handleToggle = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -804,6 +863,19 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
       else next.add(id);
       return next;
     });
+    setSelectedAgent(null);
+    setSelectedBackend(null);
+  }, []);
+
+  // Select agent
+  const handleAssignAgent = useCallback((slug: string) => {
+    setSelectedAgent((prev) => prev === slug ? null : slug);
+    setSelectedBackend(null); // reset backend when agent changes
+  }, []);
+
+  // Select backend
+  const handleSelectBackend = useCallback((backend: string) => {
+    setSelectedBackend((prev) => prev === backend ? null : backend);
   }, []);
 
   // Dispatch selected tasks
@@ -817,7 +889,7 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
         fetch("/api/dispatch/run", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ taskId, mode }),
+          body: JSON.stringify({ taskId, mode, agent: selectedAgent, backend: selectedBackend }),
         })
       )
     );
@@ -828,11 +900,13 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
 
     if (successCount > 0) {
       setSelectedIds(new Set());
+      setSelectedAgent(null);
+      setSelectedBackend(null);
       router.refresh();
     }
 
     setDispatching(false);
-  }, [selectedIds, mode, router]);
+  }, [selectedIds, mode, selectedAgent, selectedBackend, router]);
 
   // Polling: refresh when there are dispatched tasks
   useEffect(() => {
@@ -890,6 +964,8 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
         <motion.div variants={fadeVariant}>
           <QueueControls
             selectedCount={selectedCount}
+            selectedAgent={selectedAgent}
+            selectedBackend={selectedBackend}
             activeCount={activeCount}
             completedTodayCount={completedTodayCount}
             dispatching={dispatching}
@@ -920,6 +996,10 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
             health={health}
             roles={roles}
             selectedTaskTypes={selectedTaskTypes}
+            selectedAgent={selectedAgent}
+            selectedBackend={selectedBackend}
+            onAssignAgent={handleAssignAgent}
+            onSelectBackend={handleSelectBackend}
           />
         </motion.div>
       </motion.div>
