@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "sherpa-mcp": "./src/server.ts"
+    "sherpa-mcp": "./src/main.ts"
   },
   "exports": {
     ".": "./src/index.ts"

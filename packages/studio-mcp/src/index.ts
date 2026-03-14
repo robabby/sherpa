@@ -1,4 +1,7 @@
 export { createStudioMcpServer } from "./server"
 export type { StudioMcpOptions } from "./server"
+export { startHttpServer } from "./http-server"
+export type { HttpServerOptions } from "./http-server"
 export { SessionManager } from "./session-manager"
 export type { Session } from "./session-manager"
+export { resolvePort } from "./port"

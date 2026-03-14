@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Sherpa Studio MCP Server — development control plane for Claude Code.
  *
@@ -6,12 +5,11 @@
  *   Tasks: task_list, task_get, task_create, task_update, task_dispatch, task_logs
  *   Infrastructure: lm_status
  *
- * Run via .mcp.json config at repo root. Transport: stdio.
- * CRITICAL: No console.log — stdout IS the MCP transport. Use console.error for debug.
+ * Factory function creates an McpServer instance per client session.
+ * See http-server.ts for the Streamable HTTP transport layer.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod"
 import fs from "node:fs"
 import path from "node:path"
@@ -640,10 +638,3 @@ ${deliverables}
   return server
 }
 
-// ---------------------------------------------------------------------------
-// Standalone entrypoint — run with stdio transport
-// ---------------------------------------------------------------------------
-
-const server = createStudioMcpServer()
-const transport = new StdioServerTransport()
-await server.connect(transport)
