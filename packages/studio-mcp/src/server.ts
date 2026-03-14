@@ -36,6 +36,8 @@ export interface StudioMcpOptions {
   workerScript?: string
   /** Path to the task-logger module (relative to projectRoot). Null disables event logging. */
   taskLoggerPath?: string | null
+  /** Port for MCP Streamable HTTP server. Defaults to 3100. */
+  port?: number
 }
 
 function findGitRoot(): string | null {

@@ -96,6 +96,8 @@ export interface McpConfig {
   configPath?: string
   /** Path to task log directory for MCP event tracking. */
   taskLogsPath?: string
+  /** Port for MCP Streamable HTTP server. Defaults to 3100. */
+  port?: number
 }
 
 // ---------------------------------------------------------------------------

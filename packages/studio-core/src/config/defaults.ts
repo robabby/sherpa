@@ -75,6 +75,7 @@ export const DEFAULT_MCP: Required<McpConfig> = {
   lmStudioUrl: "http://127.0.0.1:1234",
   configPath: "",
   taskLogsPath: "",
+  port: 3100,
 }
 
 /**
@@ -97,6 +98,7 @@ export function buildDefaults(userConfig: SherpaUserConfig): SherpaConfig {
       lmStudioUrl: userConfig.mcp?.lmStudioUrl ?? DEFAULT_MCP.lmStudioUrl,
       configPath: userConfig.mcp?.configPath ?? paths.mcpConfig,
       taskLogsPath: userConfig.mcp?.taskLogsPath ?? DEFAULT_MCP.taskLogsPath,
+      port: userConfig.mcp?.port ?? DEFAULT_MCP.port,
     },
     dispatch: { ...DEFAULT_DISPATCH, ...userConfig.dispatch },
     plugins: userConfig.plugins ?? [],
