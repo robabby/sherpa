@@ -460,8 +460,13 @@ export function getAgentRoles(): AgentRole[] {
 
     const body = content.replace(/^#[^\n]*\n/, "").trim()
 
-    // Skip if base catalog already has this agent (org overrides handled separately)
-    if (roles.some((r) => r.slug === data.role)) continue
+    // If base catalog already has this agent, merge dispatch fields from org role
+    const existing = roles.find((r) => r.slug === data.role)
+    if (existing) {
+      if (data["task-type"]) existing.taskType = data["task-type"]
+      if (data["eligible-task-types"]?.length) existing.eligibleTaskTypes = data["eligible-task-types"]
+      continue
+    }
 
     roles.push({
       slug: data.role,
