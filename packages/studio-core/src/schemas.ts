@@ -154,6 +154,8 @@ export const agentRoleFrontmatterSchema = z.object({
   skills: z.array(z.string()).default([]),
   "tool-permissions": z.array(z.string()).default([]),
   escalation: z.array(z.string()).default([]),
+  "task-type": z.string().optional(),
+  "eligible-task-types": z.array(z.string()).optional().default([]),
 });
 
 export const behavioralAgentFrontmatterSchema = z
@@ -181,6 +183,10 @@ export const behavioralAgentFrontmatterSchema = z
     skills: z.array(z.string()).optional().default([]),
     patterns: z.array(z.enum(AGENT_PATTERNS)).optional().default([]),
     structure: z.enum(AGENT_STRUCTURES).nullable().optional().default(null),
+
+    // Dispatch (all optional)
+    "task-type": z.string().optional(),
+    "eligible-task-types": z.array(z.string()).optional().default([]),
 
     // Display (all optional)
     vibe: z.string().optional(),

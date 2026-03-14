@@ -78,6 +78,8 @@ export interface AgentRole {
   outputStyle?: string;
   vibe?: string;
   tags?: string[];
+  taskType?: string;
+  eligibleTaskTypes?: string[];
   source?: "base" | "org";
 }
 

@@ -505,10 +505,15 @@ function AssignmentsPanel({
 function WorkforcePanel({
   health,
   roles,
+  selectedTaskTypes,
+  onAssignAgent,
 }: {
   health: BackendHealth[];
   roles: AgentRole[];
+  selectedTaskTypes: Set<string>;
+  onAssignAgent?: (agentSlug: string) => void;
 }) {
+  const hasSelection = selectedTaskTypes.size > 0;
   return (
     <div className="col-span-4 flex flex-col overflow-hidden rounded-lg border border-[var(--color-copper)]/15 bg-card/30 backdrop-blur-[2px]">
       {/* Panel header */}
@@ -572,18 +577,36 @@ function WorkforcePanel({
             Agents
           </p>
           {roles.map((role) => {
-            const taskTypes = role.tags?.filter((t) => t in TASK_TYPE_STYLES) ?? [];
+            const primaryType = role.taskType;
+            const eligible = role.eligibleTaskTypes ?? [];
+            const allTypes = primaryType ? [primaryType, ...eligible] : eligible;
+            const displayTypes = allTypes.length > 0
+              ? allTypes.filter((t) => t in TASK_TYPE_STYLES)
+              : role.tags?.filter((t) => t in TASK_TYPE_STYLES) ?? [];
+
+            // Is this agent eligible for any currently selected task?
+            const isEligible = hasSelection && allTypes.some((t) => selectedTaskTypes.has(t));
+            const isIneligible = hasSelection && !isEligible;
 
             return (
               <div
                 key={role.slug}
-                className="flex items-center justify-between border-b border-[var(--color-copper)]/6 py-2 last:border-0"
+                className={cn(
+                  "flex items-center justify-between border-b border-[var(--color-copper)]/6 py-2 transition-all duration-200 last:border-0",
+                  isEligible && "rounded-md bg-[var(--color-copper)]/8 px-2 -mx-2 border-[var(--color-copper)]/20",
+                  isIneligible && "opacity-30"
+                )}
               >
                 <div>
-                  <p className="text-xs text-foreground">{role.slug}</p>
-                  {taskTypes.length > 0 && (
+                  <p className={cn(
+                    "text-xs",
+                    isEligible ? "font-medium text-[var(--color-copper)]" : "text-foreground"
+                  )}>
+                    {role.displayName || role.slug}
+                  </p>
+                  {displayTypes.length > 0 && (
                     <div className="mt-0.5 flex items-center gap-1">
-                      {taskTypes.map((tt) => {
+                      {displayTypes.map((tt) => {
                         const s = getTaskTypeStyle(tt);
                         return (
                           <span
@@ -600,8 +623,18 @@ function WorkforcePanel({
                     </div>
                   )}
                 </div>
-                <button className="rounded border border-muted-foreground/12 px-2 py-0.5 text-[10px] text-muted-foreground/60 transition-colors hover:border-muted-foreground/25 hover:text-muted-foreground/80">
-                  Assign
+                <button
+                  onClick={() => onAssignAgent?.(role.slug)}
+                  disabled={hasSelection && !isEligible}
+                  className={cn(
+                    "rounded border px-2 py-0.5 text-[10px] transition-colors",
+                    isEligible
+                      ? "border-[var(--color-copper)]/30 bg-[var(--color-copper)]/10 text-[var(--color-copper)] hover:bg-[var(--color-copper)]/20"
+                      : "border-muted-foreground/12 text-muted-foreground/60 hover:border-muted-foreground/25 hover:text-muted-foreground/80",
+                    hasSelection && !isEligible && "pointer-events-none"
+                  )}
+                >
+                  {isEligible ? "Assign" : "Assign"}
                 </button>
               </div>
             );
@@ -732,6 +765,16 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
 
   // Blocked types based on mode
   const blockedTypes = mode === "overnight" ? OVERNIGHT_BLOCKED : [];
+
+  // Task-types of currently selected tasks (for workforce highlighting)
+  const selectedTaskTypes = useMemo(() => {
+    const types = new Set<string>();
+    for (const id of selectedIds) {
+      const task = pendingTasks.find((t) => t.id === id);
+      if (task) types.add(task.taskType);
+    }
+    return types;
+  }, [selectedIds, pendingTasks]);
 
   // When mode switches to overnight, deselect blocked tasks
   const handleModeChange = useCallback(
@@ -873,7 +916,11 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
             active={activeTasks}
             completedToday={completedToday}
           />
-          <WorkforcePanel health={health} roles={roles} />
+          <WorkforcePanel
+            health={health}
+            roles={roles}
+            selectedTaskTypes={selectedTaskTypes}
+          />
         </motion.div>
       </motion.div>
     </MotionConfig>

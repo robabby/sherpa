@@ -440,6 +440,8 @@ export function getAgentRoles(): AgentRole[] {
       outputStyle: data["output-style"],
       vibe: data.vibe,
       tags: data.tags ?? [],
+      taskType: data["task-type"] ?? undefined,
+      eligibleTaskTypes: data["eligible-task-types"] ?? [],
       source: "base",
     })
   }
@@ -474,6 +476,8 @@ export function getAgentRoles(): AgentRole[] {
       toolPermissions: data["tool-permissions"] ?? [],
       escalation: data.escalation ?? [],
       description: body,
+      taskType: data["task-type"] ?? undefined,
+      eligibleTaskTypes: data["eligible-task-types"] ?? [],
       source: "org",
     })
   }
