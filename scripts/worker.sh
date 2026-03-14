@@ -106,6 +106,18 @@ ${TASK_BODY}"
 # ── Ensure logs directory ─────────────────────────────────────────────
 mkdir -p "$REPO_ROOT/docs/tasks/logs"
 
+# ── NDJSON event logger ──────────────────────────────────────────────
+EVENTS_FILE="$REPO_ROOT/docs/tasks/logs/${TASK_SLUG}-events.ndjson"
+log_event() {
+  local event="$1"
+  shift
+  local ts
+  ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  echo "{\"timestamp\":\"$ts\",\"event\":\"$event\",\"source\":\"worker.sh\"$@}" >> "$EVENTS_FILE"
+}
+
+log_event "worker_started" ",\"taskSlug\":\"$TASK_SLUG\",\"backend\":\"$BACKEND\",\"model\":\"$MODEL\",\"mode\":\"$MODE\",\"taskType\":\"$TASK_TYPE\",\"budgetUsd\":\"$BUDGET_USD\""
+
 # ── Export SHERPA_* env vars ──────────────────────────────────────────
 export SHERPA_TASK_SLUG="$TASK_SLUG"
 export SHERPA_TASK_FILE="$TASK_FILE"
@@ -121,6 +133,7 @@ export SHERPA_SYSTEM_PROMPT="You are executing task $TASK_SLUG for the Sherpa fr
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S")
 node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" status dispatched
 node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" dispatched-at "$TIMESTAMP"
+log_event "status_changed" ",\"from\":\"pending\",\"to\":\"dispatched\""
 
 echo "[worker] Dispatching task=$TASK_SLUG backend=$BACKEND model=$MODEL mode=$MODE" >&2
 
@@ -133,9 +146,12 @@ fi
 
 if [[ ! -f "$BACKEND_SCRIPT" ]]; then
   echo "ERROR: Backend not found: $BACKEND_SCRIPT" >&2
+  log_event "backend_not_found" ",\"script\":\"$BACKEND_SCRIPT\""
   node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" status failed
   exit 1
 fi
+
+log_event "backend_delegating" ",\"script\":\"$BACKEND_SCRIPT\",\"backend\":\"$BACKEND\",\"model\":\"$MODEL\""
 
 # ── Delegate to backend ───────────────────────────────────────────────
 EXIT_CODE=0
@@ -147,12 +163,15 @@ fi
 
 # ── Update final status ──────────────────────────────────────────────
 COMPLETED_AT=$(date -u +"%Y-%m-%dT%H:%M:%S")
+DURATION_S=$(( $(date +%s) - $(date -j -f "%Y-%m-%dT%H:%M:%S" "$TIMESTAMP" +%s 2>/dev/null || echo 0) ))
 if [[ "$EXIT_CODE" -eq 0 ]]; then
   node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" status completed
   node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" completed-at "$COMPLETED_AT"
+  log_event "status_changed" ",\"from\":\"dispatched\",\"to\":\"completed\",\"exitCode\":0,\"durationSeconds\":$DURATION_S"
   echo "[worker] Task $TASK_SLUG completed successfully." >&2
 else
   node "$SCRIPT_DIR/task-scanner.mjs" --update "$TASK_SLUG" status failed
+  log_event "status_changed" ",\"from\":\"dispatched\",\"to\":\"failed\",\"exitCode\":$EXIT_CODE,\"durationSeconds\":$DURATION_S"
   echo "[worker] Task $TASK_SLUG failed with exit code $EXIT_CODE." >&2
 fi
 
