@@ -42,15 +42,25 @@ We call out real problems without performing skepticism. Anti-hype, not anti-AI.
 
 Tone adapts to the situation while voice remains constant.
 
-| Context | Tone | Example |
-|---------|------|---------|
-| Marketing / website | Warm, confident | "Ship AI workflows you can actually trust." |
-| Framework docs | Clear, practical | "Define behavioral constraints in the agent role file." |
-| Consulting content | Thoughtful, grounded | "The gap isn't talent. It's that governance comes last — if it comes at all." |
-| Blog / thought leadership | Conversational, specific | "We ran this framework on 12 engagements before open-sourcing it." |
-| Empty states | Inviting, unhurried | "Nothing here yet. Start with a proposal." |
-| Errors | Honest, calm | "Something went wrong loading the initiative." |
-| Success messages | Warm, brief | "Saved." or "You're in." |
+| Context | User feeling | Tone | Example |
+|---------|-------------|------|---------|
+| Marketing / website | Curious, evaluating | Warm, confident | "Ship AI workflows you can actually trust." |
+| Framework docs | Focused, building | Clear, practical | "Define behavioral constraints in the agent role file." |
+| Consulting content | Uncertain, cautious | Thoughtful, grounded | "The gap isn't talent. It's that governance comes last." |
+| Blog / thought leadership | Browsing, skeptical | Conversational, specific | "We ran this framework on 12 engagements before open-sourcing it." |
+| Empty states | Exploring, maybe lost | Inviting, unhurried | "Nothing here yet. Start with a proposal." |
+| Errors | Frustrated, anxious | Honest, calm, solution-first | "Something went wrong loading the initiative. Try refreshing." |
+| Success messages | Accomplished | Warm, brief | "Saved." or "You're in." |
+| First-time setup | Overwhelmed, hopeful | Encouraging, concise | "Three files. That's all you need to start." |
+
+### Where We Sit (NNGroup Dimensions)
+
+| Dimension | Our position |
+|-----------|-------------|
+| Funny ↔ Serious | Serious — dry wit occasionally, never jokes |
+| Formal ↔ Casual | Middle-casual — conversational but not slangy |
+| Respectful ↔ Irreverent | Respectful — we take the reader's problems seriously |
+| Enthusiastic ↔ Matter-of-fact | Matter-of-fact — let evidence carry the energy |
 
 ---
 
@@ -147,6 +157,20 @@ Don't position against competitors. Don't apologize for being small.
 
 ---
 
+## Readability Targets
+
+| Content type | Grade level | Why |
+|-------------|-------------|-----|
+| Marketing / website | Grade 8 | Accessible to all audiences |
+| Blog / thought leadership | Grade 9-10 | Technical but not academic |
+| Framework documentation | Grade 10-12 | Technical audience expects precision |
+| Consulting content | Grade 8-9 | Executives value clarity |
+| Error messages / UI text | Grade 6 | Must be instantly understood |
+
+Even expert readers prefer simpler text — it's faster to parse. When in doubt, target lower.
+
+---
+
 ## Complementary Tool
 
 Use alongside **`elements-of-style:writing-clearly-and-concisely`** for clarity and economy.
@@ -155,3 +179,5 @@ Use alongside **`elements-of-style:writing-clearly-and-concisely`** for clarity 
 - Strunk tells you *how* to say it with precision
 
 Apply both: tone first (does this sound like us?), then clarity (is this as tight as it can be?).
+
+*See also: [Content Guidelines](./content-guidelines.md) for what we write, [Accessibility & Inclusion](./accessibility-and-inclusion.md) for accessible and inclusive writing, [Grammar & Mechanics](./grammar-and-mechanics.md) for formatting rules.*

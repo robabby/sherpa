@@ -159,7 +159,20 @@ Before publishing content, check:
 - [ ] Is it as concise as it can be?
 - [ ] Does the language avoid the Words We Avoid list?
 - [ ] Is it honest about what we don't know or haven't solved?
+- [ ] Does it meet the readability target for its content type?
+- [ ] Is it accessible? (See [Accessibility & Inclusion](./accessibility-and-inclusion.md))
 
 ---
 
-*See also: [Voice & Tone](./voice-and-tone.md) for how we speak, [Design Principles](./design-principles.md) for how we build.*
+## Readability
+
+See [Voice & Tone — Readability Targets](./voice-and-tone.md#readability-targets) for grade levels by content type. Quick reference:
+
+- Marketing copy: short sentences, concrete words, Grade 8
+- Blog posts: can go deeper but lead each section with the conclusion first (answer-first pattern)
+- Framework docs: precision over simplicity, but avoid jargon-as-decoration
+- UI text: one idea per message, Grade 6
+
+---
+
+*See also: [Voice & Tone](./voice-and-tone.md) for how we speak, [Design Principles](./design-principles.md) for how we build, [Personas](./personas.md) for who we write for, [Messaging Framework](./messaging-framework.md) for what we say.*

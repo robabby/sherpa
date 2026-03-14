@@ -6,6 +6,8 @@ A behavioral governance framework for agentic workflows — and the consulting t
 
 **Tagline:** Ship with confidence.
 
+*This document follows [April Dunford's five-component positioning structure](https://www.aprildunford.com/post/a-quickstart-guide-to-positioning). See [Messaging Framework](./messaging-framework.md) for how positioning flows into narrative and per-persona messaging.*
+
 ---
 
 ## The Name
@@ -33,6 +35,7 @@ The framework gets better because we use it on every engagement. The consulting 
 ---
 
 ## Who It's For
+<!-- Dunford: Best-Fit Customers -->
 
 Three archetypes:
 
@@ -45,6 +48,7 @@ Common thread: people who value competence over performance.
 ---
 
 ## What Sherpa Is Not
+<!-- Dunford: Competitive Alternatives (by negation) -->
 
 - **Not a platform.** We're a framework and a consulting practice, not a SaaS product with a monthly fee.
 - **Not an AI company.** We don't build AI models. We help teams govern the ones they use.
@@ -54,6 +58,7 @@ Common thread: people who value competence over performance.
 ---
 
 ## What Makes Sherpa Different
+<!-- Dunford: Unique Attributes + Value -->
 
 - **We use what we ship.** Every consulting engagement runs on the same open-source framework. Not a demo, not a simplified version — the same tools.
 - **Behavioral constraints, not identity prompts.** Agent roles are defined through what they *do*, not who they *are*. This is research-validated and structurally different from how most teams define AI agents.
@@ -63,6 +68,7 @@ Common thread: people who value competence over performance.
 ---
 
 ## Competitive Positioning
+<!-- Dunford: Competitive Alternatives (by comparison) -->
 
 | Approach | Typical Consultancy | Sherpa |
 |----------|-------------------|-------|
@@ -78,6 +84,7 @@ Common thread: people who value competence over performance.
 
 **One-sentence definition:**
 Sherpa is a behavioral governance framework for agentic workflows — and the consulting team that built it.
+<!-- Dunford: Market Category = "Behavioral governance for agentic workflows" -->
 
 **Tagline:**
 Ship with confidence.
@@ -90,4 +97,4 @@ Behavioral governance for agentic workflows. Open-source framework and consultin
 
 ---
 
-*See also: [Design Principles](./design-principles.md) for how we build, [Voice & Tone](./voice-and-tone.md) for how we speak, [Content Guidelines](./content-guidelines.md) for what we write.*
+*See also: [Design Principles](./design-principles.md) for how we build, [Voice & Tone](./voice-and-tone.md) for how we speak, [Content Guidelines](./content-guidelines.md) for what we write, [Messaging Framework](./messaging-framework.md) for narrative structure, [Personas](./personas.md) for audience archetypes.*
