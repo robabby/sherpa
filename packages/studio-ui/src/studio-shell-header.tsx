@@ -26,7 +26,8 @@ function buildSegments(pathname: string): { label: string; href?: string }[] {
   }
 
   const parts = pathname.replace(/^\//, "").split("/").filter(Boolean);
-  const sectionKey = parts[0];
+  if (parts.length === 0) return [{ label: "Dashboard" }];
+  const sectionKey = parts[0]!;
   const label = sectionLabels[sectionKey] ?? sectionKey;
 
   if (parts.length === 1) {
