@@ -1,0 +1,7 @@
+{"timestamp":"2026-03-14T01:01:48.103Z","event":"dispatch_requested","taskId":"research-opencode-rate-limits","mode":"supervised","agent":"research-lead","backend":"gemini","source":"studio-ui"}
+{"timestamp":"2026-03-14T01:01:48.160Z","event":"task_updated","taskId":"research-opencode-rate-limits","updates":{"mode":"supervised","backend":"gemini"}}
+{"timestamp":"2026-03-14T01:01:48.663Z","event":"dispatch_spawned","taskId":"research-opencode-rate-limits","pid":82795,"backend":"gemini","agent":"research-lead","mode":"supervised"}
+{"timestamp":"2026-03-14T01:01:48Z","event":"worker_started","source":"worker.sh","taskSlug":"research-opencode-rate-limits","backend":"gemini","model":"claude-sonnet-4-6","mode":"supervised","taskType":"research","budgetUsd":"1.00"}
+{"timestamp":"2026-03-14T01:01:48Z","event":"status_changed","source":"worker.sh","from":"pending","to":"dispatched"}
+{"timestamp":"2026-03-14T01:01:48Z","event":"backend_delegating","source":"worker.sh","script":"/Users/rob/Workbench/sherpa/scripts/backends/gemini.sh","backend":"gemini","model":"claude-sonnet-4-6"}
+{"timestamp":"2026-03-14T01:01:51Z","event":"status_changed","source":"worker.sh","from":"dispatched","to":"failed","exitCode":1,"durationSeconds":-25197}

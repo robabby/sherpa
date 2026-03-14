@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { getProjectRoot } from "./content";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -215,7 +216,7 @@ async function checkLmStudio(baseUrl: string): Promise<LmStudioStatus> {
 }
 
 export async function getMcpDashboard(opts?: McpDashboardOptions): Promise<McpDashboardData> {
-  const projectRoot = opts?.projectRoot ?? process.cwd();
+  const projectRoot = opts?.projectRoot ?? getProjectRoot();
   const mcpConfigPath = opts?.mcpConfigPath ?? ".mcp.json";
   const taskLogsPath = opts?.taskLogsPath ?? "docs/tasks/logs";
   const lmStudioUrl = opts?.lmStudioUrl ?? process.env.LM_STUDIO_URL ?? "http://localhost:1234";

@@ -1,0 +1,30 @@
+# Sherpa
+
+> Behavioral governance for agentic workflows — and the guides who know how to use it.
+
+Sherpa is an open-source governance framework for AI agent workflows, paired with a consulting practice that uses the same tools on every engagement.
+
+## Key pages
+
+- Homepage: https://sherpa.solar
+- Framework overview: https://sherpa.solar/framework
+- Getting started: https://sherpa.solar/framework/docs
+- Consulting services: https://sherpa.solar/consulting
+- Our approach: https://sherpa.solar/consulting/approach
+- Case studies: https://sherpa.solar/work
+- Content hub: https://sherpa.solar/learn
+- About: https://sherpa.solar/about
+- Contact: https://sherpa.solar/contact
+
+## What Sherpa does
+
+- Defines behavioral constraints for AI agents (not identity prompts)
+- Tracks initiatives through a filesystem-based lifecycle
+- Ships governance with the code, not in a separate system
+- Provides executable conventions as skills and rules
+
+## Who it's for
+
+- Technical leaders evaluating agentic workflows
+- Organizations adopting AI who want governance built in
+- Developers and AI engineers who want better agent tooling
