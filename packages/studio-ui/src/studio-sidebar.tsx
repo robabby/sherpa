@@ -100,7 +100,7 @@ export function StudioSidebar() {
     <Sidebar collapsible="icon" variant="sidebar">
       {/* ---- Header: wordmark ---- */}
       <SidebarHeader>
-        <div className="flex items-center gap-2.5 px-1 py-1.5">
+        <Link href="/" className="flex items-center gap-2.5 px-1 py-1.5 transition-opacity hover:opacity-80">
           {/* Gradient icon */}
           <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[var(--color-gold)] to-[var(--color-copper)]">
             <Zap className="size-4 text-white" />
@@ -115,7 +115,7 @@ export function StudioSidebar() {
               Studio
             </span>
           </div>
-        </div>
+        </Link>
       </SidebarHeader>
 
       {/* ---- Content: navigation groups ---- */}
