@@ -15,6 +15,7 @@ const CATEGORY_LABELS: Record<DocCategory, string> = {
   specs: "Specs",
   ux: "UX",
   curation: "Curation",
+  templates: "Templates",
 };
 
 export function HubDocsPanel({ docsByCategory }: HubDocsPanelProps) {
