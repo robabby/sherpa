@@ -8,9 +8,10 @@ import { getProjectRoot } from "./content";
 
 export interface McpServerConfig {
   name: string;
-  command: string;
-  args: string[];
-  env: Record<string, string>;
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  url?: string;
 }
 
 export interface McpToolInfo {
@@ -140,7 +141,7 @@ function readMcpConfig(projectRoot: string, configPath: string): McpServerConfig
     const raw = JSON.parse(fs.readFileSync(fullPath, "utf-8")) as {
       mcpServers?: Record<
         string,
-        { command: string; args: string[]; env?: Record<string, string> }
+        { command?: string; args?: string[]; env?: Record<string, string>; url?: string }
       >;
     };
     const studio = raw.mcpServers?.studio;
@@ -150,7 +151,8 @@ function readMcpConfig(projectRoot: string, configPath: string): McpServerConfig
       name: "studio",
       command: studio.command,
       args: studio.args,
-      env: studio.env ?? {},
+      env: studio.env,
+      url: studio.url,
     };
   } catch {
     return null;
@@ -169,12 +171,13 @@ function readAllEvents(logsDir: string): McpEvent[] {
     for (const line of content.split("\n").filter(Boolean)) {
       try {
         const parsed = JSON.parse(line) as {
-          ts: string;
+          timestamp?: string;
+          ts?: string;
           event: string;
           data?: Record<string, unknown>;
         };
         events.push({
-          ts: parsed.ts,
+          ts: parsed.timestamp ?? parsed.ts ?? "",
           event: parsed.event,
           data: parsed.data ?? {},
           taskSlug,

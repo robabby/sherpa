@@ -94,25 +94,36 @@ function ServerConfigCard({
               {data.server.name}
             </span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground/60">Runtime</span>
-            <span className="font-mono text-xs text-foreground/80">
-              {data.server.command}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground/60">Script</span>
-            <span className="font-mono text-xs text-foreground/80">
-              {data.server.args.join(" ")}
-            </span>
-          </div>
+          {data.server.url ? (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground/60">URL</span>
+              <span className="font-mono text-xs text-foreground/80">
+                {data.server.url}
+              </span>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground/60">Runtime</span>
+                <span className="font-mono text-xs text-foreground/80">
+                  {data.server.command}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground/60">Script</span>
+                <span className="font-mono text-xs text-foreground/80">
+                  {data.server.args?.join(" ")}
+                </span>
+              </div>
+            </>
+          )}
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground/60">Config</span>
             <span className="font-mono text-xs text-muted-foreground/50">
               {data.configPath}
             </span>
           </div>
-          {Object.entries(data.server.env).length > 0 && (
+          {data.server.env && Object.entries(data.server.env).length > 0 && (
             <div className="mt-3 border-t border-[var(--color-mcp)]/10 pt-3">
               <span className="mb-2 block text-xs text-muted-foreground/60">
                 Environment
