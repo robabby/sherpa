@@ -54,13 +54,16 @@ Our audience is thoughtful people navigating real complexity. We don't oversimpl
 
 ## 5. Guide, Not Guru
 
-We're experienced practitioners who share what we've learned, not authorities who pronounce truth. The consulting relationship is a partnership, not a power dynamic.
+We're experienced practitioners who share what we've learned, not authorities who pronounce truth. The consulting relationship is a partnership, not a power dynamic. The goal is to leave people more capable, not more dependent.
 
 **In practice:**
 - "Here's what we've seen work" — not "Here's what you must do"
 - Share the framework openly — don't gatekeep knowledge behind consulting fees
 - Acknowledge what we don't know and where the edges are
 - Use behavioral constraints in agent roles, not identity claims — this applies to our own brand too
+- Frame consulting as acceleration, not dependency — "we make ourselves unnecessary"
+- Never use vendor lock-in language — the framework is yours after we leave
+- Sovereignty over subscription: clients own their governance system, not a seat on our platform
 
 ---
 
@@ -78,13 +81,15 @@ Quality over quantity. One well-written article beats three rushed ones. Better 
 
 ## 7. Show the Work
 
-We built the framework we use. The best proof of our approach is making it visible — open-source code, public research, transparent methodology.
+We built the framework we use. The best proof of our approach is making it visible — open-source code, public research, transparent methodology. The community that forms around this work is a constituency, not an audience.
 
 **In practice:**
 - Research iterations become public thought leadership
 - The framework is open-source, not a black box
 - Case studies show the real process, not a sanitized narrative
 - "We use the same tools we sell" is a structural claim, not a tagline
+- Talk about contributors as peers, not "users" — they improve the framework too
+- Shared learning over proprietary insight — what we discover, we publish
 
 ---
 

@@ -75,6 +75,17 @@ Lead with results, then tell the story. Be honest about what was hard.
 
 Anonymous case studies are fine. Use descriptive references ("a mid-size SaaS company") not vague ones ("a leading organization").
 
+### Sovereignty Language
+
+Consulting copy must frame the relationship as acceleration toward self-sufficiency, never dependency.
+
+| Do | Don't |
+|----|-------|
+| "You keep the framework after we leave" | "Ongoing support packages available" |
+| "The goal is to make ourselves unnecessary" | "Long-term partnership" (implies retention) |
+| "Your team maintains this" | "We manage it for you" |
+| "Open-source — no license fees, no lock-in" | "Enterprise licensing" |
+
 ---
 
 ## Framework Documentation
