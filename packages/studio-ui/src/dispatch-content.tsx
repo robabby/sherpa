@@ -1,0 +1,870 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion, MotionConfig } from "motion/react";
+import { formatDistanceToNowStrict } from "date-fns";
+import {
+  AlertTriangle,
+  ChevronRight,
+  Play,
+  Zap,
+} from "lucide-react";
+
+import { SectionHeader } from "./section-header";
+import { StudioBreadcrumb } from "./studio-breadcrumb";
+import { EASE_STANDARD } from "./lib/animation-constants";
+import { cn } from "./lib/utils";
+import type { TaskBoardEntry } from "@/lib/studio/tasks";
+import type { AgentRole } from "@/lib/studio";
+import type { BackendHealth } from "@sherpa/studio-core";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+type DispatchMode = "interactive" | "supervised" | "overnight";
+
+const OVERNIGHT_BLOCKED: string[] = ["code-implementation", "architect"];
+
+const TASK_TYPE_STYLES: Record<string, { label: string; className: string }> = {
+  "code-review": {
+    label: "code-review",
+    className:
+      "border-[var(--color-primitive)]/20 bg-[var(--color-primitive)]/12 text-[var(--color-primitive)]",
+  },
+  research: {
+    label: "research",
+    className:
+      "border-[var(--color-eclipse)]/20 bg-[var(--color-eclipse)]/12 text-[var(--color-eclipse)]",
+  },
+  audit: {
+    label: "audit",
+    className:
+      "border-[var(--color-gold)]/20 bg-[var(--color-gold)]/12 text-[var(--color-gold)]",
+  },
+  "content-generation": {
+    label: "content",
+    className:
+      "border-[var(--color-copper)]/20 bg-[var(--color-copper)]/12 text-[var(--color-copper)]",
+  },
+  "code-implementation": {
+    label: "code-impl",
+    className:
+      "border-[var(--color-primitive)]/20 bg-[var(--color-primitive)]/12 text-[var(--color-primitive)]",
+  },
+  architect: {
+    label: "architect",
+    className:
+      "border-[var(--color-gold)]/20 bg-[var(--color-gold)]/12 text-[var(--color-gold)]",
+  },
+  embeddings: {
+    label: "embeddings",
+    className:
+      "border-[var(--color-session)]/20 bg-[var(--color-session)]/12 text-[var(--color-session)]",
+  },
+  general: {
+    label: "general",
+    className:
+      "border-muted-foreground/20 bg-muted-foreground/10 text-muted-foreground",
+  },
+};
+
+const STATUS_STYLES: Record<string, { label: string; className: string }> = {
+  dispatched: {
+    label: "dispatched",
+    className:
+      "border-[var(--color-copper)]/40 bg-[var(--color-copper)]/10 text-[var(--color-copper)]",
+  },
+  completed: {
+    label: "completed",
+    className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-500",
+  },
+  failed: {
+    label: "failed",
+    className: "border-rose-500/40 bg-rose-500/10 text-rose-500",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Animation variants
+// ---------------------------------------------------------------------------
+
+const staggerContainer = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.05, delayChildren: 0.08 },
+  },
+};
+
+const fadeVariant = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.25, ease: EASE_STANDARD },
+  },
+};
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: EASE_STANDARD },
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatElapsed(isoDate: string | null): string {
+  if (!isoDate) return "";
+  try {
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return "";
+    const str = formatDistanceToNowStrict(d, { addSuffix: false });
+    return str
+      .replace(/ seconds?/, "s")
+      .replace(/ minutes?/, "m")
+      .replace(/ hours?/, "h")
+      .replace(/ days?/, "d")
+      .replace(/ months?/, "mo")
+      .replace(/ years?/, "y");
+  } catch {
+    return "";
+  }
+}
+
+function isToday(isoDate: string | null): boolean {
+  if (!isoDate) return false;
+  try {
+    const d = new Date(isoDate);
+    const now = new Date();
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    );
+  } catch {
+    return false;
+  }
+}
+
+function getTaskTypeStyle(taskType: string) {
+  return TASK_TYPE_STYLES[taskType] ?? TASK_TYPE_STYLES.general!;
+}
+
+// ---------------------------------------------------------------------------
+// Mode Selector
+// ---------------------------------------------------------------------------
+
+function ModeSelector({
+  mode,
+  onModeChange,
+}: {
+  mode: DispatchMode;
+  onModeChange: (mode: DispatchMode) => void;
+}) {
+  const modes: { value: DispatchMode; label: string }[] = [
+    { value: "interactive", label: "interactive" },
+    { value: "supervised", label: "supervised" },
+    { value: "overnight", label: "overnight" },
+  ];
+
+  return (
+    <div className="flex items-center gap-1 rounded-lg border border-muted-foreground/15 p-0.5">
+      {modes.map((m) => (
+        <button
+          key={m.value}
+          onClick={() => onModeChange(m.value)}
+          className={cn(
+            "flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] transition-all",
+            mode === m.value
+              ? "bg-[var(--color-copper)]/12 text-[var(--color-copper)]"
+              : "text-muted-foreground/40 hover:text-muted-foreground/60"
+          )}
+        >
+          <span
+            className={cn(
+              "inline-block h-1.5 w-1.5 rounded-full",
+              mode === m.value
+                ? "bg-[var(--color-copper)]"
+                : "border border-muted-foreground/30"
+            )}
+          />
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Guard Rail Banner
+// ---------------------------------------------------------------------------
+
+function GuardRailBanner({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      className="flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/8 px-3 py-2 text-[11px] text-rose-500/80"
+    >
+      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+      Overnight mode: code-implementation and architect tasks are blocked
+    </motion.div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Backlog Panel
+// ---------------------------------------------------------------------------
+
+interface TaskGroup {
+  taskType: string;
+  tasks: TaskBoardEntry[];
+}
+
+function BacklogPanel({
+  groups,
+  selectedIds,
+  onToggle,
+  blockedTypes,
+}: {
+  groups: TaskGroup[];
+  selectedIds: Set<string>;
+  onToggle: (id: string) => void;
+  blockedTypes: string[];
+}) {
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (taskType: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskType)) next.delete(taskType);
+      else next.add(taskType);
+      return next;
+    });
+  };
+
+  const totalPending = groups.reduce((s, g) => s + g.tasks.length, 0);
+
+  return (
+    <div className="col-span-3 flex flex-col overflow-hidden rounded-lg border border-[var(--color-copper)]/15 bg-card/30 backdrop-blur-[2px]">
+      {/* Panel header */}
+      <div className="flex items-center justify-between border-b border-[var(--color-copper)]/10 px-3 py-2.5">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
+          Backlog
+        </span>
+        <span className="text-[10px] text-[var(--color-copper)]">
+          {totalPending} pending
+        </span>
+      </div>
+
+      {/* Groups */}
+      <div className="flex-1 overflow-y-auto">
+        {groups.map((group) => {
+          const collapsed = collapsedGroups.has(group.taskType);
+          const isBlocked = blockedTypes.includes(group.taskType);
+          const style = getTaskTypeStyle(group.taskType);
+
+          return (
+            <div key={group.taskType}>
+              {/* Group header */}
+              <button
+                onClick={() => toggleGroup(group.taskType)}
+                className="flex w-full items-center justify-between border-b border-[var(--color-copper)]/8 px-3 py-2 transition-colors hover:bg-[var(--color-copper)]/3"
+              >
+                <div className="flex items-center gap-2">
+                  <ChevronRight
+                    className={cn(
+                      "h-2.5 w-2.5 text-muted-foreground/50 transition-transform",
+                      !collapsed && "rotate-90"
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                      style.className
+                    )}
+                  >
+                    {style.label}
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground/50">
+                  {group.tasks.length}
+                </span>
+              </button>
+
+              {/* Task rows */}
+              {!collapsed &&
+                group.tasks.map((task) => {
+                  const blocked = isBlocked;
+                  return (
+                    <div
+                      key={task.id}
+                      className={cn(
+                        "flex items-center gap-2 border-b border-[var(--color-copper)]/6 px-3 py-2 transition-colors last:border-0 hover:bg-[var(--color-copper)]/4",
+                        blocked && "opacity-20"
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(task.id)}
+                        disabled={blocked}
+                        onChange={() => onToggle(task.id)}
+                        className="h-3.5 w-3.5 shrink-0 accent-[var(--color-copper)]"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs text-foreground">
+                          {task.title}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/40">
+                          {task.initiative ?? "general"} &middot; {task.priority}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          );
+        })}
+
+        {groups.length === 0 && (
+          <div className="py-8 text-center text-xs text-muted-foreground/40">
+            No pending tasks
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Assignments Panel
+// ---------------------------------------------------------------------------
+
+function AssignmentsPanel({
+  active,
+  completedToday,
+}: {
+  active: TaskBoardEntry[];
+  completedToday: TaskBoardEntry[];
+}) {
+  return (
+    <div className="col-span-5 flex flex-col overflow-hidden rounded-lg border border-[var(--color-copper)]/15 bg-card/30 backdrop-blur-[2px]">
+      {/* Panel header */}
+      <div className="flex items-center justify-between border-b border-[var(--color-copper)]/10 px-3 py-2.5">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
+          Assignments
+        </span>
+        <span className="text-[10px] text-[var(--color-copper)]">
+          {active.length} active
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {/* Active assignments */}
+        {active.map((task) => {
+          const statusBadge = STATUS_STYLES.dispatched!;
+          const typeStyle = getTaskTypeStyle(task.taskType);
+
+          return (
+            <div
+              key={task.id}
+              className="rounded-lg border border-[var(--color-copper)]/12 bg-card/40 p-3"
+            >
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-xs font-medium text-foreground">
+                  {task.title}
+                </span>
+                <span
+                  className={cn(
+                    "inline-flex animate-pulse items-center rounded-full border px-2 py-0.5 text-[10px]",
+                    statusBadge.className
+                  )}
+                >
+                  {statusBadge.label}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">
+                  {task.backend}
+                </span>
+                {task.model && (
+                  <span className="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">
+                    {task.model}
+                  </span>
+                )}
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] font-medium",
+                    typeStyle.className
+                  )}
+                >
+                  {typeStyle.label}
+                </span>
+                <span className="ml-auto text-[10px] tabular-nums text-muted-foreground/35">
+                  {formatElapsed(task.dispatchedAt)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+
+        {active.length === 0 && (
+          <div className="py-6 text-center text-xs text-muted-foreground/40">
+            No active assignments
+          </div>
+        )}
+
+        {/* Completed today divider */}
+        {completedToday.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 py-2">
+              <div className="h-px flex-1 bg-muted-foreground/10" />
+              <span className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/30">
+                completed today
+              </span>
+              <div className="h-px flex-1 bg-muted-foreground/10" />
+            </div>
+
+            {completedToday.map((task) => {
+              const statusBadge = STATUS_STYLES[task.status] ?? STATUS_STYLES.completed!;
+              const typeStyle = getTaskTypeStyle(task.taskType);
+
+              return (
+                <div
+                  key={task.id}
+                  className="rounded-lg border border-emerald-500/12 bg-card/40 p-3 opacity-60"
+                >
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      {task.title}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px]",
+                        statusBadge.className
+                      )}
+                    >
+                      {statusBadge.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">
+                      {task.backend}
+                    </span>
+                    {task.model && (
+                      <span className="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">
+                        {task.model}
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] font-medium",
+                        typeStyle.className
+                      )}
+                    >
+                      {typeStyle.label}
+                    </span>
+                    <span className="ml-auto text-[10px] tabular-nums text-muted-foreground/35">
+                      {formatElapsed(task.completedAt)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Workforce Panel
+// ---------------------------------------------------------------------------
+
+function WorkforcePanel({
+  health,
+  roles,
+}: {
+  health: BackendHealth[];
+  roles: AgentRole[];
+}) {
+  return (
+    <div className="col-span-4 flex flex-col overflow-hidden rounded-lg border border-[var(--color-copper)]/15 bg-card/30 backdrop-blur-[2px]">
+      {/* Panel header */}
+      <div className="border-b border-[var(--color-copper)]/10 px-3 py-2.5">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
+          Workforce
+        </span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {/* Backends section */}
+        <div className="space-y-1.5 p-3">
+          <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground/40">
+            Backends
+          </p>
+          {health.map((b) => (
+            <div
+              key={b.backend}
+              className="flex items-center justify-between py-1"
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "inline-block h-1.5 w-1.5 rounded-full",
+                    b.available
+                      ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]"
+                      : "bg-rose-400 shadow-[0_0_6px_rgba(248,113,113,0.4)]"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-xs",
+                    b.available ? "text-foreground" : "text-muted-foreground/50"
+                  )}
+                >
+                  {b.backend === "lm-studio"
+                    ? "LM Studio"
+                    : b.backend.charAt(0).toUpperCase() + b.backend.slice(1)}
+                </span>
+              </div>
+              <span
+                className={cn(
+                  "inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50",
+                  !b.available && "opacity-40"
+                )}
+              >
+                {b.available
+                  ? b.models?.join(" \u00b7 ") ?? "ready"
+                  : "offline"}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="mx-3 border-t border-muted-foreground/8" />
+
+        {/* Agents section */}
+        <div className="p-3">
+          <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground/40">
+            Agents
+          </p>
+          {roles.map((role) => {
+            const taskTypes = role.tags?.filter((t) => t in TASK_TYPE_STYLES) ?? [];
+
+            return (
+              <div
+                key={role.slug}
+                className="flex items-center justify-between border-b border-[var(--color-copper)]/6 py-2 last:border-0"
+              >
+                <div>
+                  <p className="text-xs text-foreground">{role.slug}</p>
+                  {taskTypes.length > 0 && (
+                    <div className="mt-0.5 flex items-center gap-1">
+                      {taskTypes.map((tt) => {
+                        const s = getTaskTypeStyle(tt);
+                        return (
+                          <span
+                            key={tt}
+                            className={cn(
+                              "inline-flex items-center rounded border px-1 py-px text-[8px] font-medium",
+                              s.className
+                            )}
+                          >
+                            {s.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <button className="rounded border border-muted-foreground/12 px-2 py-0.5 text-[10px] text-muted-foreground/60 transition-colors hover:border-muted-foreground/25 hover:text-muted-foreground/80">
+                  Assign
+                </button>
+              </div>
+            );
+          })}
+
+          {roles.length === 0 && (
+            <div className="py-4 text-center text-xs text-muted-foreground/40">
+              No agent roles configured
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Queue Controls (bottom bar)
+// ---------------------------------------------------------------------------
+
+function QueueControls({
+  selectedCount,
+  activeCount,
+  completedTodayCount,
+  dispatching,
+  onDispatch,
+}: {
+  selectedCount: number;
+  activeCount: number;
+  completedTodayCount: number;
+  dispatching: boolean;
+  onDispatch: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-[var(--color-copper)]/15 bg-card/30 px-4 py-3 backdrop-blur-[2px]">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onDispatch}
+          disabled={selectedCount === 0 || dispatching}
+          className={cn(
+            "flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-all",
+            selectedCount > 0 && !dispatching
+              ? "border-[var(--color-copper)]/30 bg-[var(--color-copper)]/15 text-[var(--color-copper)] hover:border-[var(--color-copper)]/50 hover:bg-[var(--color-copper)]/25"
+              : "border-muted-foreground/15 bg-muted/30 text-muted-foreground/40 cursor-not-allowed"
+          )}
+        >
+          <Play className="h-3 w-3" />
+          {dispatching
+            ? "Dispatching..."
+            : `Dispatch Selected (${selectedCount})`}
+        </button>
+        <button className="rounded-md border border-muted-foreground/12 px-3 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:border-muted-foreground/25 hover:text-muted-foreground/80">
+          <span className="flex items-center gap-1.5">
+            <Zap className="h-3 w-3" />
+            Auto-Dispatch
+          </span>
+        </button>
+      </div>
+
+      <div className="flex items-center gap-4 text-xs text-muted-foreground/50">
+        <span>
+          <span className="font-medium text-[var(--color-copper)]">
+            {selectedCount}
+          </span>{" "}
+          selected
+        </span>
+        <span>
+          <span className="font-medium text-foreground">{activeCount}</span>{" "}
+          active
+        </span>
+        <span>
+          <span className="font-medium text-emerald-400">
+            {completedTodayCount}
+          </span>{" "}
+          completed today
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Content
+// ---------------------------------------------------------------------------
+
+interface DispatchContentProps {
+  tasks: TaskBoardEntry[];
+  roles: AgentRole[];
+  health: BackendHealth[];
+}
+
+export function DispatchContent({ tasks, roles, health }: DispatchContentProps) {
+  const router = useRouter();
+  const [mode, setMode] = useState<DispatchMode>("supervised");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [dispatching, setDispatching] = useState(false);
+
+  // Derived task lists
+  const pendingTasks = useMemo(
+    () => tasks.filter((t) => t.status === "pending"),
+    [tasks]
+  );
+
+  const activeTasks = useMemo(
+    () => tasks.filter((t) => t.status === "dispatched"),
+    [tasks]
+  );
+
+  const completedToday = useMemo(
+    () => tasks.filter((t) => t.status === "completed" && isToday(t.completedAt)),
+    [tasks]
+  );
+
+  // Group pending tasks by taskType
+  const backlogGroups = useMemo(() => {
+    const map = new Map<string, TaskBoardEntry[]>();
+    for (const t of pendingTasks) {
+      const existing = map.get(t.taskType);
+      if (existing) existing.push(t);
+      else map.set(t.taskType, [t]);
+    }
+    const groups: TaskGroup[] = [];
+    for (const [taskType, groupTasks] of map) {
+      groups.push({ taskType, tasks: groupTasks });
+    }
+    return groups;
+  }, [pendingTasks]);
+
+  // Blocked types based on mode
+  const blockedTypes = mode === "overnight" ? OVERNIGHT_BLOCKED : [];
+
+  // When mode switches to overnight, deselect blocked tasks
+  const handleModeChange = useCallback(
+    (newMode: DispatchMode) => {
+      setMode(newMode);
+      if (newMode === "overnight") {
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          for (const id of prev) {
+            const task = pendingTasks.find((t) => t.id === id);
+            if (task && OVERNIGHT_BLOCKED.includes(task.taskType)) {
+              next.delete(id);
+            }
+          }
+          return next;
+        });
+      }
+    },
+    [pendingTasks]
+  );
+
+  // Toggle task selection
+  const handleToggle = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Dispatch selected tasks
+  const handleDispatch = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setDispatching(true);
+
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(
+      ids.map((taskId) =>
+        fetch("/api/dispatch/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId, mode }),
+        })
+      )
+    );
+
+    const successCount = results.filter(
+      (r) => r.status === "fulfilled" && (r.value as Response).ok
+    ).length;
+
+    if (successCount > 0) {
+      setSelectedIds(new Set());
+      router.refresh();
+    }
+
+    setDispatching(false);
+  }, [selectedIds, mode, router]);
+
+  // Polling: refresh when there are dispatched tasks
+  useEffect(() => {
+    if (activeTasks.length === 0) return;
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeTasks.length, router]);
+
+  // Stats
+  const selectedCount = selectedIds.size;
+  const activeCount = activeTasks.length;
+  const completedTodayCount = completedToday.length;
+
+  return (
+    <MotionConfig reducedMotion="user">
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        className="space-y-4"
+      >
+        {/* Breadcrumb */}
+        <motion.div variants={fadeVariant}>
+          <StudioBreadcrumb segments={[{ label: "Dispatch" }]} />
+        </motion.div>
+
+        {/* Header: Title + Mode + Stats */}
+        <motion.div
+          variants={fadeVariant}
+          className="flex items-center justify-between"
+        >
+          <SectionHeader label="pipeline" title="Dispatch Center" />
+          <div className="flex items-center gap-4">
+            <ModeSelector mode={mode} onModeChange={handleModeChange} />
+            <div className="flex items-center gap-3 text-xs">
+              <span className="text-muted-foreground/50">
+                <span className="font-medium text-[var(--color-copper)]">
+                  {activeCount}
+                </span>{" "}
+                active
+              </span>
+              <span className="text-muted-foreground/50">
+                <span className="font-medium text-foreground">
+                  {completedTodayCount}
+                </span>{" "}
+                today
+              </span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Guard rail banner */}
+        <GuardRailBanner visible={mode === "overnight"} />
+
+        {/* Three-panel grid */}
+        <motion.div
+          variants={cardVariant}
+          className="grid grid-cols-12 gap-4"
+          style={{ minHeight: 520 }}
+        >
+          <BacklogPanel
+            groups={backlogGroups}
+            selectedIds={selectedIds}
+            onToggle={handleToggle}
+            blockedTypes={blockedTypes}
+          />
+          <AssignmentsPanel
+            active={activeTasks}
+            completedToday={completedToday}
+          />
+          <WorkforcePanel health={health} roles={roles} />
+        </motion.div>
+
+        {/* Bottom bar: Queue controls */}
+        <motion.div variants={fadeVariant}>
+          <QueueControls
+            selectedCount={selectedCount}
+            activeCount={activeCount}
+            completedTodayCount={completedTodayCount}
+            dispatching={dispatching}
+            onDispatch={handleDispatch}
+          />
+        </motion.div>
+      </motion.div>
+    </MotionConfig>
+  );
+}

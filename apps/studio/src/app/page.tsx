@@ -16,6 +16,7 @@ import { HubWorkforcePanel } from "@/components/studio/hub-workforce-panel"
 import { HubSessionsPanel } from "@/components/studio/hub-sessions-panel"
 import { HubTasksPanel } from "@/components/studio/hub-tasks-panel"
 import { HubMcpPanel } from "@/components/studio/hub-mcp-panel"
+import { HubDispatchPanel } from "@/components/studio/hub-dispatch-panel"
 import { HubWorkflowPanel } from "@/components/studio/hub-workflow-panel"
 import { HubPlaybooksPanel } from "@/components/studio/hub-playbooks-panel"
 import type { AttentionItem, PendingReviewItem } from "@/components/studio/hub-process-panel"
@@ -35,6 +36,7 @@ import {
 import { readProjectFile } from "@/lib/studio/content"
 import type { HubStats, Initiative, Session } from "@/lib/studio"
 import { getTaskBoard } from "@/lib/studio/tasks"
+import { getBackendHealth } from "@sherpa/studio-core"
 import { getMcpDashboard } from "@/lib/studio/mcp"
 import { detectPlaybook, PLAYBOOK_IDS } from "@/lib/studio/playbooks"
 
@@ -145,6 +147,7 @@ export default async function StudioPage() {
   const agentRoles = getAgentRoles()
   const sessions = getSessions()
   const tasks = getTaskBoard()
+  const health = getBackendHealth()
   const mcpData = await getMcpDashboard()
 
   // Compute playbook summaries
@@ -244,6 +247,11 @@ export default async function StudioPage() {
           </HubStaggerItem>
           <HubStaggerItem variant="panel" className="lg:col-span-7">
             <HubWorkforcePanel roles={agentRoles} workstreams={workstreams} />
+          </HubStaggerItem>
+
+          {/* Row 4.5: dispatch center */}
+          <HubStaggerItem variant="panel" className="lg:col-span-12">
+            <HubDispatchPanel tasks={tasks} health={health} />
           </HubStaggerItem>
 
           {/* Row 5: sessions + MCP */}
