@@ -51,6 +51,20 @@ Frontmatter: `started` (date work began), `worktree` (active worktree path or nu
 
 Body: Lightweight activity log (key milestones, not every action).
 
+### Seeds Section
+
+When an initiative reaches `integrated` status, add a `## Seeds` section at the bottom of `activity.md`. Seeds are ideas, improvements, or follow-on work that surfaced during the initiative but were explicitly out of scope. Each seed is a candidate for its own future proposal. Reference where the item was scoped out (rabbit hole, no-go, or emerged during implementation).
+
+### Follow-on Initiatives
+
+When a seed gets picked up as new work, it becomes a **new top-level initiative** with `spawned-from: <parent-slug>` — not a sub-initiative nested inside the completed parent. Completed initiatives stay closed.
+
+When creating a follow-on:
+1. Create `docs/initiatives/<new-slug>/proposal.md` with `spawned-from: <parent-slug>`
+2. Update the parent's seeds section with a forward link: `→ initiative: <new-slug>`
+
+This creates a bidirectional trail: child points back via `spawned-from`, parent points forward via seeds. Use `sub-initiatives/` only when the parent is still `in-progress` and the sub-work is tightly coupled to the parent's completion.
+
 ## Discovery Protocol
 
 Recursive research (`/rr`) is the standard way to discover and deepen initiatives. Each cycle: orient → focus → fan out → converge → propose → seed. See `.claude/skills/rr/SKILL.md` for the full protocol. Every research cycle must produce at least one proposal.
