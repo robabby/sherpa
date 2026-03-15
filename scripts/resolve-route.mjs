@@ -13,9 +13,9 @@ const DEFAULT_ROUTES = {
   'code-implementation': { backend: 'claude', model: 'claude-opus-4-6' },
   'code-review':         { backend: 'codex', model: null },
   'architect':           { backend: 'claude', model: 'claude-opus-4-6' },
-  'research':            { backend: 'opencode', model: 'minimax-m2.5-free' },
-  'content-generation':  { backend: 'gemini', model: null },
-  'audit':               { backend: 'opencode', model: 'minimax-m2.5-free' },
+  'research':            { backend: 'groq', model: 'llama-3.3-70b-versatile' },
+  'content-generation':  { backend: 'google-ai', model: 'gemini-2.5-flash' },
+  'audit':               { backend: 'groq', model: 'llama-3.3-70b-versatile' },
   'embeddings':          { backend: 'opencode', model: 'minimax-m2.5-free' },
 }
 
