@@ -127,6 +127,11 @@ export function getTaskDetail(slug: string, opts?: TaskBoardOptions): TaskDetail
     }
     return null;
   };
+  const readRawLog = (): string | null => {
+    const p = path.join(logsDir, `${id}.log`);
+    if (fs.existsSync(p)) return fs.readFileSync(p, "utf-8");
+    return null;
+  };
 
   return {
     id,
@@ -148,11 +153,12 @@ export function getTaskDetail(slug: string, opts?: TaskBoardOptions): TaskDetail
     mode: meta.mode ?? 'supervised',
     title,
     hasReport: fs.existsSync(path.join(logsDir, `${id}-report.md`)) ||
-               fs.existsSync(path.join(logsDir, `${id}-output.md`)),
+               fs.existsSync(path.join(logsDir, `${id}-output.md`)) ||
+               fs.existsSync(path.join(logsDir, `${id}.log`)),
     hasVerdict: fs.existsSync(path.join(logsDir, `${id}-verdict.md`)),
     hasBlockers: fs.existsSync(path.join(logsDir, `${id}-blockers.md`)),
     body,
-    reportContent: readLog("report") ?? readLog("output"),
+    reportContent: readLog("report") ?? readLog("output") ?? readRawLog(),
     verdictContent: readLog("verdict"),
     blockerContent: readLog("blockers"),
   };
