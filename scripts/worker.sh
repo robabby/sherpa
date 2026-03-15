@@ -139,6 +139,7 @@ export SHERPA_BUDGET_USD="$BUDGET_USD"
 export SHERPA_WORKTREE="${WORKTREE:-}"
 export SHERPA_MODE="$MODE"
 export SHERPA_SYSTEM_PROMPT="You are executing task $TASK_SLUG for the Sherpa framework. Follow all instructions precisely."
+export SHERPA_BACKEND="$BACKEND"
 
 # ── Update status to dispatched ───────────────────────────────────────
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S")
@@ -149,10 +150,13 @@ log_event "status_changed" ",\"from\":\"pending\",\"to\":\"dispatched\""
 echo "[worker] Dispatching task=$TASK_SLUG backend=$BACKEND model=$MODEL mode=$MODE" >&2
 
 # ── Resolve backend module ────────────────────────────────────────────
-if [[ "$BACKEND" == "lm-studio" ]]; then
-  BACKEND_SCRIPT="$SCRIPT_DIR/backends/lm-studio.mjs"
-else
+# Check .mjs first (API backends + lm-studio), then .sh (CLI backends)
+if [[ -f "$SCRIPT_DIR/backends/${BACKEND}.mjs" ]]; then
+  BACKEND_SCRIPT="$SCRIPT_DIR/backends/${BACKEND}.mjs"
+elif [[ -f "$SCRIPT_DIR/backends/${BACKEND}.sh" ]]; then
   BACKEND_SCRIPT="$SCRIPT_DIR/backends/${BACKEND}.sh"
+else
+  BACKEND_SCRIPT=""
 fi
 
 if [[ ! -f "$BACKEND_SCRIPT" ]]; then
