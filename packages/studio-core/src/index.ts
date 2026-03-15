@@ -10,6 +10,7 @@ export * from "./process-nodes-shared"
 
 // Self-contained modules
 export * from "./tasks"
+export * from "./task-events"
 export * from "./mcp-dashboard"
 
 // Parsing

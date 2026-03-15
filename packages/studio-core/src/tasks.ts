@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { extractAgentMetrics } from "./task-events";
 
 export interface TaskBoardEntry {
   id: string;
@@ -23,6 +24,10 @@ export interface TaskBoardEntry {
   taskType: string;
   mode: string;
   hasBlockers: boolean;
+  durationSeconds: number | null;
+  tokensInput: number | null;
+  tokensOutput: number | null;
+  costUsd: number | null;
 }
 
 function parseFrontmatter(content: string): { meta: Record<string, string | null>; body: string } {
@@ -133,6 +138,8 @@ export function getTaskDetail(slug: string, opts?: TaskBoardOptions): TaskDetail
     return null;
   };
 
+  const metrics = extractAgentMetrics(id, opts);
+
   return {
     id,
     file: path.basename(filePath),
@@ -157,6 +164,10 @@ export function getTaskDetail(slug: string, opts?: TaskBoardOptions): TaskDetail
                fs.existsSync(path.join(logsDir, `${id}.log`)),
     hasVerdict: fs.existsSync(path.join(logsDir, `${id}-verdict.md`)),
     hasBlockers: fs.existsSync(path.join(logsDir, `${id}-blockers.md`)),
+    durationSeconds: metrics.durationSeconds,
+    tokensInput: metrics.tokensInput,
+    tokensOutput: metrics.tokensOutput,
+    costUsd: metrics.costUsd,
     body,
     reportContent: readLog("report") ?? readLog("output") ?? readRawLog(),
     verdictContent: readLog("verdict"),
@@ -183,6 +194,8 @@ export function getTaskBoard(opts?: TaskBoardOptions): TaskBoardEntry[] {
 
     const id = meta.id ?? file.replace(".md", "");
 
+    const metrics = extractAgentMetrics(id, opts);
+
     tasks.push({
       id,
       file,
@@ -206,6 +219,10 @@ export function getTaskBoard(opts?: TaskBoardOptions): TaskBoardEntry[] {
                  fs.existsSync(path.join(logsDir, `${id}-output.md`)),
       hasVerdict: fs.existsSync(path.join(logsDir, `${id}-verdict.md`)),
       hasBlockers: fs.existsSync(path.join(logsDir, `${id}-blockers.md`)),
+      durationSeconds: metrics.durationSeconds,
+      tokensInput: metrics.tokensInput,
+      tokensOutput: metrics.tokensOutput,
+      costUsd: metrics.costUsd,
     });
   }
 
