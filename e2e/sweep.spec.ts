@@ -28,7 +28,7 @@ for (const [vpName, vpSize] of Object.entries(viewports)) {
       test(`${route.label} — ${route.path}`, async ({ page }) => {
         await page.goto(route.path)
         await page.waitForLoadState('networkidle')
-        const slug = route.path === '/' ? 'home' : route.path.slice(1).replace(/\//g, '-')
+        const slug = route.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
         await page.screenshot({
           path: join(outDir, `${vpName}-${slug}.png`),
           fullPage: true,

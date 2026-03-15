@@ -9,12 +9,27 @@
     { "path": "/docs", "label": "Docs" },
     { "path": "/mcp", "label": "MCP" },
     { "path": "/playbooks", "label": "Playbooks" },
-    { "path": "/process", "label": "Process" },
     { "path": "/sessions", "label": "Sessions" },
     { "path": "/skills", "label": "Skills" },
+    { "path": "/skills/ui-review", "label": "Skill Detail" },
     { "path": "/tasks", "label": "Tasks" },
     { "path": "/workflow", "label": "Workflow" },
-    { "path": "/workforce", "label": "Workforce" }
+    { "path": "/workforce", "label": "Workforce" },
+
+    { "path": "/process", "label": "Process — Tree View" },
+    { "path": "/process?kind=initiative&status=pending", "label": "Process — Pending" },
+    { "path": "/process?kind=initiative&status=in-progress", "label": "Process — In-Progress" },
+    { "path": "/process?kind=initiative&status=integrated", "label": "Process — Integrated" },
+    { "path": "/process?kind=workstream", "label": "Process — Workstreams" },
+    { "path": "/process?kind=seed", "label": "Process — Seeds" },
+    { "path": "/process?kind=skill", "label": "Process — Skills" },
+    { "path": "/process?kind=convention", "label": "Process — Conventions" },
+
+    { "path": "/process?node=initiative%2Fsherpa-framework-extraction", "label": "Initiative — In-Flight" },
+    { "path": "/process?node=initiative%2Fagentic-organization-model", "label": "Initiative — Needs Review" },
+    { "path": "/process?node=initiative%2Fagentic-workspace", "label": "Initiative — Ready to Start" },
+    { "path": "/process?node=initiative%2Fdispatch-center", "label": "Initiative — Integrated" },
+    { "path": "/process?node=initiative%2Fmcp-agent-delegation", "label": "Initiative — Archived" }
   ],
   "viewports": {
     "desktop": { "width": 1280, "height": 800 },

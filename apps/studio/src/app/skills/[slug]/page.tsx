@@ -3,6 +3,7 @@ import { Text } from "@radix-ui/themes";
 
 import { DocRenderer } from "@/components/studio/doc-renderer";
 import { SectionHeader } from "@/components/studio/section-header";
+import { PromptCopyButton } from "@sherpa/studio-ui";
 
 import { getDocument, getSkills } from "@/lib/studio";
 
@@ -40,6 +41,11 @@ export default async function SkillDetailPage({
       />
 
       <div className="flex items-center gap-4">
+        <PromptCopyButton
+          prompt={`/${skill.slug}`}
+          variant="pipeline"
+          label={`/${skill.slug}`}
+        />
         <Text size="1" className="font-mono text-muted-foreground">
           {skill.relativePath}
         </Text>
