@@ -10,10 +10,26 @@
  */
 
 import fs from "fs";
+import path from "path";
 import { generateText } from "ai";
 import { createGroq } from "@ai-sdk/groq";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+
+// Load .env.local from project root if env vars aren't already set
+try {
+  const scriptDir = path.dirname(new URL(import.meta.url).pathname);
+  const projectRoot = path.resolve(scriptDir, "../..");
+  const envFile = path.join(projectRoot, ".env.local");
+  const envContent = fs.readFileSync(envFile, "utf-8");
+  for (const line of envContent.split("\n")) {
+    if (line.startsWith("#") || !line.includes("=")) continue;
+    const eqIdx = line.indexOf("=");
+    const key = line.slice(0, eqIdx).trim();
+    const val = line.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+    if (key && !process.env[key]) process.env[key] = val;
+  }
+} catch { /* no .env.local, rely on existing env */ }
 
 const LM_STUDIO_URL = process.env.LM_STUDIO_URL || "http://localhost:1234";
 
