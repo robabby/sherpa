@@ -6,7 +6,11 @@ import { execSync } from "child_process"
 import path from "path"
 import type { TaskBoardEntry } from "./tasks"
 
-export type Backend = 'claude' | 'opencode' | 'codex' | 'gemini' | 'lm-studio'
+export type Backend =
+  // CLI backends
+  | 'claude' | 'opencode' | 'codex' | 'gemini' | 'lm-studio'
+  // API backends
+  | 'groq' | 'google-ai' | 'lm-studio-api'
 export type DispatchMode = 'interactive' | 'supervised' | 'overnight'
 export type TaskType =
   | 'code-implementation'
@@ -17,6 +21,30 @@ export type TaskType =
   | 'audit'
   | 'embeddings'
   | 'general'
+
+export type BackendType = 'cli' | 'api'
+
+export interface BackendMeta {
+  type: BackendType
+  displayName: string
+  /** AI SDK provider key. Only for API backends. */
+  provider?: string
+  /** Env var required for this backend. Null = no key needed (local). */
+  envKey?: string | null
+}
+
+export const BACKEND_META: Record<Backend, BackendMeta> = {
+  // CLI
+  'claude':         { type: 'cli', displayName: 'Claude' },
+  'opencode':       { type: 'cli', displayName: 'OpenCode' },
+  'codex':          { type: 'cli', displayName: 'Codex' },
+  'gemini':         { type: 'cli', displayName: 'Gemini' },
+  'lm-studio':      { type: 'cli', displayName: 'LM Studio' },
+  // API
+  'groq':           { type: 'api', displayName: 'Groq',            provider: 'groq',     envKey: 'GROQ_API_KEY' },
+  'google-ai':      { type: 'api', displayName: 'Google AI',       provider: 'google',   envKey: 'GOOGLE_GENERATIVE_AI_API_KEY' },
+  'lm-studio-api':  { type: 'api', displayName: 'LM Studio (API)', provider: 'lmstudio', envKey: null },
+}
 
 export interface BackendRoute {
   backend: Backend
@@ -37,9 +65,9 @@ export const DEFAULT_DISPATCH: DispatchConfig = {
     'code-implementation': { backend: 'claude', model: 'claude-opus-4-6' },
     'code-review': { backend: 'codex' },
     'architect': { backend: 'claude', model: 'claude-opus-4-6' },
-    'research': { backend: 'opencode', model: 'minimax-m2.5-free' },
-    'content-generation': { backend: 'gemini' },
-    'audit': { backend: 'opencode', model: 'minimax-m2.5-free' },
+    'research': { backend: 'groq', model: 'llama-3.3-70b-versatile' },
+    'content-generation': { backend: 'google-ai', model: 'gemini-2.5-flash' },
+    'audit': { backend: 'groq', model: 'llama-3.3-70b-versatile' },
     'embeddings': { backend: 'opencode', model: 'minimax-m2.5-free' },
   },
   fallback: { backend: 'opencode', model: 'minimax-m2.5-free' },
@@ -121,6 +149,8 @@ export interface BackendHealth {
   available: boolean
   models?: string[]
   error?: string
+  backendType: BackendType
+  displayName: string
 }
 
 export interface WorkforceAgent {
@@ -136,9 +166,24 @@ export interface WorkforceAgent {
  */
 export function getBackendHealth(projectRoot?: string): BackendHealth[] {
   const root = projectRoot ?? process.cwd()
-  const backends: Backend[] = ['claude', 'opencode', 'codex', 'gemini', 'lm-studio']
+  const allBackends = Object.keys(BACKEND_META) as Backend[]
 
-  return backends.map(backend => {
+  return allBackends.map(backend => {
+    const meta = BACKEND_META[backend]
+
+    // API backends: check if env var is set (basic check for now)
+    if (meta.type === 'api') {
+      const available = meta.envKey ? !!process.env[meta.envKey] : true
+      return {
+        backend,
+        available,
+        error: available ? undefined : `${meta.envKey} not set`,
+        backendType: meta.type,
+        displayName: meta.displayName,
+      }
+    }
+
+    // CLI backends: existing health check via --health flag
     const ext = backend === 'lm-studio' ? 'mjs' : 'sh'
     const script = path.join(root, `scripts/backends/${backend}.${ext}`)
     const cmd = ext === 'mjs'
@@ -148,9 +193,22 @@ export function getBackendHealth(projectRoot?: string): BackendHealth[] {
     try {
       const output = execSync(cmd, { timeout: 5000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] })
       const data = JSON.parse(output.trim())
-      return { backend, available: data.available ?? false, models: data.models, error: data.error }
+      return {
+        backend,
+        available: data.available ?? false,
+        models: data.models,
+        error: data.error,
+        backendType: meta.type,
+        displayName: meta.displayName,
+      }
     } catch {
-      return { backend, available: false, error: 'health check failed' }
+      return {
+        backend,
+        available: false,
+        error: 'health check failed',
+        backendType: meta.type,
+        displayName: meta.displayName,
+      }
     }
   })
 }
