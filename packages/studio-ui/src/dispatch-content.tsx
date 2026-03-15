@@ -13,13 +13,12 @@ import {
   Zap,
 } from "lucide-react";
 
-import { SectionHeader } from "./section-header";
-import { StudioBreadcrumb } from "./studio-breadcrumb";
 import { EASE_STANDARD } from "./lib/animation-constants";
 import { cn } from "./lib/utils";
 import type { TaskBoardEntry } from "@/lib/studio/tasks";
 import type { AgentRole } from "@/lib/studio";
-import type { BackendHealth } from "@sherpa/studio-core";
+import type { BackendHealth, BackendType } from "@sherpa/studio-core";
+import { BACKEND_META } from "@sherpa/studio-core";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -256,9 +255,9 @@ function BacklogPanel({
   const totalPending = groups.reduce((s, g) => s + g.tasks.length, 0);
 
   return (
-    <div className="col-span-3 flex flex-col overflow-hidden rounded-lg border border-[var(--color-copper)]/15 bg-card/30 backdrop-blur-[2px]">
+    <div className="col-span-3 flex flex-col overflow-hidden border-r border-[var(--color-dark-bronze)]">
       {/* Panel header */}
-      <div className="flex items-center justify-between border-b border-[var(--color-copper)]/10 px-3 py-2.5">
+      <div className="flex items-center justify-between border-b border-[var(--color-dark-bronze)] px-3 py-2.5">
         <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
           Backlog
         </span>
@@ -366,9 +365,9 @@ function AssignmentsPanel({
   onResetTask: (taskId: string) => void;
 }) {
   return (
-    <div className="col-span-5 flex flex-col overflow-hidden rounded-lg border border-[var(--color-copper)]/15 bg-card/30 backdrop-blur-[2px]">
+    <div className="col-span-5 flex flex-col overflow-hidden border-r border-[var(--color-dark-bronze)]">
       {/* Panel header */}
-      <div className="flex items-center justify-between border-b border-[var(--color-copper)]/10 px-3 py-2.5">
+      <div className="flex items-center justify-between border-b border-[var(--color-dark-bronze)] px-3 py-2.5">
         <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
           Assignments
         </span>
@@ -572,6 +571,21 @@ function AssignmentsPanel({
 // Workforce Panel
 // ---------------------------------------------------------------------------
 
+function BackendTypeBadge({ type }: { type: BackendType }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded border px-1 py-px text-[7px] font-semibold uppercase tracking-widest",
+        type === "cli"
+          ? "border-muted-foreground/20 bg-muted-foreground/8 text-muted-foreground/60"
+          : "border-[var(--color-session)]/25 bg-[var(--color-session)]/10 text-[var(--color-session)]"
+      )}
+    >
+      {type}
+    </span>
+  );
+}
+
 function WorkforcePanel({
   health,
   roles,
@@ -592,78 +606,135 @@ function WorkforcePanel({
   const hasSelection = selectedTaskTypes.size > 0;
   const hasAgent = selectedAgent !== null;
   return (
-    <div className="col-span-4 flex flex-col overflow-hidden rounded-lg border border-[var(--color-copper)]/15 bg-card/30 backdrop-blur-[2px]">
+    <div className="col-span-4 flex flex-col overflow-hidden">
       {/* Panel header */}
-      <div className="border-b border-[var(--color-copper)]/10 px-3 py-2.5">
+      <div className="border-b border-[var(--color-dark-bronze)] px-3 py-2.5">
         <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
           Workforce
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {/* Backends section */}
-        <div className="space-y-1.5 p-3">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Backends section — fixed height, no scroll */}
+        <div className="shrink-0 space-y-1.5 p-3">
           <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground/40">
             Backends
           </p>
-          {health.map((b) => {
-            const isSelected = selectedBackend === b.backend;
-            const isClickable = hasAgent && b.available;
 
-            return (
-              <button
-                key={b.backend}
-                disabled={!isClickable}
-                onClick={() => isClickable && onSelectBackend?.(b.backend)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 transition-all duration-200",
-                  isSelected && "bg-[var(--color-copper)]/12 border border-[var(--color-copper)]/25",
-                  !isSelected && "border border-transparent",
-                  isClickable && !isSelected && "hover:bg-[var(--color-copper)]/5 cursor-pointer",
-                  !isClickable && "cursor-default"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "inline-block h-1.5 w-1.5 rounded-full",
-                      b.available
-                        ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]"
-                        : "bg-rose-400 shadow-[0_0_6px_rgba(248,113,113,0.4)]"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-xs",
-                      isSelected ? "font-medium text-[var(--color-copper)]" : b.available ? "text-foreground" : "text-muted-foreground/50"
-                    )}
-                  >
-                    {b.backend === "lm-studio"
-                      ? "LM Studio"
-                      : b.backend.charAt(0).toUpperCase() + b.backend.slice(1)}
-                  </span>
-                </div>
-                <span
+          <p className="text-[9px] uppercase tracking-widest text-muted-foreground/30 pt-1 pb-0.5">CLI Agents</p>
+          {health
+            .filter((b) => b.backendType === "cli")
+            .map((b) => {
+              const isSelected = selectedBackend === b.backend;
+              const isClickable = hasAgent && b.available;
+
+              return (
+                <button
+                  key={b.backend}
+                  disabled={!isClickable}
+                  onClick={() => isClickable && onSelectBackend?.(b.backend)}
                   className={cn(
-                    "inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50",
-                    !b.available && "opacity-40",
-                    isSelected && "border-[var(--color-copper)]/25 text-[var(--color-copper)]"
+                    "flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 transition-all duration-200",
+                    isSelected && "bg-[var(--color-copper)]/12 border border-[var(--color-copper)]/25",
+                    !isSelected && "border border-transparent",
+                    isClickable && !isSelected && "hover:bg-[var(--color-copper)]/5 cursor-pointer",
+                    !isClickable && "cursor-default"
                   )}
                 >
-                  {b.available
-                    ? b.models?.join(" \u00b7 ") ?? "ready"
-                    : "offline"}
-                </span>
-              </button>
-            );
-          })}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "inline-block h-1.5 w-1.5 rounded-full",
+                        b.available
+                          ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]"
+                          : "bg-rose-400 shadow-[0_0_6px_rgba(248,113,113,0.4)]"
+                      )}
+                    />
+                    <BackendTypeBadge type={b.backendType} />
+                    <span
+                      className={cn(
+                        "text-xs",
+                        isSelected ? "font-medium text-[var(--color-copper)]" : b.available ? "text-foreground" : "text-muted-foreground/50"
+                      )}
+                    >
+                      {b.displayName}
+                    </span>
+                  </div>
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50",
+                      !b.available && "opacity-40",
+                      isSelected && "border-[var(--color-copper)]/25 text-[var(--color-copper)]"
+                    )}
+                  >
+                    {b.available
+                      ? b.models?.join(" \u00b7 ") ?? "ready"
+                      : "offline"}
+                  </span>
+                </button>
+              );
+            })}
+
+          <p className="text-[9px] uppercase tracking-widest text-muted-foreground/30 pt-3 pb-0.5">API Backends</p>
+          {health
+            .filter((b) => b.backendType === "api")
+            .map((b) => {
+              const isSelected = selectedBackend === b.backend;
+              const isClickable = hasAgent && b.available;
+
+              return (
+                <button
+                  key={b.backend}
+                  disabled={!isClickable}
+                  onClick={() => isClickable && onSelectBackend?.(b.backend)}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 transition-all duration-200",
+                    isSelected && "bg-[var(--color-copper)]/12 border border-[var(--color-copper)]/25",
+                    !isSelected && "border border-transparent",
+                    isClickable && !isSelected && "hover:bg-[var(--color-copper)]/5 cursor-pointer",
+                    !isClickable && "cursor-default"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "inline-block h-1.5 w-1.5 rounded-full",
+                        b.available
+                          ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]"
+                          : "bg-rose-400 shadow-[0_0_6px_rgba(248,113,113,0.4)]"
+                      )}
+                    />
+                    <BackendTypeBadge type={b.backendType} />
+                    <span
+                      className={cn(
+                        "text-xs",
+                        isSelected ? "font-medium text-[var(--color-copper)]" : b.available ? "text-foreground" : "text-muted-foreground/50"
+                      )}
+                    >
+                      {b.displayName}
+                    </span>
+                  </div>
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50",
+                      !b.available && "opacity-40",
+                      isSelected && "border-[var(--color-copper)]/25 text-[var(--color-copper)]"
+                    )}
+                  >
+                    {b.available
+                      ? b.models?.join(" \u00b7 ") ?? "ready"
+                      : "offline"}
+                  </span>
+                </button>
+              );
+            })}
         </div>
 
         {/* Divider */}
-        <div className="mx-3 border-t border-muted-foreground/8" />
+        <div className="shrink-0 mx-3 border-t border-muted-foreground/8" />
 
-        {/* Agents section */}
-        <div className="p-3">
+        {/* Agents section — scrollable */}
+        <div className="min-h-0 flex-1 overflow-y-auto p-3">
           <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground/40">
             Agents
           </p>
@@ -777,8 +848,7 @@ function QueueControls({
   ];
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-[var(--color-copper)]/15 bg-card/30 px-4 py-3 backdrop-blur-[2px]">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3">
         {/* Pipeline steps */}
         <div className="flex items-center gap-1.5">
           {steps.map((step, i) => (
@@ -819,26 +889,6 @@ function QueueControls({
             Auto-Dispatch
           </span>
         </button>
-      </div>
-
-      <div className="flex items-center gap-4 text-xs text-muted-foreground/50">
-        <span>
-          <span className="font-medium text-[var(--color-copper)]">
-            {selectedCount}
-          </span>{" "}
-          selected
-        </span>
-        <span>
-          <span className="font-medium text-foreground">{activeCount}</span>{" "}
-          active
-        </span>
-        <span>
-          <span className="font-medium text-emerald-400">
-            {completedTodayCount}
-          </span>{" "}
-          completed today
-        </span>
-      </div>
     </div>
   );
 }
@@ -1010,72 +1060,50 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
 
   return (
     <MotionConfig reducedMotion="user">
-      <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-        className="space-y-4"
-      >
-        {/* Breadcrumb */}
-        <motion.div variants={fadeVariant}>
-          <StudioBreadcrumb segments={[{ label: "Dispatch" }]} />
-        </motion.div>
-
-        {/* Header: Title + Mode + Stats */}
-        <motion.div
-          variants={fadeVariant}
-          className="flex items-center justify-between"
-        >
-          <SectionHeader label="pipeline" title="Dispatch Center" />
-          <div className="flex items-center gap-4">
+      <div className="flex h-[calc(100vh-53px)] min-h-[400px] flex-col overflow-hidden border-t border-[var(--color-dark-bronze)]">
+        {/* Top bar: Mode + Queue controls + Stats */}
+        <div className="flex shrink-0 items-center justify-between border-b border-[var(--color-dark-bronze)] px-4 py-2">
+          <div className="flex items-center gap-3">
             <ModeSelector mode={mode} onModeChange={handleModeChange} />
-            <div className="flex items-center gap-3 text-xs">
-              <span className="text-muted-foreground/50">
-                <span className="font-medium text-[var(--color-copper)]">
-                  {activeCount}
-                </span>{" "}
-                active
-              </span>
-              {failedCount > 0 && (
-                <span className="text-muted-foreground/50">
-                  <span className="font-medium text-rose-400">
-                    {failedCount}
-                  </span>{" "}
-                  failed
-                </span>
-              )}
-              <span className="text-muted-foreground/50">
-                <span className="font-medium text-foreground">
-                  {completedTodayCount}
-                </span>{" "}
-                today
-              </span>
-            </div>
+            <QueueControls
+              selectedCount={selectedCount}
+              selectedAgent={selectedAgent}
+              selectedBackend={selectedBackend}
+              activeCount={activeCount}
+              completedTodayCount={completedTodayCount}
+              dispatching={dispatching}
+              onDispatch={handleDispatch}
+            />
           </div>
-        </motion.div>
-
-        {/* Queue controls — above the panels */}
-        <motion.div variants={fadeVariant}>
-          <QueueControls
-            selectedCount={selectedCount}
-            selectedAgent={selectedAgent}
-            selectedBackend={selectedBackend}
-            activeCount={activeCount}
-            completedTodayCount={completedTodayCount}
-            dispatching={dispatching}
-            onDispatch={handleDispatch}
-          />
-        </motion.div>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-muted-foreground/50">
+              <span className="font-medium text-[var(--color-copper)]">
+                {activeCount}
+              </span>{" "}
+              active
+            </span>
+            {failedCount > 0 && (
+              <span className="text-muted-foreground/50">
+                <span className="font-medium text-rose-400">
+                  {failedCount}
+                </span>{" "}
+                failed
+              </span>
+            )}
+            <span className="text-muted-foreground/50">
+              <span className="font-medium text-foreground">
+                {completedTodayCount}
+              </span>{" "}
+              today
+            </span>
+          </div>
+        </div>
 
         {/* Guard rail banner */}
         <GuardRailBanner visible={mode === "overnight"} />
 
-        {/* Three-panel grid */}
-        <motion.div
-          variants={cardVariant}
-          className="grid grid-cols-12 gap-4"
-          style={{ minHeight: 520 }}
-        >
+        {/* Three-panel grid — fills remaining space */}
+        <div className="grid flex-1 grid-cols-12 gap-0 overflow-hidden">
           <BacklogPanel
             groups={backlogGroups}
             selectedIds={selectedIds}
@@ -1097,8 +1125,8 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
             onAssignAgent={handleAssignAgent}
             onSelectBackend={handleSelectBackend}
           />
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </MotionConfig>
   );
 }
