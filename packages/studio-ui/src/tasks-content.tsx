@@ -11,6 +11,7 @@ import { PromptCopyButton } from "./prompt-copy-button";
 import { EASE_STANDARD } from "./lib/animation-constants";
 import { cn } from "./lib/utils";
 import type { TaskBoardEntry } from "@/lib/studio/tasks";
+import { BACKEND_META } from "@sherpa/studio-core";
 
 // ---------------------------------------------------------------------------
 // Badge style maps
@@ -391,8 +392,26 @@ function TaskTable({ tasks }: { tasks: TaskBoardEntry[] }) {
                   <span className="text-xs text-muted-foreground">{task.role}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="inline-flex items-center rounded border border-muted-foreground/15 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/60">
-                    {task.backend}
+                  <span className="inline-flex items-center gap-1.5">
+                    {(() => {
+                      const meta = BACKEND_META[task.backend as keyof typeof BACKEND_META];
+                      if (!meta) return null;
+                      return (
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded border px-1 py-px text-[7px] font-semibold uppercase tracking-widest",
+                            meta.type === "cli"
+                              ? "border-muted-foreground/20 bg-muted-foreground/8 text-muted-foreground/60"
+                              : "border-[var(--color-session)]/25 bg-[var(--color-session)]/10 text-[var(--color-session)]"
+                          )}
+                        >
+                          {meta.type}
+                        </span>
+                      );
+                    })()}
+                    <span className="inline-flex items-center rounded border border-muted-foreground/15 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/60">
+                      {task.backend}
+                    </span>
                   </span>
                 </td>
                 <td className="px-4 py-3">
