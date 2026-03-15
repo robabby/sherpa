@@ -12,6 +12,8 @@ worktree: null
 - 2026-03-13: Implementation complete in 5 sessions. Session 1: 7 core scripts + Claude backend. Session 2: OpenCode, Codex, Gemini, LM Studio backends. Session 3: TypeScript types, config integration, task-type routing, role frontmatter. Session 4: Dispatch Center UI (870-line three-panel component), API route, hub panel. Session 5: auto-dispatch matching, docs updates, status → integrated. Total: 52 files changed, ~6,500 lines added.
 - 2026-03-13: Post-implementation polish. Fixed Gemini `-p` flag syntax, model resolution for non-Claude backends. Added failed task visibility + reset button, auto-refresh fix (API route sets status before spawning worker), Claude-only constraint for governance files. First successful browser→Gemini dispatch: "Benchmark Gemini vs MiniMax on content generation tasks" completed in 41 minutes.
 
+- 2026-03-14: Design task dispatched: "Design overnight run summary view for morning review." Produced `overnight-summary-design.md` (6-file plan: `overnight.ts` data model, `overnight-summary-content.tsx` UI, `/dispatch/morning` page, `/api/dispatch/judge` route, dispatch-content.tsx link) and `overnight-summary-prototype.html` with interactive task cards, bulk judge/re-queue actions, and three view states (normal run, empty, in-progress).
+
 ## Seeds
 
 Items that surfaced during this initiative but were explicitly out of scope. Each is a candidate for its own proposal.
