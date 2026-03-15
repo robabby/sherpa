@@ -304,12 +304,12 @@ export function MissionWorkspace({
     <div
       ref={wrapperRef}
       tabIndex={0}
-      className="flex h-[calc(100vh-53px)] min-h-[400px] overflow-hidden border-t border-[var(--color-dark-bronze)] outline-none"
+      className="flex h-[calc(100vh-53px)] min-h-[400px] min-w-0 overflow-hidden border-t border-[var(--color-dark-bronze)] outline-none [contain:strict]"
     >
       {/* Left pane */}
       <div
         style={{ width: listWidth, minWidth: LIST_MIN_WIDTH, maxWidth: LIST_MAX_WIDTH }}
-        className="flex flex-col overflow-hidden border-r border-[var(--color-dark-bronze)] bg-[var(--color-obsidian)]"
+        className="flex shrink-0 flex-col overflow-hidden border-r border-[var(--color-dark-bronze)] bg-[var(--color-obsidian)]"
       >
         <MissionFilterBar
           tasks={tasks}

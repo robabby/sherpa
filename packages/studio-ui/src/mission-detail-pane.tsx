@@ -232,7 +232,7 @@ export function MissionDetailPane({
   // -------------------------------------------------------------------------
   return (
     <div
-      className="h-full overflow-y-auto px-6 pt-5 pb-8"
+      className="h-full w-full min-w-0 overflow-y-auto overflow-x-hidden px-6 pt-5 pb-8"
       style={{
         background: `radial-gradient(ellipse at 20% 0%, rgba(196,154,108,0.03) 0%, transparent 50%),
                      radial-gradient(ellipse at 80% 100%, rgba(99,102,241,0.02) 0%, transparent 50%)`,
@@ -271,7 +271,7 @@ export function MissionDetailPane({
         </div>
 
         {/* Title */}
-        <h1 className="mb-4 font-display text-xl font-semibold tracking-tight text-foreground">
+        <h1 className="mb-4 font-display text-xl font-semibold tracking-tight text-foreground [overflow-wrap:anywhere]">
           {task.title}
         </h1>
 
@@ -348,7 +348,7 @@ export function MissionDetailPane({
       </div>
 
       {/* Tabs */}
-      <Tabs value={effectiveTab} onValueChange={onTabChange}>
+      <Tabs value={effectiveTab} onValueChange={onTabChange} className="min-w-0 overflow-hidden">
         <TabsList className="mb-5 bg-transparent">
           <TabsTrigger value="overview" className={TAB_TRIGGER_CLASS}>
             Overview
@@ -368,14 +368,14 @@ export function MissionDetailPane({
         </TabsList>
 
         {/* Overview tab */}
-        <TabsContent value="overview">
+        <TabsContent value="overview" className="overflow-hidden">
           <div className="space-y-8">
             {objectiveSection && (
               <div>
                 <h2 className="mb-3 font-heading text-[15px] font-semibold text-[var(--color-copper)]">
                   Objective
                 </h2>
-                <div className="text-sm leading-relaxed text-foreground/90">
+                <div className="min-w-0 text-sm leading-relaxed text-foreground/90 [overflow-wrap:anywhere]">
                   <DocRenderer content={objectiveSection.content} />
                 </div>
               </div>
@@ -396,7 +396,7 @@ export function MissionDetailPane({
         </TabsContent>
 
         {/* Report tab */}
-        <TabsContent value="report">
+        <TabsContent value="report" className="overflow-hidden">
           {task.reportContent ? (
             <div className="rounded-lg border border-[var(--color-dark-bronze)] bg-[var(--color-warm-charcoal)]/30 p-5">
               <div className="mb-3 flex items-center gap-2">
@@ -405,7 +405,7 @@ export function MissionDetailPane({
                 </span>
                 <div className="h-px flex-1 bg-[var(--color-dark-bronze)]" />
               </div>
-              <div className="text-sm">
+              <div className="min-w-0 overflow-x-auto text-sm [overflow-wrap:anywhere]">
                 <DocRenderer content={task.reportContent} />
               </div>
             </div>
@@ -422,7 +422,7 @@ export function MissionDetailPane({
         </TabsContent>
 
         {/* Verdict tab */}
-        <TabsContent value="verdict">
+        <TabsContent value="verdict" className="overflow-hidden">
           {task.verdictContent ? (
             <div className="rounded-lg border border-[var(--color-dark-bronze)] bg-[var(--color-warm-charcoal)]/30 p-5">
               <div className="mb-3 flex items-center gap-2">
@@ -431,7 +431,7 @@ export function MissionDetailPane({
                 </span>
                 <div className="h-px flex-1 bg-[var(--color-dark-bronze)]" />
               </div>
-              <div className="text-sm">
+              <div className="min-w-0 overflow-x-auto text-sm [overflow-wrap:anywhere]">
                 <DocRenderer content={task.verdictContent} />
               </div>
             </div>
@@ -457,7 +457,7 @@ export function MissionDetailPane({
         </TabsContent>
 
         {/* Events tab */}
-        <TabsContent value="events">
+        <TabsContent value="events" className="overflow-hidden">
           <MissionTimeline events={events} isStreaming={isStreaming} />
         </TabsContent>
       </Tabs>

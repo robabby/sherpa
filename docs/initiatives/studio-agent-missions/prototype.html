@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Agent Missions — Prototype v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'obsidian':       '#08080a',
+            'warm-charcoal':  '#18181b',
+            'dark-bronze':    '#27272a',
+            'gold':           '#d4a574',
+            'gold-bright':    '#e8c49a',
+            'gold-muted':     '#b08a5e',
+            'copper':         '#c49a6c',
+            'bronze':         '#8b7355',
+            'tarnished':      '#6b5a42',
+            'cream':          '#f5f0e8',
+            'warm-gray':      '#9a8e80',
+            'dim':            '#71665a',
+            'session':        '#6366f1',
+            'session-bright': '#818cf8',
+          },
+          fontFamily: {
+            sans:    ['"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            display: ['"Fraunces"', 'Georgia', 'serif'],
+            heading: ['"Fraunces"', 'Georgia', 'serif'],
+            mono:    ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #08080a;
+      color: #fafafa;
+      font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    }
+
+    /* Scrollbar */
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+    /* Animations */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(196, 154, 108, 0); }
+      50% { box-shadow: 0 0 8px 2px rgba(196, 154, 108, 0.15); }
+    }
+    .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+    @keyframes stream-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-stream-in { animation: stream-in 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    @keyframes timeline-trace {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 40px; }
+    }
+    .timeline-line-active {
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(196, 154, 108, 0.4) 0px,
+        rgba(196, 154, 108, 0.1) 10px,
+        rgba(39, 39, 42, 0.5) 20px,
+        rgba(39, 39, 42, 0.5) 30px,
+        rgba(196, 154, 108, 0.4) 40px
+      );
+      background-size: 1px 40px;
+      animation: timeline-trace 2s linear infinite;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-up {
+      animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Stagger children */
+    .stagger > * { animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    .stagger > *:nth-child(1) { animation-delay: 0.02s; }
+    .stagger > *:nth-child(2) { animation-delay: 0.06s; }
+    .stagger > *:nth-child(3) { animation-delay: 0.10s; }
+    .stagger > *:nth-child(4) { animation-delay: 0.14s; }
+    .stagger > *:nth-child(5) { animation-delay: 0.18s; }
+    .stagger > *:nth-child(6) { animation-delay: 0.22s; }
+    .stagger > *:nth-child(7) { animation-delay: 0.26s; }
+    .stagger > *:nth-child(8) { animation-delay: 0.30s; }
+    .stagger > *:nth-child(9) { animation-delay: 0.34s; }
+
+    /* Resize handle */
+    .resize-handle:hover .resize-track { background: rgba(196, 154, 108, 0.3); }
+    .resize-handle:active .resize-track { background: rgba(212, 165, 116, 0.4); }
+
+    /* Card states */
+    .mission-card { transition: all 0.15s ease; }
+    .mission-card:hover { background: rgba(196, 154, 108, 0.03); }
+    .mission-card.selected {
+      background: rgba(196, 154, 108, 0.06);
+      border-left: 2px solid #c49a6c;
+    }
+    .mission-card.selected .card-title { color: #e8c49a; }
+
+    /* Metric chip */
+    .metric-chip {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: rgba(39, 39, 42, 0.5);
+      border: 1px solid rgba(39, 39, 42, 0.8);
+    }
+    .metric-chip .label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #71665a; }
+    .metric-chip .value { font-size: 13px; font-weight: 500; font-family: 'JetBrains Mono', monospace; }
+
+    /* Detail pane atmosphere */
+    .detail-bg {
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(196, 154, 108, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(99, 102, 241, 0.02) 0%, transparent 50%),
+        #0c0c0e;
+    }
+
+    /* Noise overlay */
+    .noise::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* Tab underline with glow */
+    .tab-active {
+      border-bottom: 2px solid #c49a6c;
+      color: #c49a6c;
+      text-shadow: 0 0 20px rgba(196, 154, 108, 0.3);
+    }
+  </style>
+</head>
+<body class="overflow-hidden">
+
+  <!-- Studio Nav -->
+  <nav class="flex h-[53px] items-center border-b border-dark-bronze bg-warm-charcoal/80 px-5 backdrop-blur-sm">
+    <span class="font-display text-[15px] font-semibold tracking-tight text-copper">Sherpa Studio</span>
+    <div class="ml-10 flex items-center gap-5 text-[13px]">
+      <a href="#" class="text-zinc-500 transition-colors hover:text-zinc-300">Home</a>
+      <a href="#" class="text-zinc-500 transition-colors hover:text-zinc-300">Process</a>
+      <a href="#" class="text-zinc-500 transition-colors hover:text-zinc-300">Dispatch</a>
+      <a href="#" class="text-copper font-medium">Tasks</a>
+      <a href="#" class="text-zinc-500 transition-colors hover:text-zinc-300">Agents</a>
+    </div>
+    <div class="ml-auto flex items-center gap-2">
+      <kbd class="rounded border border-dark-bronze bg-obsidian px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">j/k</kbd>
+      <span class="text-[10px] text-zinc-600">navigate</span>
+    </div>
+  </nav>
+
+  <!-- Mission Control -->
+  <div id="app" class="flex border-t border-dark-bronze" style="height: calc(100vh - 53px);">
+
+    <!-- LEFT PANE -->
+    <div id="list-pane" class="flex flex-col overflow-hidden border-r border-dark-bronze bg-obsidian" style="width: 360px; min-width: 200px; max-width: 500px;">
+
+      <!-- Filter Row 1: Search + Status + Sort -->
+      <div class="flex shrink-0 items-center gap-1.5 border-b border-dark-bronze bg-warm-charcoal/30 px-2.5 py-2">
+        <div class="relative flex-1">
+          <svg class="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="Search missions..." class="h-7 w-full rounded-md border border-dark-bronze/50 bg-obsidian/80 pl-8 pr-2 text-xs text-zinc-300 placeholder:text-zinc-600 outline-none transition-colors focus:border-copper/30 focus:bg-obsidian">
+        </div>
+        <button class="shrink-0 rounded-md border border-dark-bronze/50 bg-obsidian/60 px-2 py-1 text-[10px] font-medium text-zinc-500 transition-colors hover:border-copper/20 hover:text-zinc-400">
+          Status <span class="ml-0.5 opacity-50">&#x25BE;</span>
+        </button>
+        <div class="flex shrink-0 items-center rounded-md border border-dark-bronze/50 bg-obsidian/60">
+          <button class="rounded-l-md px-2 py-1 text-[10px] font-medium text-gold transition-colors">Recent</button>
+          <button class="border-l border-dark-bronze/50 px-2 py-1 text-[10px] font-medium text-zinc-600 transition-colors hover:text-zinc-400">A-Z</button>
+          <button class="rounded-r-md border-l border-dark-bronze/50 px-2 py-1 text-[10px] font-medium text-zinc-600 transition-colors hover:text-zinc-400">Status</button>
+        </div>
+      </div>
+
+      <!-- Filter Row 2: Backend toggles -->
+      <div class="flex shrink-0 items-center gap-1.5 border-b border-dark-bronze px-2.5 py-1.5">
+        <button class="rounded-md bg-copper/12 px-2 py-0.5 text-[10px] font-medium text-copper ring-1 ring-copper/20">All</button>
+        <div class="mx-0.5 h-3 w-px bg-dark-bronze"></div>
+        <span class="font-mono text-[8px] uppercase tracking-widest text-zinc-600">CLI</span>
+        <button class="rounded-md px-1.5 py-0.5 text-[10px] text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400">Claude</button>
+        <button class="rounded-md px-1.5 py-0.5 text-[10px] text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400">Gemini</button>
+        <div class="mx-0.5 h-3 w-px bg-dark-bronze"></div>
+        <span class="font-mono text-[8px] uppercase tracking-widest text-zinc-600">API</span>
+        <button class="rounded-md px-1.5 py-0.5 text-[10px] text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400">Groq</button>
+        <button class="rounded-md px-1.5 py-0.5 text-[10px] text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400">Google</button>
+      </div>
+
+      <!-- Stats bar -->
+      <div class="flex shrink-0 items-center gap-3 border-b border-dark-bronze/40 bg-warm-charcoal/15 px-3 py-1.5">
+        <span class="text-[10px] text-zinc-500"><span class="font-mono font-medium text-copper">2</span> dispatched</span>
+        <span class="text-[10px] text-zinc-500"><span class="font-mono font-medium text-emerald-500">5</span> completed</span>
+        <span class="text-[10px] text-zinc-500"><span class="font-mono font-medium text-gold">1</span> reviewed</span>
+        <span class="ml-auto font-mono text-[10px] text-tarnished">$0.06 total</span>
+      </div>
+
+      <!-- Mission Cards -->
+      <div class="flex-1 overflow-y-auto scrollbar-thin stagger">
+
+        <!-- Card 0: Dispatched — selected -->
+        <div class="mission-card selected cursor-pointer border-b border-dark-bronze/30 px-3 py-3" data-index="0" onclick="selectTask(0)">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-copper animate-pulse-dot"></span>
+            <span class="card-title flex-1 truncate text-[13px] font-medium text-gold-bright">Design Overnight Dashboard</span>
+            <span class="shrink-0 font-mono text-[10px] tabular-nums text-zinc-500">6m 13s</span>
+          </div>
+          <div class="mt-1 pl-4 text-[11px] text-dim">dispatch-center</div>
+          <div class="mt-1.5 flex items-center gap-1.5 pl-4">
+            <span class="rounded border border-zinc-700/80 bg-zinc-800/60 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-zinc-500">CLI</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">claude</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">sonnet-4-6</span>
+          </div>
+          <div class="mt-1.5 flex items-center gap-2 pl-4">
+            <span class="font-mono text-[10px] tabular-nums text-zinc-600">12.4K tok</span>
+            <span class="text-zinc-700">&middot;</span>
+            <span class="font-mono text-[10px] tabular-nums text-zinc-600">$0.03</span>
+          </div>
+        </div>
+
+        <!-- Card 1: Dispatched API -->
+        <div class="mission-card cursor-pointer border-b border-dark-bronze/30 px-3 py-3" data-index="1" onclick="selectTask(1)">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-copper animate-pulse-dot"></span>
+            <span class="card-title flex-1 truncate text-[13px] font-medium text-zinc-200">Test Groq Research</span>
+            <span class="shrink-0 font-mono text-[10px] tabular-nums text-zinc-500">42s</span>
+          </div>
+          <div class="mt-1 pl-4 text-[11px] text-dim">ai-sdk-dispatch</div>
+          <div class="mt-1.5 flex items-center gap-1.5 pl-4">
+            <span class="rounded border border-session/25 bg-session/10 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-session">API</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">groq</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">llama-3.3-70b</span>
+          </div>
+          <div class="mt-1.5 flex items-center gap-2 pl-4">
+            <span class="font-mono text-[10px] tabular-nums text-zinc-600">2.1K tok</span>
+            <span class="text-zinc-700">&middot;</span>
+            <span class="font-mono text-[10px] tabular-nums text-zinc-600">$0.001</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Completed + approved -->
+        <div class="mission-card cursor-pointer border-b border-dark-bronze/30 px-3 py-3" data-index="2" onclick="selectTask(2)">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+            <span class="card-title flex-1 truncate text-[13px] font-medium text-zinc-300">Audit Claude MD Token Budget</span>
+            <span class="shrink-0 font-mono text-[10px] tabular-nums text-zinc-500">2m 34s</span>
+          </div>
+          <div class="mt-1 pl-4 text-[11px] text-dim">claude-md-standards</div>
+          <div class="mt-1.5 flex items-center gap-1.5 pl-4">
+            <span class="rounded border border-zinc-700/80 bg-zinc-800/60 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-zinc-500">CLI</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">claude</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">sonnet-4-6</span>
+            <span class="ml-auto rounded-full border border-emerald-500/30 bg-emerald-500/8 px-1.5 py-0.5 text-[10px] font-medium text-emerald-500">approved</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Reviewed + approved -->
+        <div class="mission-card cursor-pointer border-b border-dark-bronze/30 px-3 py-3" data-index="3" onclick="selectTask(3)">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-gold"></span>
+            <span class="card-title flex-1 truncate text-[13px] font-medium text-zinc-300">Research OpenCode Rate Limits</span>
+            <span class="shrink-0 font-mono text-[10px] tabular-nums text-zinc-500">1m 12s</span>
+          </div>
+          <div class="mt-1 pl-4 text-[11px] text-dim">opencode-integration</div>
+          <div class="mt-1.5 flex items-center gap-1.5 pl-4">
+            <span class="rounded border border-zinc-700/80 bg-zinc-800/60 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-zinc-500">CLI</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">opencode</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">gpt-4o</span>
+            <span class="ml-auto rounded-full border border-emerald-500/30 bg-emerald-500/8 px-1.5 py-0.5 text-[10px] font-medium text-emerald-500">approved</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Completed, pending verdict -->
+        <div class="mission-card cursor-pointer border-b border-dark-bronze/30 px-3 py-3" data-index="4" onclick="selectTask(4)">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+            <span class="card-title flex-1 truncate text-[13px] font-medium text-zinc-300">Research Gemini Content Quality</span>
+            <span class="shrink-0 font-mono text-[10px] tabular-nums text-zinc-500">45s</span>
+          </div>
+          <div class="mt-1 pl-4 text-[11px] text-dim">gemini-eval</div>
+          <div class="mt-1.5 flex items-center gap-1.5 pl-4">
+            <span class="rounded border border-zinc-700/80 bg-zinc-800/60 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-zinc-500">CLI</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">gemini</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">gemini-2.5-pro</span>
+            <span class="ml-auto rounded-full border border-zinc-600/30 bg-zinc-700/15 px-1.5 py-0.5 text-[10px] text-zinc-500">pending</span>
+          </div>
+        </div>
+
+        <!-- Card 5: API completed -->
+        <div class="mission-card cursor-pointer border-b border-dark-bronze/30 px-3 py-3" data-index="5" onclick="selectTask(5)">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+            <span class="card-title flex-1 truncate text-[13px] font-medium text-zinc-300">Test Google Content Generation</span>
+            <span class="shrink-0 font-mono text-[10px] tabular-nums text-zinc-500">3s</span>
+          </div>
+          <div class="mt-1 pl-4 text-[11px] text-dim">ai-sdk-dispatch</div>
+          <div class="mt-1.5 flex items-center gap-1.5 pl-4">
+            <span class="rounded border border-session/25 bg-session/10 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-session">API</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">google-ai</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">gemini-2.5-flash</span>
+            <span class="ml-auto rounded-full border border-emerald-500/30 bg-emerald-500/8 px-1.5 py-0.5 text-[10px] font-medium text-emerald-500">approved</span>
+          </div>
+          <div class="mt-1.5 flex items-center gap-2 pl-4">
+            <span class="font-mono text-[10px] tabular-nums text-zinc-600">847 tok</span>
+            <span class="text-zinc-700">&middot;</span>
+            <span class="font-mono text-[10px] tabular-nums text-zinc-600">$0.0004</span>
+          </div>
+        </div>
+
+        <!-- Card 6: Pending -->
+        <div class="mission-card cursor-pointer border-b border-dark-bronze/30 px-3 py-3" data-index="6" onclick="selectTask(6)">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-zinc-600"></span>
+            <span class="card-title flex-1 truncate text-[13px] font-medium text-zinc-500">Evaluate LM Studio Latency</span>
+          </div>
+          <div class="mt-1 pl-4 text-[11px] text-zinc-600">lm-studio-eval</div>
+          <div class="mt-1.5 flex items-center gap-1.5 pl-4">
+            <span class="rounded border border-session/25 bg-session/10 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-session">API</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-600">lm-studio-api</span>
+          </div>
+        </div>
+
+        <!-- Card 7: Pending -->
+        <div class="mission-card cursor-pointer border-b border-dark-bronze/30 px-3 py-3" data-index="7" onclick="selectTask(7)">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-zinc-600"></span>
+            <span class="card-title flex-1 truncate text-[13px] font-medium text-zinc-500">Benchmark Groq vs Google Latency</span>
+          </div>
+          <div class="mt-1 pl-4 text-[11px] text-zinc-600">ai-sdk-dispatch</div>
+          <div class="mt-1.5 flex items-center gap-1.5 pl-4">
+            <span class="rounded border border-session/25 bg-session/10 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-session">API</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-600">groq</span>
+          </div>
+        </div>
+
+        <!-- Card 8: Failed -->
+        <div class="mission-card cursor-pointer border-b border-dark-bronze/30 px-3 py-3" data-index="8" onclick="selectTask(8)">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-rose-500"></span>
+            <span class="card-title flex-1 truncate text-[13px] font-medium text-zinc-400">Generate API Documentation</span>
+            <span class="shrink-0 font-mono text-[10px] tabular-nums text-zinc-500">12s</span>
+          </div>
+          <div class="mt-1 pl-4 text-[11px] text-dim">api-docs</div>
+          <div class="mt-1.5 flex items-center gap-1.5 pl-4">
+            <span class="rounded border border-zinc-700/80 bg-zinc-800/60 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-zinc-500">CLI</span>
+            <span class="rounded border border-zinc-700/50 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">codex</span>
+            <span class="ml-auto rounded-full border border-rose-500/30 bg-rose-500/8 px-1.5 py-0.5 text-[10px] font-medium text-rose-500">failed</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RESIZE HANDLE -->
+    <div class="resize-handle flex w-2 shrink-0 cursor-col-resize items-center justify-center self-stretch select-none">
+      <div class="resize-track h-full w-px bg-dark-bronze transition-colors"></div>
+    </div>
+
+    <!-- RIGHT PANE: Detail -->
+    <div id="detail-pane" class="detail-bg noise relative flex min-w-0 flex-1 flex-col overflow-hidden">
+
+      <!-- Empty state (shown when nothing selected — hidden by default since card 0 is selected) -->
+      <div id="empty-state" class="hidden flex-1 flex items-center justify-center">
+        <div class="text-center">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-dark-bronze bg-warm-charcoal/50">
+            <svg class="h-8 w-8 text-tarnished" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 12h6m-3-3v6m-7.5 3V6.75A2.25 2.25 0 016.75 4.5h10.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25H6.75a2.25 2.25 0 01-2.25-2.25z"/>
+            </svg>
+          </div>
+          <p class="font-display text-lg text-zinc-400">Select a mission</p>
+          <p class="mt-1 text-sm text-dim">Click a task or press <kbd class="rounded border border-dark-bronze bg-obsidian px-1 py-0.5 font-mono text-[10px]">j/k</kbd> to navigate</p>
+        </div>
+      </div>
+
+      <!-- Detail content (visible when a task is selected) -->
+      <div id="detail-content" class="flex-1 overflow-y-auto px-6 pt-5 pb-8 scrollbar-thin">
+
+        <!-- Metadata Header -->
+        <div id="detail-header" class="mb-6 animate-fade-up">
+          <!-- Status line -->
+          <div class="flex items-center gap-2.5 mb-3">
+            <span id="detail-status-dot" class="h-2.5 w-2.5 rounded-full bg-copper animate-pulse-glow"></span>
+            <span id="detail-status-badge" class="rounded-full border border-copper/40 bg-copper/10 px-2.5 py-0.5 text-xs font-medium text-copper">dispatched</span>
+            <span id="detail-verdict-badge" class="rounded-full border border-zinc-600/30 bg-zinc-700/15 px-2.5 py-0.5 text-xs text-zinc-500">pending verdict</span>
+          </div>
+
+          <!-- Title -->
+          <h1 id="detail-title" class="font-display text-xl font-semibold tracking-tight text-zinc-100 mb-4">Design Overnight Dashboard</h1>
+
+          <!-- Metric chips row -->
+          <div class="flex flex-wrap items-stretch gap-2 mb-3">
+            <div class="metric-chip">
+              <span class="label">Backend</span>
+              <div class="flex items-center gap-1.5">
+                <span id="detail-type-badge" class="rounded border border-zinc-700/80 bg-zinc-800/60 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-zinc-500">CLI</span>
+                <span id="detail-backend" class="value text-zinc-300">claude</span>
+              </div>
+            </div>
+            <div class="metric-chip">
+              <span class="label">Model</span>
+              <span id="detail-model" class="value text-zinc-300">claude-sonnet-4-6</span>
+            </div>
+            <div class="metric-chip">
+              <span class="label">Duration</span>
+              <span id="detail-duration" class="value text-copper">6m 13s</span>
+            </div>
+            <div class="metric-chip">
+              <span class="label">Tokens</span>
+              <span id="detail-tokens" class="value text-zinc-300">12,384 in <span class="text-zinc-600">/</span> 3,201 out</span>
+            </div>
+            <div class="metric-chip">
+              <span class="label">Cost</span>
+              <span id="detail-cost" class="value text-gold">$0.03</span>
+            </div>
+            <div class="metric-chip">
+              <span class="label">Mode</span>
+              <span id="detail-mode" class="value text-zinc-400">supervised</span>
+            </div>
+          </div>
+
+          <!-- Context line -->
+          <div id="detail-context" class="flex flex-wrap items-center gap-2 text-xs text-dim">
+            <a href="#" class="transition-colors hover:text-copper">dispatch-center</a>
+            <span class="text-zinc-700">&middot;</span>
+            <span>medium priority</span>
+            <span class="text-zinc-700">&middot;</span>
+            <span>2h ago</span>
+            <span class="text-zinc-700">&middot;</span>
+            <span class="font-mono text-[10px]">architect</span>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-5">
+          <div class="flex items-center border-b border-dark-bronze">
+            <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn tab-active px-3.5 py-2.5 text-xs font-medium transition-all">Overview</button>
+            <button onclick="switchTab('report')" id="tab-report" class="tab-btn border-b-2 border-transparent px-3.5 py-2.5 text-xs font-medium text-zinc-500 transition-all hover:text-zinc-400">Report</button>
+            <button onclick="switchTab('verdict')" id="tab-verdict" class="tab-btn border-b-2 border-transparent px-3.5 py-2.5 text-xs font-medium text-zinc-500 transition-all hover:text-zinc-400">Verdict</button>
+            <button onclick="switchTab('events')" id="tab-events" class="tab-btn relative border-b-2 border-transparent px-3.5 py-2.5 text-xs font-medium text-zinc-500 transition-all hover:text-zinc-400">
+              Events
+              <span id="events-live-dot" class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-copper animate-pulse-dot"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab: Overview -->
+        <div id="content-overview" class="tab-content animate-fade-up">
+          <div class="mb-8">
+            <h2 class="mb-3 font-heading text-[15px] font-semibold text-copper">Objective</h2>
+            <p id="detail-objective" class="text-sm leading-relaxed text-zinc-300/90">Design the overnight summary dashboard for the Dispatch Center. Create a UI layout that shows the results of overnight batch dispatches &mdash; completed tasks, failures, cost breakdown, and model performance &mdash; so the human operator can review outcomes in under 2 minutes each morning.</p>
+          </div>
+
+          <div>
+            <h2 class="mb-3 font-heading text-[15px] font-semibold text-copper">Acceptance Criteria</h2>
+            <div id="detail-criteria" class="space-y-2.5">
+              <div class="flex items-start gap-2.5">
+                <div class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-emerald-500/50 bg-emerald-500/12 text-emerald-500">
+                  <svg viewBox="0 0 12 12" class="h-2.5 w-2.5"><path d="M10 3L4.5 8.5 2 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <span class="text-sm leading-relaxed text-zinc-500 line-through decoration-zinc-700">Dashboard layout mockup or prototype exists</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <div class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-emerald-500/50 bg-emerald-500/12 text-emerald-500">
+                  <svg viewBox="0 0 12 12" class="h-2.5 w-2.5"><path d="M10 3L4.5 8.5 2 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <span class="text-sm leading-relaxed text-zinc-500 line-through decoration-zinc-700">Cost breakdown per model/provider included</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <div class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-zinc-700/50"></div>
+                <span class="text-sm leading-relaxed text-zinc-200">Failure summary with actionable next steps</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <div class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-zinc-700/50"></div>
+                <span class="text-sm leading-relaxed text-zinc-200">2-minute review time validated</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Report -->
+        <div id="content-report" class="tab-content hidden">
+          <div class="animate-fade-up rounded-lg border border-dark-bronze bg-warm-charcoal/30 p-5">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="font-mono text-[9px] uppercase tracking-widest text-dim">Worker Output</span>
+              <div class="h-px flex-1 bg-dark-bronze"></div>
+            </div>
+            <div id="detail-report-body" class="text-sm leading-relaxed text-zinc-400 space-y-3">
+              <p>Designed a three-panel overnight dashboard layout with the following zones:</p>
+              <p><strong class="text-zinc-300">Summary Bar (top)</strong> &mdash; Total tasks dispatched, completed, failed. Total cost. Total tokens. Average duration. All as large stat cards.</p>
+              <p><strong class="text-zinc-300">Task Results Grid (center)</strong> &mdash; Grouped by initiative. Each task shows status, model, duration, cost. Failed tasks highlighted with error summary.</p>
+              <p><strong class="text-zinc-300">Cost Breakdown (right sidebar)</strong> &mdash; Pie chart by provider. Bar chart by model. Running total with daily trend.</p>
+              <p>Prototype HTML created at <code class="rounded bg-obsidian px-1.5 py-0.5 font-mono text-[11px] text-copper">docs/initiatives/dispatch-center/overnight-summary-prototype.html</code></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Verdict -->
+        <div id="content-verdict" class="tab-content hidden">
+          <div id="detail-verdict-body" class="animate-fade-up rounded-lg border border-dark-bronze/50 bg-warm-charcoal/20 p-8 text-center">
+            <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-700/50 bg-zinc-800/50">
+              <svg class="h-5 w-5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <p class="text-sm text-zinc-500">No verdict yet</p>
+            <p class="mt-1 text-xs text-dim">Awaiting judge review</p>
+          </div>
+        </div>
+
+        <!-- Tab: Events -->
+        <div id="content-events" class="tab-content hidden">
+
+          <!-- Streaming indicator -->
+          <div id="streaming-banner" class="animate-fade-up mb-5 flex items-center gap-2.5 rounded-lg border border-copper/15 bg-copper/4 px-3.5 py-2.5">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-copper/40"></span>
+              <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-copper"></span>
+            </span>
+            <span class="text-xs font-medium text-copper/80">Streaming live events</span>
+            <div class="ml-auto flex items-center gap-1">
+              <span class="h-1 w-1 rounded-full bg-copper/40 animate-pulse-dot" style="animation-delay: 0s"></span>
+              <span class="h-1 w-1 rounded-full bg-copper/40 animate-pulse-dot" style="animation-delay: 0.3s"></span>
+              <span class="h-1 w-1 rounded-full bg-copper/40 animate-pulse-dot" style="animation-delay: 0.6s"></span>
+            </div>
+          </div>
+
+          <!-- Timeline -->
+          <div class="relative ml-4 stagger">
+            <!-- Vertical line -->
+            <div id="timeline-line" class="absolute left-[7px] top-2 bottom-2 w-px timeline-line-active"></div>
+
+            <!-- Event: dispatch_requested -->
+            <div class="relative flex gap-4 pb-6">
+              <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                <span class="h-3.5 w-3.5 rounded-full border-2 border-copper bg-copper/20 shadow-[0_0_6px_rgba(196,154,108,0.3)]"></span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-copper">dispatch_requested</span>
+                  <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">14:11:17</span>
+                </div>
+                <p class="mt-1 text-[11px] leading-relaxed text-zinc-500">Dispatched to <span class="text-zinc-400">claude</span> (supervised) via studio-ui</p>
+              </div>
+            </div>
+
+            <!-- Event: task_updated -->
+            <div class="relative flex gap-4 pb-6">
+              <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                <span class="h-3 w-3 rounded-full border-[1.5px] border-gold/40 bg-gold/8"></span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gold/60">task_updated</span>
+                  <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">14:11:17</span>
+                </div>
+                <p class="mt-1 text-[11px] text-zinc-600">status: dispatched, backend: claude</p>
+              </div>
+            </div>
+
+            <!-- Event: worker_started -->
+            <div class="relative flex gap-4 pb-6">
+              <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                <span class="h-3.5 w-3.5 rounded-full border-2 border-bronze bg-bronze/15"></span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-bronze">worker_started</span>
+                  <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">14:11:17</span>
+                </div>
+                <p class="mt-1 text-[11px] text-zinc-500"><span class="text-zinc-400">claude-sonnet-4-6</span> &middot; supervised &middot; architect &middot; $1.00 budget</p>
+              </div>
+            </div>
+
+            <!-- Event: backend_delegating -->
+            <div class="relative flex gap-4 pb-6">
+              <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                <span class="h-2.5 w-2.5 rounded-full border border-zinc-600/60"></span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-zinc-600">backend_delegating</span>
+                  <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-700">14:11:17</span>
+                </div>
+                <p class="mt-1 font-mono text-[10px] text-zinc-600">scripts/backends/claude.sh</p>
+              </div>
+            </div>
+
+            <!-- Event: dispatch_spawned -->
+            <div class="relative flex gap-4 pb-6">
+              <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                <span class="h-3.5 w-3.5 rounded-full border-2 border-copper bg-copper/15"></span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-copper/80">dispatch_spawned</span>
+                  <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">14:11:18</span>
+                </div>
+                <p class="mt-1 text-[11px] text-zinc-500">PID <span class="font-mono text-zinc-400">13480</span> &middot; claude &middot; architect &middot; supervised</p>
+              </div>
+            </div>
+
+            <!-- Time gap -->
+            <div class="relative flex gap-4 pb-6">
+              <div class="relative z-10 mt-1 flex h-4 w-4 shrink-0 items-center justify-center">
+                <svg class="h-3 w-3 text-zinc-700" viewBox="0 0 12 12" fill="none"><path d="M6 2v4l2.5 1.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1" opacity="0.3"/></svg>
+              </div>
+              <div class="flex-1">
+                <span class="font-mono text-[10px] italic text-zinc-600">6m 12s elapsed</span>
+              </div>
+            </div>
+
+            <!-- Event: status_changed → completed -->
+            <div class="relative flex gap-4 pb-6">
+              <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                <span class="h-3.5 w-3.5 rounded-full border-2 border-emerald-500 bg-emerald-500/20 shadow-[0_0_6px_rgba(16,185,129,0.3)]"></span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-emerald-500">status_changed</span>
+                  <span class="rounded border border-emerald-500/25 bg-emerald-500/8 px-1.5 py-px text-[10px] font-medium text-emerald-400">completed</span>
+                  <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">14:17:30</span>
+                </div>
+                <p class="mt-1 text-[11px] text-zinc-500">Exit code <span class="font-mono text-zinc-400">0</span> &middot; 6m 13s duration</p>
+              </div>
+            </div>
+
+            <!-- Streaming: waiting -->
+            <div id="timeline-waiting" class="relative flex gap-4">
+              <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+                <span class="relative flex h-2.5 w-2.5">
+                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-copper/30"></span>
+                  <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-copper/60"></span>
+                </span>
+              </div>
+              <div class="flex-1">
+                <span class="text-[10px] text-copper/50">Waiting for events...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // -----------------------------------------------------------------------
+    // Task data for switching detail content
+    // -----------------------------------------------------------------------
+    const tasks = [
+      {
+        title: 'Design Overnight Dashboard',
+        status: 'dispatched', verdict: 'pending',
+        type: 'CLI', backend: 'claude', model: 'claude-sonnet-4-6',
+        duration: '6m 13s', tokens: '12,384 in / 3,201 out', cost: '$0.03',
+        mode: 'supervised', initiative: 'dispatch-center', priority: 'medium',
+        age: '2h ago', role: 'architect', isStreaming: true,
+        objective: 'Design the overnight summary dashboard for the Dispatch Center. Create a UI layout that shows the results of overnight batch dispatches \u2014 completed tasks, failures, cost breakdown, and model performance \u2014 so the human operator can review outcomes in under 2 minutes each morning.',
+        report: '<p>Designed a three-panel overnight dashboard layout with the following zones:</p><p><strong class="text-zinc-300">Summary Bar (top)</strong> \u2014 Total tasks dispatched, completed, failed. Total cost. Total tokens. Average duration. All as large stat cards.</p><p><strong class="text-zinc-300">Task Results Grid (center)</strong> \u2014 Grouped by initiative. Each task shows status, model, duration, cost. Failed tasks highlighted with error summary.</p><p><strong class="text-zinc-300">Cost Breakdown (right sidebar)</strong> \u2014 Pie chart by provider. Bar chart by model. Running total with daily trend.</p>',
+      },
+      {
+        title: 'Test Groq Research',
+        status: 'dispatched', verdict: 'pending',
+        type: 'API', backend: 'groq', model: 'llama-3.3-70b',
+        duration: '42s', tokens: '2,103 in / 891 out', cost: '$0.001',
+        mode: 'autonomous', initiative: 'ai-sdk-dispatch', priority: 'low',
+        age: '1h ago', role: 'researcher', isStreaming: true,
+        objective: 'Test the Groq API backend for research-type tasks. Verify that structured output is returned correctly, that token usage is reported, and that the response quality meets the baseline established by Claude for research tasks.',
+        report: null,
+      },
+      {
+        title: 'Audit Claude MD Token Budget',
+        status: 'completed', verdict: 'approved',
+        type: 'CLI', backend: 'claude', model: 'claude-sonnet-4-6',
+        duration: '2m 34s', tokens: '\u2014', cost: '\u2014',
+        mode: 'supervised', initiative: 'claude-md-standards', priority: 'high',
+        age: '5h ago', role: 'auditor', isStreaming: false,
+        objective: 'Audit all CLAUDE.md files across the monorepo for compliance with the 200-line hard max and 4,000 token budget. Report any files that exceed limits and suggest splits.',
+        report: '<p>Scanned 14 CLAUDE.md files. 2 exceeded the 200-line limit:</p><p><strong class="text-zinc-300">apps/studio/CLAUDE.md</strong> \u2014 247 lines. Moved architecture docs to <code class="rounded bg-obsidian px-1.5 py-0.5 font-mono text-[11px] text-copper">docs/architecture/studio.md</code>.</p><p><strong class="text-zinc-300">packages/studio-core/CLAUDE.md</strong> \u2014 203 lines. Split type definitions into <code class="rounded bg-obsidian px-1.5 py-0.5 font-mono text-[11px] text-copper">docs/architecture/studio-core-types.md</code>.</p>',
+      },
+      {
+        title: 'Research OpenCode Rate Limits',
+        status: 'reviewed', verdict: 'approved',
+        type: 'CLI', backend: 'opencode', model: 'gpt-4o',
+        duration: '1m 12s', tokens: '\u2014', cost: '\u2014',
+        mode: 'supervised', initiative: 'opencode-integration', priority: 'medium',
+        age: '8h ago', role: 'researcher', isStreaming: false,
+        objective: 'Research the rate limiting behavior of the OpenCode CLI backend. Document any throttling, backoff, or queue behavior observed during rapid task dispatch.',
+        report: '<p>OpenCode CLI respects a 60 requests/minute rate limit from the OpenAI API. Backoff is automatic with exponential retry (max 3 attempts). No queue \u2014 excess requests return 429 immediately.</p>',
+      },
+      {
+        title: 'Research Gemini Content Quality',
+        status: 'completed', verdict: 'pending',
+        type: 'CLI', backend: 'gemini', model: 'gemini-2.5-pro',
+        duration: '45s', tokens: '\u2014', cost: '\u2014',
+        mode: 'supervised', initiative: 'gemini-eval', priority: 'medium',
+        age: '3h ago', role: 'researcher', isStreaming: false,
+        objective: 'Evaluate Gemini 2.5 Pro content quality for research and content generation tasks compared to Claude baselines.',
+        report: '<p>Gemini 2.5 Pro produces competent research summaries but tends toward surface-level analysis compared to Claude Sonnet 4.6. Strengths: fast generation, good at structured data extraction. Weaknesses: less nuanced reasoning, occasionally misses edge cases in technical analysis.</p>',
+      },
+      {
+        title: 'Test Google Content Generation',
+        status: 'completed', verdict: 'approved',
+        type: 'API', backend: 'google-ai', model: 'gemini-2.5-flash',
+        duration: '3s', tokens: '847 in / 312 out', cost: '$0.0004',
+        mode: 'autonomous', initiative: 'ai-sdk-dispatch', priority: 'low',
+        age: '1h ago', role: 'researcher', isStreaming: false,
+        objective: 'Test the Google AI API backend for content generation tasks via Vercel AI SDK. Verify the response format, token reporting, and end-to-end dispatch flow.',
+        report: '<p>End-to-end dispatch via AI SDK working correctly. Google AI returns structured usage metadata (promptTokenCount, candidatesTokenCount). Response time: 2.8s for 312 output tokens. Format matches expectations.</p>',
+      },
+      {
+        title: 'Evaluate LM Studio Latency',
+        status: 'pending', verdict: 'pending',
+        type: 'API', backend: 'lm-studio-api', model: '\u2014',
+        duration: '\u2014', tokens: '\u2014', cost: '\u2014',
+        mode: 'autonomous', initiative: 'lm-studio-eval', priority: 'low',
+        age: '6h ago', role: 'researcher', isStreaming: false,
+        objective: 'Benchmark LM Studio API backend latency with various model sizes to establish performance baselines for local inference.',
+        report: null,
+      },
+      {
+        title: 'Benchmark Groq vs Google Latency',
+        status: 'pending', verdict: 'pending',
+        type: 'API', backend: 'groq', model: '\u2014',
+        duration: '\u2014', tokens: '\u2014', cost: '\u2014',
+        mode: 'autonomous', initiative: 'ai-sdk-dispatch', priority: 'low',
+        age: '6h ago', role: 'researcher', isStreaming: false,
+        objective: 'Compare Groq and Google AI API latency, throughput, and cost for equivalent research tasks.',
+        report: null,
+      },
+      {
+        title: 'Generate API Documentation',
+        status: 'failed', verdict: 'pending',
+        type: 'CLI', backend: 'codex', model: 'codex-latest',
+        duration: '12s', tokens: '\u2014', cost: '\u2014',
+        mode: 'supervised', initiative: 'api-docs', priority: 'medium',
+        age: '4h ago', role: 'writer', isStreaming: false,
+        objective: 'Generate API documentation for the MCP server endpoints using Codex CLI backend.',
+        report: null,
+      },
+    ];
+
+    const STATUS_COLORS = {
+      dispatched: { dot: 'bg-copper', badge: 'border-copper/40 bg-copper/10 text-copper' },
+      completed:  { dot: 'bg-emerald-500', badge: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500' },
+      reviewed:   { dot: 'bg-gold', badge: 'border-gold/40 bg-gold/10 text-gold' },
+      pending:    { dot: 'bg-zinc-600', badge: 'border-zinc-600/30 bg-zinc-700/15 text-zinc-500' },
+      failed:     { dot: 'bg-rose-500', badge: 'border-rose-500/40 bg-rose-500/10 text-rose-500' },
+    };
+    const VERDICT_COLORS = {
+      approved: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500',
+      pending:  'border-zinc-600/30 bg-zinc-700/15 text-zinc-500',
+      failed:   'border-rose-500/40 bg-rose-500/10 text-rose-500',
+    };
+
+    let selectedIndex = 0;
+
+    function selectTask(index) {
+      selectedIndex = index;
+      const task = tasks[index];
+      if (!task) return;
+
+      // Update cards
+      document.querySelectorAll('.mission-card').forEach((card, i) => {
+        card.classList.toggle('selected', i === index);
+      });
+
+      // Show detail, hide empty
+      document.getElementById('empty-state').classList.add('hidden');
+      document.getElementById('detail-content').classList.remove('hidden');
+
+      // Header
+      const sc = STATUS_COLORS[task.status] || STATUS_COLORS.pending;
+      const vc = VERDICT_COLORS[task.verdict] || VERDICT_COLORS.pending;
+
+      const dot = document.getElementById('detail-status-dot');
+      dot.className = `h-2.5 w-2.5 rounded-full ${sc.dot}`;
+      if (task.isStreaming) dot.classList.add('animate-pulse-glow');
+
+      const sb = document.getElementById('detail-status-badge');
+      sb.className = `rounded-full border px-2.5 py-0.5 text-xs font-medium ${sc.badge}`;
+      sb.textContent = task.status;
+
+      const vb = document.getElementById('detail-verdict-badge');
+      vb.className = `rounded-full border px-2.5 py-0.5 text-xs ${vc}`;
+      vb.textContent = task.verdict === 'pending' ? 'pending verdict' : task.verdict;
+
+      document.getElementById('detail-title').textContent = task.title;
+
+      const typeBadge = document.getElementById('detail-type-badge');
+      if (task.type === 'API') {
+        typeBadge.className = 'rounded border border-session/25 bg-session/10 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-session';
+      } else {
+        typeBadge.className = 'rounded border border-zinc-700/80 bg-zinc-800/60 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-zinc-500';
+      }
+      typeBadge.textContent = task.type;
+
+      document.getElementById('detail-backend').textContent = task.backend;
+      document.getElementById('detail-model').textContent = task.model;
+      document.getElementById('detail-duration').textContent = task.duration;
+      document.getElementById('detail-tokens').innerHTML = task.tokens === '\u2014' ? '<span class="text-zinc-600">\u2014</span>' : task.tokens.replace('/', '<span class="text-zinc-600">/</span>');
+      document.getElementById('detail-cost').textContent = task.cost;
+      document.getElementById('detail-mode').textContent = task.mode;
+
+      document.getElementById('detail-context').innerHTML = `
+        <a href="#" class="transition-colors hover:text-copper">${task.initiative}</a>
+        <span class="text-zinc-700">&middot;</span>
+        <span>${task.priority} priority</span>
+        <span class="text-zinc-700">&middot;</span>
+        <span>${task.age}</span>
+        <span class="text-zinc-700">&middot;</span>
+        <span class="font-mono text-[10px]">${task.role}</span>
+      `;
+
+      // Overview tab
+      document.getElementById('detail-objective').textContent = task.objective;
+
+      // Report tab
+      const reportBody = document.getElementById('detail-report-body');
+      if (task.report) {
+        reportBody.innerHTML = task.report;
+      } else {
+        reportBody.innerHTML = '<p class="text-zinc-600 italic">No output yet</p>';
+      }
+
+      // Streaming indicators
+      const liveDot = document.getElementById('events-live-dot');
+      const banner = document.getElementById('streaming-banner');
+      const timelineLine = document.getElementById('timeline-line');
+      const waiting = document.getElementById('timeline-waiting');
+      if (task.isStreaming) {
+        liveDot?.classList.remove('hidden');
+        banner?.classList.remove('hidden');
+        timelineLine?.classList.add('timeline-line-active');
+        waiting?.classList.remove('hidden');
+      } else {
+        liveDot?.classList.add('hidden');
+        banner?.classList.add('hidden');
+        timelineLine?.classList.remove('timeline-line-active');
+        waiting?.classList.add('hidden');
+      }
+
+      // Reset to overview tab
+      switchTab('overview');
+    }
+
+    // Tab switching
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('tab-active');
+        el.classList.add('border-transparent', 'text-zinc-500');
+      });
+      const content = document.getElementById('content-' + tab);
+      if (content) content.classList.remove('hidden');
+      const btn = document.getElementById('tab-' + tab);
+      if (btn) {
+        btn.classList.remove('border-transparent', 'text-zinc-500');
+        btn.classList.add('tab-active');
+      }
+    }
+
+    // Resize
+    const handle = document.querySelector('.resize-handle');
+    const listPane = document.getElementById('list-pane');
+    let dragging = false, startX = 0, startWidth = 0;
+
+    handle.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      startX = e.clientX;
+      startWidth = listPane.offsetWidth;
+      handle.setPointerCapture(e.pointerId);
+      document.body.style.cursor = 'col-resize';
+    });
+    handle.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      listPane.style.width = Math.min(500, Math.max(200, startWidth + e.clientX - startX)) + 'px';
+    });
+    handle.addEventListener('pointerup', () => { dragging = false; document.body.style.cursor = ''; });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      const cards = document.querySelectorAll('.mission-card');
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectTask(Math.min(selectedIndex + 1, cards.length - 1));
+        cards[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectTask(Math.max(selectedIndex - 1, 0));
+        cards[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+      }
+    });
+
+    // Simulate live event after 4s (only when Events tab is visible)
+    setTimeout(() => {
+      const waiting = document.getElementById('timeline-waiting');
+      if (!waiting) return;
+      const timeline = waiting.parentElement;
+
+      const newEvent = document.createElement('div');
+      newEvent.className = 'relative flex gap-4 pb-6 animate-stream-in';
+      newEvent.innerHTML = `
+        <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+          <span class="h-3.5 w-3.5 rounded-full border-2 border-gold bg-gold/20 shadow-[0_0_6px_rgba(212,165,116,0.3)]"></span>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-medium text-gold">task_updated</span>
+            <span class="rounded border border-emerald-500/25 bg-emerald-500/8 px-1.5 py-px text-[10px] font-medium text-emerald-400">judge: approved</span>
+            <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">${new Date().toLocaleTimeString('en-US', {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>
+          </div>
+          <p class="mt-1 text-[11px] text-zinc-500">judge-verdict: approved \u00b7 simulated live event</p>
+        </div>
+      `;
+      timeline.insertBefore(newEvent, waiting);
+    }, 6000);
+  </script>
+</body>
+</html>
