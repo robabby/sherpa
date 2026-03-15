@@ -18,5 +18,11 @@
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^3.0.43",
+    "@ai-sdk/groq": "^3.0.29",
+    "@ai-sdk/openai-compatible": "^2.0.35",
+    "ai": "^6.0.116"
   }
 }
