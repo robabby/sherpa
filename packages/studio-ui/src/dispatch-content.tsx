@@ -840,11 +840,16 @@ function QueueControls({
 }) {
   const isReady = selectedCount > 0 && selectedAgent && selectedBackend;
 
+  // Resolve backend type for pipeline display
+  const selectedBackendMeta = selectedBackend
+    ? BACKEND_META[selectedBackend as keyof typeof BACKEND_META]
+    : null;
+
   // Pipeline step indicators
   const steps = [
     { label: `${selectedCount} task${selectedCount !== 1 ? "s" : ""}`, done: selectedCount > 0 },
     { label: selectedAgent ?? "agent", done: !!selectedAgent },
-    { label: selectedBackend ?? "backend", done: !!selectedBackend },
+    { label: selectedBackendMeta?.displayName ?? selectedBackend ?? "backend", done: !!selectedBackend, backendType: selectedBackendMeta?.type },
   ];
 
   return (
@@ -862,6 +867,9 @@ function QueueControls({
                     : "border-muted-foreground/12 text-muted-foreground/30"
                 )}
               >
+                {"backendType" in step && step.backendType && step.done && (
+                  <BackendTypeBadge type={step.backendType} />
+                )}{" "}
                 {step.label}
               </span>
             </span>
