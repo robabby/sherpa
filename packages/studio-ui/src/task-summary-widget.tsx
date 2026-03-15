@@ -5,48 +5,9 @@ import { motion } from "motion/react";
 
 import { SectionHeader } from "./section-header";
 import { EASE_STANDARD } from "./lib/animation-constants";
+import { STATUS_STYLES, STATUS_DOT, PRIORITY_COLORS } from "./lib/task-styles";
 import { cn } from "./lib/utils";
 import type { TaskBoardEntry } from "@/lib/studio/tasks";
-
-const STATUS_STYLES: Record<string, { label: string; className: string }> = {
-  pending: {
-    label: "pending",
-    className: "border-muted-foreground/30 bg-muted-foreground/10 text-muted-foreground",
-  },
-  dispatched: {
-    label: "dispatched",
-    className:
-      "border-[var(--color-copper)]/40 bg-[var(--color-copper)]/10 text-[var(--color-copper)]",
-  },
-  completed: {
-    label: "completed",
-    className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-500",
-  },
-  failed: {
-    label: "failed",
-    className: "border-rose-500/40 bg-rose-500/10 text-rose-500",
-  },
-  reviewed: {
-    label: "reviewed",
-    className:
-      "border-[var(--color-gold)]/40 bg-[var(--color-gold)]/10 text-[var(--color-gold)]",
-  },
-};
-
-const STATUS_DOT: Record<string, string> = {
-  pending: "bg-muted-foreground",
-  dispatched: "bg-[var(--color-copper)]",
-  completed: "bg-emerald-500",
-  reviewed: "bg-[var(--color-gold)]",
-  failed: "bg-rose-500",
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  urgent: "bg-rose-500",
-  high: "bg-[var(--color-gold)]",
-  medium: "bg-[var(--color-copper)]",
-  low: "bg-[var(--color-bronze)]",
-};
 
 const fadeVariant = {
   hidden: { opacity: 0 },
