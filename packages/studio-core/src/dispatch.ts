@@ -171,15 +171,43 @@ export function getBackendHealth(projectRoot?: string): BackendHealth[] {
   return allBackends.map(backend => {
     const meta = BACKEND_META[backend]
 
-    // API backends: check if env var is set (basic check for now)
+    // API backends: check env var + run --health via wrapper script
     if (meta.type === 'api') {
-      const available = meta.envKey ? !!process.env[meta.envKey] : true
-      return {
-        backend,
-        available,
-        error: available ? undefined : `${meta.envKey} not set`,
-        backendType: meta.type,
-        displayName: meta.displayName,
+      if (meta.envKey && !process.env[meta.envKey]) {
+        return {
+          backend,
+          available: false,
+          error: `${meta.envKey} not set`,
+          backendType: meta.type,
+          displayName: meta.displayName,
+        }
+      }
+
+      const script = path.join(root, `scripts/backends/${backend}.mjs`)
+      try {
+        const output = execSync(`node "${script}" --health`, {
+          timeout: 3000,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+          env: { ...process.env },
+        })
+        const data = JSON.parse(output.trim())
+        return {
+          backend,
+          available: data.available ?? false,
+          models: data.models,
+          error: data.error,
+          backendType: meta.type,
+          displayName: meta.displayName,
+        }
+      } catch {
+        return {
+          backend,
+          available: false,
+          error: 'health check timed out',
+          backendType: meta.type,
+          displayName: meta.displayName,
+        }
       }
     }
 
