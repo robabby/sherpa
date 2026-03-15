@@ -474,12 +474,14 @@ export default function PlaybooksPage() {
     <div className="flex flex-col gap-10">
       <div>
         <SectionHeader label="Process" title="Playbooks" />
-        <p className="mb-10 max-w-xl text-sm text-muted-foreground">
+        <p className="mb-6 max-w-xl text-sm text-muted-foreground">
           Three tracks for moving from research to implementation. The
           initiative&apos;s risk level determines the default playbook.
         </p>
 
-        <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-3">
+        <CrossCuttingSection skillSlugs={skillSlugs} />
+
+        <div className="mt-5 grid grid-cols-1 items-start gap-5 md:grid-cols-3">
           {PLAYBOOK_IDS.map((pbId) => (
             <PlaybookCard
               key={pbId}
@@ -490,8 +492,6 @@ export default function PlaybooksPage() {
           ))}
         </div>
       </div>
-
-      <CrossCuttingSection skillSlugs={skillSlugs} />
     </div>
   );
 }

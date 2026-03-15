@@ -1,0 +1,14 @@
+{"timestamp":"2026-03-15T01:49:21.327Z","event":"dispatch_requested","taskId":"test-groq-research","mode":"supervised","agent":"research-lead","backend":"groq","source":"studio-ui"}
+{"timestamp":"2026-03-15T01:49:21.455Z","event":"task_updated","taskId":"test-groq-research","updates":{"status":"dispatched","dispatched-at":"2026-03-15T01:49:21","mode":"supervised","backend":"groq"}}
+{"timestamp":"2026-03-15T01:49:21Z","event":"worker_started","source":"worker.sh","taskSlug":"test-groq-research","backend":"groq","model":"","mode":"supervised","taskType":"research","budgetUsd":"1.00"}
+{"timestamp":"2026-03-15T01:49:21Z","event":"status_changed","source":"worker.sh","from":"pending","to":"dispatched"}
+{"timestamp":"2026-03-15T01:49:21Z","event":"backend_delegating","source":"worker.sh","script":"/Users/rob/Workbench/sherpa/scripts/backends/groq.mjs","backend":"groq","model":""}
+{"timestamp":"2026-03-15T01:49:21Z","event":"status_changed","source":"worker.sh","from":"dispatched","to":"failed","exitCode":1,"durationSeconds":-25200}
+{"timestamp":"2026-03-15T01:49:21.957Z","event":"dispatch_spawned","taskId":"test-groq-research","pid":54814,"backend":"groq","agent":"research-lead","mode":"supervised"}
+{"timestamp":"2026-03-15T02:08:06.002Z","event":"dispatch_requested","taskId":"test-groq-research","mode":"supervised","agent":"research-lead","backend":"groq","source":"studio-ui"}
+{"timestamp":"2026-03-15T02:08:06.139Z","event":"task_updated","taskId":"test-groq-research","updates":{"status":"dispatched","dispatched-at":"2026-03-15T02:08:06","mode":"supervised","backend":"groq"}}
+{"timestamp":"2026-03-15T02:08:06Z","event":"worker_started","source":"worker.sh","taskSlug":"test-groq-research","backend":"groq","model":"","mode":"supervised","taskType":"research","budgetUsd":"1.00"}
+{"timestamp":"2026-03-15T02:08:06Z","event":"status_changed","source":"worker.sh","from":"pending","to":"dispatched"}
+{"timestamp":"2026-03-15T02:08:06Z","event":"backend_delegating","source":"worker.sh","script":"/Users/rob/Workbench/sherpa/scripts/backends/groq.mjs","backend":"groq","model":""}
+{"timestamp":"2026-03-15T02:08:06.641Z","event":"dispatch_spawned","taskId":"test-groq-research","pid":63947,"backend":"groq","agent":"research-lead","mode":"supervised"}
+{"timestamp":"2026-03-15T02:08:09Z","event":"status_changed","source":"worker.sh","from":"dispatched","to":"completed","exitCode":0,"durationSeconds":-25197}

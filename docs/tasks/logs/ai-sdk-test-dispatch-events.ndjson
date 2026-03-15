@@ -1,0 +1,4 @@
+{"timestamp":"2026-03-15T01:25:06Z","event":"worker_started","source":"worker.sh","taskSlug":"ai-sdk-test-dispatch","backend":"groq","model":"llama-3.3-70b-versatile","mode":"supervised","taskType":"research","budgetUsd":"1.00"}
+{"timestamp":"2026-03-15T01:25:06Z","event":"status_changed","source":"worker.sh","from":"pending","to":"dispatched"}
+{"timestamp":"2026-03-15T01:25:06Z","event":"backend_delegating","source":"worker.sh","script":"/Users/rob/Workbench/sherpa/scripts/backends/groq.mjs","backend":"groq","model":"llama-3.3-70b-versatile"}
+{"timestamp":"2026-03-15T01:25:08Z","event":"status_changed","source":"worker.sh","from":"dispatched","to":"completed","exitCode":0,"durationSeconds":-25199}

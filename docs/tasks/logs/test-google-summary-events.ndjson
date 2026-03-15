@@ -1,0 +1,7 @@
+{"timestamp":"2026-03-15T02:13:24.293Z","event":"dispatch_requested","taskId":"test-google-summary","mode":"supervised","agent":"technical-writer","backend":"google-ai","source":"studio-ui"}
+{"timestamp":"2026-03-15T02:13:24.426Z","event":"task_updated","taskId":"test-google-summary","updates":{"status":"dispatched","dispatched-at":"2026-03-15T02:13:24","mode":"supervised","backend":"google-ai"}}
+{"timestamp":"2026-03-15T02:13:24Z","event":"worker_started","source":"worker.sh","taskSlug":"test-google-summary","backend":"google-ai","model":"","mode":"supervised","taskType":"content-generation","budgetUsd":"1.00"}
+{"timestamp":"2026-03-15T02:13:24Z","event":"status_changed","source":"worker.sh","from":"pending","to":"dispatched"}
+{"timestamp":"2026-03-15T02:13:24Z","event":"backend_delegating","source":"worker.sh","script":"/Users/rob/Workbench/sherpa/scripts/backends/google-ai.mjs","backend":"google-ai","model":""}
+{"timestamp":"2026-03-15T02:13:24.928Z","event":"dispatch_spawned","taskId":"test-google-summary","pid":71223,"backend":"google-ai","agent":"technical-writer","mode":"supervised"}
+{"timestamp":"2026-03-15T02:13:31Z","event":"status_changed","source":"worker.sh","from":"dispatched","to":"completed","exitCode":0,"durationSeconds":-25193}

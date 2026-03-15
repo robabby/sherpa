@@ -1,0 +1,43 @@
+# Worker Output
+
+**Provider:** google
+**Model:** gemini-2.5-flash
+**Duration:** 7.0s
+**Tokens:** input=?, output=?
+**Finish reason:** stop
+
+---
+
+```text
+# Write a 3-paragraph summary of how AI-native consulting differs from traditional technology consulting. Highlight what changes when AI agents are part of the delivery team, not just the deliverable.
+```
+
+## AI-Native Consulting vs. Traditional Technology Consulting
+
+Traditional technology consulting primarily relies on human experts to analyze problems, develop strategies, design solutions, and manage implementation projects. This model involves consultants leveraging their knowledge, frameworks, and a suite of software tools to deliver recommendations, system integrations, or process improvements to clients. The focus is on human intellectual capital driving insights and execution, with technology often being the *subject* of the consultation or a *tool* used by the human consultants. The deliverables are typically static reports, implemented systems, or defined processes, handed over for the client to operate and maintain.
+
+The advent of AI-native consulting fundamentally shifts this paradigm by integrating AI agents directly into the consulting delivery team, not merely as a subject or a tool. In this model, AI agents function as active team members, performing tasks such as rapid data analysis, research, code generation, testing, market scanning, and even assisting with project management and communication. This allows for unparalleled speed, scale, and precision, as AI agents can process vast amounts of information, identify patterns, and generate outputs far quicker than human teams alone. The human consultants evolve into orchestrators and validators, overseeing the AI agents, setting their objectives, and providing the strategic human oversight and empathy required for client-facing roles.
+
+This integration of AI agents as delivery team members leads to several critical differentiators and outcomes. Projects can move from insight to implementation at an accelerated pace, often with continuous iteration and optimization driven by AI. The value delivered shifts from static advice or one-off implementations to dynamic, self-improving systems and processes. AI-native consulting can tackle problems of greater complexity and scope, provide real-time adjustments, and unlock efficiencies that were previously unattainable. Ultimately, it redefines the very nature of consulting, transforming it into a more agile, data-driven, and continuously evolving service that delivers higher ROI and faster time-to-value by making intelligent automation an intrinsic part of the service delivery itself.
+
+---
+
+### docs/tasks/logs/test-google-summary-report.md
+
+```md
+# Sherpa Task Completion Report: AI-Native vs. Traditional Consulting Summary
+
+**Task:** Write a 3-paragraph summary of how AI-native consulting differs from traditional technology consulting. Highlight what changes when AI agents are part of the delivery team, not just the deliverable.
+
+**What I Did:**
+I generated a three-paragraph summary directly addressing the prompt.
+-   **Paragraph 1:** Defined traditional technology consulting, focusing on human-centric delivery and technology as the subject or tool.
+-   **Paragraph 2:** Explained AI-native consulting, emphasizing the role of AI agents as active members of the delivery team performing tasks like data analysis, research, and code generation, and the shift for human consultants to orchestration.
+-   **Paragraph 3:** Highlighted the key differentiators and outcomes of this shift, such as accelerated pace, dynamic deliverables, increased complexity handling, and higher ROI.
+
+**Files Changed:**
+-   `test-google-summary-report.md` (This file)
+
+**Notes:**
+The task was straightforward and I did not encounter any blockers. The summary was written to clearly articulate the fundamental differences, particularly focusing on the "AI agents as part of the delivery team" aspect as requested.
+```

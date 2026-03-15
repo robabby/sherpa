@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ai-sdk-dispatch — Dispatch Center Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#0a0a0a',
+            foreground: '#e5e5e5',
+            card: '#141414',
+            muted: '#1a1a1a',
+            'muted-foreground': '#737373',
+            copper: '#c47f3c',
+            session: '#7c9fdb',
+            gold: '#d4a843',
+            primitive: '#7bb88a',
+            eclipse: '#9b7cb8',
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Menlo', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      background: #0a0a0a;
+      color: #e5e5e5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .glow-green { box-shadow: 0 0 6px rgba(52,211,153,0.4); }
+    .glow-red { box-shadow: 0 0 6px rgba(248,113,113,0.4); }
+    .glow-copper { box-shadow: 0 0 12px rgba(196,127,60,0.15); }
+    .backdrop-blur-sm { backdrop-filter: blur(2px); }
+
+    /* Pulse for active tasks */
+    @keyframes pulse-copper {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .pulse-copper { animation: pulse-copper 2s ease-in-out infinite; }
+  </style>
+</head>
+<body class="min-h-screen p-8">
+
+  <!-- Title -->
+  <div class="mx-auto max-w-7xl">
+    <div class="mb-6">
+      <p class="text-xs text-muted-foreground/50 mb-1">ai-sdk-dispatch prototype — Dispatch Center with CLI/API backends</p>
+    </div>
+
+    <!-- Header: Title + Mode + Stats (matches actual layout) -->
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="text-[10px] uppercase tracking-widest text-muted-foreground/40 mb-0.5">pipeline</p>
+        <h2 class="text-base font-semibold tracking-tight">Dispatch Center</h2>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Mode selector -->
+        <div class="flex items-center gap-1 rounded-lg border border-muted-foreground/15 p-0.5">
+          <button class="flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] text-muted-foreground/40 hover:text-muted-foreground/60">
+            <span class="inline-block h-1.5 w-1.5 rounded-full border border-muted-foreground/30"></span>
+            interactive
+          </button>
+          <button class="flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] bg-copper/12 text-copper">
+            <span class="inline-block h-1.5 w-1.5 rounded-full bg-copper"></span>
+            supervised
+          </button>
+          <button class="flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] text-muted-foreground/40 hover:text-muted-foreground/60">
+            <span class="inline-block h-1.5 w-1.5 rounded-full border border-muted-foreground/30"></span>
+            overnight
+          </button>
+        </div>
+        <div class="flex items-center gap-3 text-xs">
+          <span class="text-muted-foreground/50"><span class="font-medium text-copper">2</span> active</span>
+          <span class="text-muted-foreground/50"><span class="font-medium text-foreground">1</span> today</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Queue Controls — ABOVE the panels (matches actual layout) -->
+    <div class="flex items-center justify-between rounded-lg border border-copper/15 bg-card/30 px-4 py-3 backdrop-blur-sm mb-4">
+      <div class="flex items-center gap-3">
+        <!-- Pipeline steps -->
+        <div class="flex items-center gap-1.5">
+          <span class="rounded-md border border-copper/30 bg-copper/10 px-2 py-0.5 text-[10px] font-medium text-copper">3 tasks</span>
+          <span class="text-muted-foreground/20">&rarr;</span>
+          <span class="rounded-md border border-copper/30 bg-copper/10 px-2 py-0.5 text-[10px] font-medium text-copper">Research Lead</span>
+          <span class="text-muted-foreground/20">&rarr;</span>
+          <span class="rounded-md border border-copper/30 bg-copper/10 px-2 py-0.5 text-[10px] font-medium text-copper">
+            <span class="inline-flex items-center rounded border border-session/25 bg-session/10 text-session px-0.5 py-px text-[7px] font-semibold uppercase tracking-widest mr-1">API</span>
+            groq
+          </span>
+        </div>
+
+        <!-- Dispatch button -->
+        <button class="flex items-center gap-1.5 rounded-md border border-copper/30 bg-copper/15 px-3 py-1.5 text-xs font-medium text-copper hover:border-copper/50 hover:bg-copper/25 transition-all">
+          <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          Dispatch
+        </button>
+
+        <button class="rounded-md border border-muted-foreground/12 px-3 py-1.5 text-xs text-muted-foreground/60 hover:border-muted-foreground/25 hover:text-muted-foreground/80 transition-colors">
+          <span class="flex items-center gap-1.5">
+            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Auto-Dispatch
+          </span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-4 text-xs text-muted-foreground/50">
+        <span><span class="font-medium text-copper">3</span> selected</span>
+        <span><span class="font-medium text-foreground">2</span> active</span>
+        <span><span class="font-medium text-emerald-400">1</span> completed today</span>
+      </div>
+    </div>
+
+    <!-- Three-panel grid (below controls, matches actual layout) -->
+    <div class="grid grid-cols-12 gap-4" style="min-height: 520px;">
+
+      <!-- Backlog Panel (simplified) -->
+      <div class="col-span-3 flex flex-col overflow-hidden rounded-lg border border-copper/15 bg-card/30 backdrop-blur-sm">
+        <div class="flex items-center justify-between border-b border-copper/10 px-3 py-2.5">
+          <span class="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">Backlog</span>
+          <span class="text-[10px] text-copper">5 pending</span>
+        </div>
+        <div class="flex-1 p-3 space-y-2">
+          <!-- research group -->
+          <div class="flex items-center justify-between border-b border-copper/8 pb-2">
+            <div class="flex items-center gap-2">
+              <svg class="h-2.5 w-2.5 text-muted-foreground/50 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              <span class="inline-flex items-center rounded border border-eclipse/20 bg-eclipse/12 text-eclipse px-1.5 py-0.5 text-[10px] font-medium">research</span>
+            </div>
+            <span class="text-[10px] text-muted-foreground/40">3</span>
+          </div>
+          <div class="space-y-1 pl-5">
+            <div class="flex items-center gap-2 py-1">
+              <input type="checkbox" checked class="h-3 w-3 rounded border-copper/30 accent-copper" />
+              <span class="text-[11px] text-foreground/80">ai-literacy-landscape</span>
+            </div>
+            <div class="flex items-center gap-2 py-1">
+              <input type="checkbox" checked class="h-3 w-3 rounded border-copper/30 accent-copper" />
+              <span class="text-[11px] text-foreground/80">blog-topic-research</span>
+            </div>
+            <div class="flex items-center gap-2 py-1">
+              <input type="checkbox" class="h-3 w-3 rounded border-muted-foreground/20" />
+              <span class="text-[11px] text-foreground/80">competitor-analysis</span>
+            </div>
+          </div>
+          <!-- content group -->
+          <div class="flex items-center justify-between border-b border-copper/8 pb-2 pt-1">
+            <div class="flex items-center gap-2">
+              <svg class="h-2.5 w-2.5 text-muted-foreground/50 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              <span class="inline-flex items-center rounded border border-copper/20 bg-copper/12 text-copper px-1.5 py-0.5 text-[10px] font-medium">content</span>
+            </div>
+            <span class="text-[10px] text-muted-foreground/40">2</span>
+          </div>
+          <div class="space-y-1 pl-5">
+            <div class="flex items-center gap-2 py-1">
+              <input type="checkbox" checked class="h-3 w-3 rounded border-copper/30 accent-copper" />
+              <span class="text-[11px] text-foreground/80">draft-intro-blog-post</span>
+            </div>
+            <div class="flex items-center gap-2 py-1">
+              <input type="checkbox" class="h-3 w-3 rounded border-muted-foreground/20" />
+              <span class="text-[11px] text-foreground/80">service-descriptions</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assignments Panel (simplified) -->
+      <div class="col-span-5 flex flex-col overflow-hidden rounded-lg border border-copper/15 bg-card/30 backdrop-blur-sm">
+        <div class="flex items-center justify-between border-b border-copper/10 px-3 py-2.5">
+          <span class="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">Assignments</span>
+          <span class="text-[10px] text-copper">2 active</span>
+        </div>
+        <div class="p-3 space-y-2">
+          <p class="text-[10px] uppercase tracking-widest text-muted-foreground/40 mb-2">Active</p>
+
+          <!-- Active task - CLI -->
+          <div class="flex items-center justify-between rounded-md border border-copper/20 bg-copper/5 px-3 py-2">
+            <div class="flex items-center gap-2.5">
+              <span class="inline-block h-1.5 w-1.5 rounded-full bg-copper pulse-copper"></span>
+              <div>
+                <p class="text-[11px] font-medium text-foreground/90">schema-validation-audit</p>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="inline-flex items-center rounded border border-gold/20 bg-gold/12 text-gold px-1 py-px text-[8px] font-medium">audit</span>
+                  <span class="text-[9px] text-muted-foreground/40">·</span>
+                  <span class="inline-flex items-center rounded border border-muted-foreground/20 bg-muted-foreground/8 text-muted-foreground/60 px-1 py-px text-[7px] font-semibold uppercase tracking-widest">CLI</span>
+                  <span class="font-mono text-[9px] text-muted-foreground/50">opencode</span>
+                </div>
+              </div>
+            </div>
+            <span class="text-[10px] tabular-nums text-muted-foreground/35">4m</span>
+          </div>
+
+          <!-- Active task - API -->
+          <div class="flex items-center justify-between rounded-md border border-copper/20 bg-copper/5 px-3 py-2">
+            <div class="flex items-center gap-2.5">
+              <span class="inline-block h-1.5 w-1.5 rounded-full bg-copper pulse-copper"></span>
+              <div>
+                <p class="text-[11px] font-medium text-foreground/90">ai-literacy-landscape</p>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="inline-flex items-center rounded border border-eclipse/20 bg-eclipse/12 text-eclipse px-1 py-px text-[8px] font-medium">research</span>
+                  <span class="text-[9px] text-muted-foreground/40">·</span>
+                  <span class="inline-flex items-center rounded border border-session/25 bg-session/10 text-session px-1 py-px text-[7px] font-semibold uppercase tracking-widest">API</span>
+                  <span class="font-mono text-[9px] text-muted-foreground/50">groq · llama-3.3-70b</span>
+                </div>
+              </div>
+            </div>
+            <span class="text-[10px] tabular-nums text-muted-foreground/35">1m</span>
+          </div>
+
+          <!-- Completed today -->
+          <p class="text-[10px] uppercase tracking-widest text-muted-foreground/40 mt-4 mb-2">Completed today</p>
+          <div class="flex items-center justify-between px-3 py-1.5 opacity-60">
+            <div class="flex items-center gap-2.5">
+              <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+              <div>
+                <p class="text-[11px] text-foreground/70">blog-topic-research</p>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="inline-flex items-center rounded border border-session/25 bg-session/10 text-session px-1 py-px text-[7px] font-semibold uppercase tracking-widest">API</span>
+                  <span class="font-mono text-[9px] text-muted-foreground/40">google-ai · gemini-2.5-flash</span>
+                </div>
+              </div>
+            </div>
+            <span class="text-[10px] tabular-nums text-muted-foreground/30">23m</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workforce Panel (THE KEY DESIGN) -->
+      <div class="col-span-4 flex flex-col overflow-hidden rounded-lg border border-copper/15 bg-card/30 backdrop-blur-sm">
+        <div class="border-b border-copper/10 px-3 py-2.5">
+          <span class="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">Workforce</span>
+        </div>
+
+        <div class="flex flex-1 flex-col overflow-hidden">
+          <!-- Backends section — fixed, no scroll -->
+          <div class="shrink-0 p-3 space-y-1.5">
+            <p class="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground/40">Backends</p>
+
+            <!-- CLI sub-header -->
+            <p class="text-[9px] uppercase tracking-widest text-muted-foreground/30 pt-1 pb-0.5">CLI Agents</p>
+
+            <!-- Claude - CLI, selected -->
+            <button class="flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 border border-transparent hover:bg-copper/5 cursor-pointer transition-all duration-200">
+              <div class="flex items-center gap-2">
+                <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 glow-green"></span>
+                <span class="inline-flex items-center rounded border border-muted-foreground/20 bg-muted-foreground/8 text-muted-foreground/60 px-1 py-px text-[7px] font-semibold uppercase tracking-widest">CLI</span>
+                <span class="text-xs text-foreground">Claude</span>
+              </div>
+              <span class="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">claude-opus-4-6</span>
+            </button>
+
+            <!-- OpenCode - CLI -->
+            <button class="flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 border border-transparent hover:bg-copper/5 cursor-pointer transition-all duration-200">
+              <div class="flex items-center gap-2">
+                <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 glow-green"></span>
+                <span class="inline-flex items-center rounded border border-muted-foreground/20 bg-muted-foreground/8 text-muted-foreground/60 px-1 py-px text-[7px] font-semibold uppercase tracking-widest">CLI</span>
+                <span class="text-xs text-foreground">OpenCode</span>
+              </div>
+              <span class="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">minimax-m2.5</span>
+            </button>
+
+            <!-- Codex - CLI -->
+            <button class="flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 border border-transparent hover:bg-copper/5 cursor-pointer transition-all duration-200">
+              <div class="flex items-center gap-2">
+                <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 glow-green"></span>
+                <span class="inline-flex items-center rounded border border-muted-foreground/20 bg-muted-foreground/8 text-muted-foreground/60 px-1 py-px text-[7px] font-semibold uppercase tracking-widest">CLI</span>
+                <span class="text-xs text-foreground">Codex</span>
+              </div>
+              <span class="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">ready</span>
+            </button>
+
+            <!-- Gemini - CLI -->
+            <button class="flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 border border-transparent hover:bg-copper/5 cursor-pointer transition-all duration-200">
+              <div class="flex items-center gap-2">
+                <span class="inline-block h-1.5 w-1.5 rounded-full bg-rose-400 glow-red"></span>
+                <span class="inline-flex items-center rounded border border-muted-foreground/20 bg-muted-foreground/8 text-muted-foreground/60 px-1 py-px text-[7px] font-semibold uppercase tracking-widest">CLI</span>
+                <span class="text-xs text-muted-foreground/50">Gemini</span>
+              </div>
+              <span class="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50 opacity-40">offline</span>
+            </button>
+
+            <!-- LM Studio - CLI -->
+            <button class="flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 border border-transparent hover:bg-copper/5 cursor-pointer transition-all duration-200">
+              <div class="flex items-center gap-2">
+                <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 glow-green"></span>
+                <span class="inline-flex items-center rounded border border-muted-foreground/20 bg-muted-foreground/8 text-muted-foreground/60 px-1 py-px text-[7px] font-semibold uppercase tracking-widest">CLI</span>
+                <span class="text-xs text-foreground">LM Studio</span>
+              </div>
+              <span class="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">qwen-3.5-9b</span>
+            </button>
+
+            <!-- API sub-header -->
+            <p class="text-[9px] uppercase tracking-widest text-muted-foreground/30 pt-3 pb-0.5">API Backends</p>
+
+            <!-- Groq - API, selected state -->
+            <button class="flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 bg-copper/12 border border-copper/25 transition-all duration-200">
+              <div class="flex items-center gap-2">
+                <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 glow-green"></span>
+                <span class="inline-flex items-center rounded border border-session/25 bg-session/10 text-session px-1 py-px text-[7px] font-semibold uppercase tracking-widest">API</span>
+                <span class="text-xs font-medium text-copper">Groq</span>
+              </div>
+              <span class="inline-flex items-center rounded border border-copper/25 px-1.5 py-0.5 font-mono text-[10px] text-copper">llama-3.3-70b</span>
+            </button>
+
+            <!-- Google AI - API -->
+            <button class="flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 border border-transparent hover:bg-copper/5 cursor-pointer transition-all duration-200">
+              <div class="flex items-center gap-2">
+                <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 glow-green"></span>
+                <span class="inline-flex items-center rounded border border-session/25 bg-session/10 text-session px-1 py-px text-[7px] font-semibold uppercase tracking-widest">API</span>
+                <span class="text-xs text-foreground">Google AI</span>
+              </div>
+              <span class="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">gemini-2.5-flash</span>
+            </button>
+
+            <!-- LM Studio API -->
+            <button class="flex w-full items-center justify-between rounded-md py-1.5 px-2 -mx-2 border border-transparent hover:bg-copper/5 cursor-pointer transition-all duration-200">
+              <div class="flex items-center gap-2">
+                <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 glow-green"></span>
+                <span class="inline-flex items-center rounded border border-session/25 bg-session/10 text-session px-1 py-px text-[7px] font-semibold uppercase tracking-widest">API</span>
+                <span class="text-xs text-foreground">LM Studio (API)</span>
+              </div>
+              <span class="inline-flex items-center rounded border border-muted-foreground/12 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/50">qwen-3.5-9b</span>
+            </button>
+          </div>
+
+          <!-- Divider -->
+          <div class="shrink-0 mx-3 border-t border-muted-foreground/8"></div>
+
+          <!-- Agents section — scrollable -->
+          <div class="min-h-0 flex-1 overflow-y-auto p-3">
+            <p class="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground/40">Agents</p>
+
+            <!-- Research Lead - assigned -->
+            <div class="flex items-center justify-between rounded-md bg-copper/15 px-2 -mx-2 border border-copper/30 py-2 glow-copper">
+              <div>
+                <p class="text-xs font-semibold text-copper">Research Lead</p>
+                <div class="mt-0.5 flex items-center gap-1">
+                  <span class="inline-flex items-center rounded border border-eclipse/20 bg-eclipse/12 text-eclipse px-1 py-px text-[8px] font-medium">research</span>
+                  <span class="inline-flex items-center rounded border border-gold/20 bg-gold/12 text-gold px-1 py-px text-[8px] font-medium">audit</span>
+                </div>
+              </div>
+              <span class="rounded border border-copper/50 bg-copper/20 px-2 py-0.5 text-[10px] font-medium text-copper">Assigned</span>
+            </div>
+
+            <!-- Engineer -->
+            <div class="flex items-center justify-between border-b border-copper/6 py-2 opacity-30">
+              <div>
+                <p class="text-xs text-foreground">Engineer</p>
+                <div class="mt-0.5 flex items-center gap-1">
+                  <span class="inline-flex items-center rounded border border-primitive/20 bg-primitive/12 text-primitive px-1 py-px text-[8px] font-medium">code-impl</span>
+                  <span class="inline-flex items-center rounded border border-primitive/20 bg-primitive/12 text-primitive px-1 py-px text-[8px] font-medium">code-review</span>
+                </div>
+              </div>
+              <span class="rounded border border-muted-foreground/12 px-2 py-0.5 text-[10px] text-muted-foreground/60 pointer-events-none">Assign</span>
+            </div>
+
+            <!-- Technical Writer -->
+            <div class="flex items-center justify-between border-b border-copper/6 py-2 opacity-30">
+              <div>
+                <p class="text-xs text-foreground">Technical Writer</p>
+                <div class="mt-0.5 flex items-center gap-1">
+                  <span class="inline-flex items-center rounded border border-copper/20 bg-copper/12 text-copper px-1 py-px text-[8px] font-medium">content</span>
+                </div>
+              </div>
+              <span class="rounded border border-muted-foreground/12 px-2 py-0.5 text-[10px] text-muted-foreground/60 pointer-events-none">Assign</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Design notes -->
+    <div class="mt-8 rounded-lg border border-muted-foreground/10 bg-card/20 p-4">
+      <h2 class="text-sm font-semibold text-muted-foreground/60 mb-3">Design Notes</h2>
+      <div class="grid grid-cols-2 gap-4 text-[11px] text-muted-foreground/50">
+        <div>
+          <p class="font-medium text-muted-foreground/70 mb-1">CLI Badge</p>
+          <span class="inline-flex items-center rounded border border-muted-foreground/20 bg-muted-foreground/8 text-muted-foreground/60 px-1 py-px text-[7px] font-semibold uppercase tracking-widest">CLI</span>
+          <p class="mt-1">Muted treatment — the established default. Uses muted-foreground palette.</p>
+        </div>
+        <div>
+          <p class="font-medium text-muted-foreground/70 mb-1">API Badge</p>
+          <span class="inline-flex items-center rounded border border-session/25 bg-session/10 text-session px-1 py-px text-[7px] font-semibold uppercase tracking-widest">API</span>
+          <p class="mt-1">Session color (blue) — distinct from copper action palette. Signals "new capability."</p>
+        </div>
+        <div>
+          <p class="font-medium text-muted-foreground/70 mb-1">Grouping</p>
+          <p>"CLI Agents" and "API Backends" sub-headers separate the two types. Users immediately see the category.</p>
+        </div>
+        <div>
+          <p class="font-medium text-muted-foreground/70 mb-1">Pipeline Step</p>
+          <p>The backend step in QueueControls shows the type badge inline: <span class="inline-flex items-center rounded border border-session/25 bg-session/10 text-session px-0.5 py-px text-[7px] font-semibold uppercase tracking-widest mx-0.5">API</span> groq</p>
+        </div>
+        <div>
+          <p class="font-medium text-muted-foreground/70 mb-1">Active Tasks</p>
+          <p>Assignment cards show type badge + provider + model below the task name. Users always see what's running where.</p>
+        </div>
+        <div>
+          <p class="font-medium text-muted-foreground/70 mb-1">Transparency Principle</p>
+          <p>Every dispatch surface shows: backend type (CLI/API), provider name, model identifier. Nothing is hidden.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

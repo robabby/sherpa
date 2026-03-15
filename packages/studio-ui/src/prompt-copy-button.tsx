@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Check, Terminal, FileText, FlaskConical, ListChecks, Users, Workflow, Sunrise, ListTodo, ClipboardCheck, Scissors, Target, Zap, PenTool, AlertTriangle, Shield, Radar } from "lucide-react";
+import { Check, Terminal, FileText, FlaskConical, ListChecks, Users, Workflow, Sunrise, ListTodo, ClipboardCheck, Scissors, Target, Zap, PenTool, AlertTriangle, Shield, Radar, MonitorCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -28,6 +28,7 @@ const VARIANT_CONFIG = {
   "stress-test": { icon: Shield, label: "/stress-test", className: "text-[var(--color-copper)]/70 hover:text-[var(--color-copper)]" },
   memo: { icon: FileText, label: "/memo", className: "text-[var(--color-eclipse)]/70 hover:text-[var(--color-eclipse)]" },
   radar: { icon: Radar, label: "/radar", className: "text-[var(--color-gold-bright)]/70 hover:text-[var(--color-gold-bright)]" },
+  "ui-review": { icon: MonitorCheck, label: "/ui-review", className: "text-[var(--color-transit)]/70 hover:text-[var(--color-transit)]" },
 } as const;
 
 interface PromptCopyButtonProps {
