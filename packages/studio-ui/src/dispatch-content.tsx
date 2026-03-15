@@ -17,8 +17,9 @@ import { EASE_STANDARD } from "./lib/animation-constants";
 import { cn } from "./lib/utils";
 import type { TaskBoardEntry } from "@/lib/studio/tasks";
 import type { AgentRole } from "@/lib/studio";
-import type { BackendHealth, BackendType } from "@sherpa/studio-core";
-import { BACKEND_META } from "@sherpa/studio-core";
+import type { BackendHealth } from "@sherpa/studio-core";
+import { BACKEND_META } from "@sherpa/studio-core/dispatch-meta";
+import type { BackendType } from "@sherpa/studio-core/dispatch-meta";
 
 // ---------------------------------------------------------------------------
 // Constants

@@ -25,7 +25,8 @@
     "./config": "./src/config/index.ts",
     "./tokens": "./src/tokens.ts",
     "./patterns": "./src/patterns.ts",
-    "./playbooks": "./src/playbooks.ts"
+    "./playbooks": "./src/playbooks.ts",
+    "./dispatch-meta": "./src/dispatch-meta.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

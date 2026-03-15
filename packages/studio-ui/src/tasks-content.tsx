@@ -11,7 +11,7 @@ import { PromptCopyButton } from "./prompt-copy-button";
 import { EASE_STANDARD } from "./lib/animation-constants";
 import { cn } from "./lib/utils";
 import type { TaskBoardEntry } from "@/lib/studio/tasks";
-import { BACKEND_META } from "@sherpa/studio-core";
+import { BACKEND_META } from "@sherpa/studio-core/dispatch-meta";
 
 // ---------------------------------------------------------------------------
 // Badge style maps
