@@ -1,0 +1,7 @@
+{"timestamp":"2026-03-14T20:11:17.415Z","event":"dispatch_requested","taskId":"design-overnight-dashboard","mode":"supervised","agent":"architect","backend":"claude","source":"studio-ui"}
+{"timestamp":"2026-03-14T20:11:17.548Z","event":"task_updated","taskId":"design-overnight-dashboard","updates":{"status":"dispatched","dispatched-at":"2026-03-14T20:11:17","mode":"supervised","backend":"claude"}}
+{"timestamp":"2026-03-14T20:11:17Z","event":"worker_started","source":"worker.sh","taskSlug":"design-overnight-dashboard","backend":"claude","model":"claude-sonnet-4-6","mode":"supervised","taskType":"architect","budgetUsd":"1.00"}
+{"timestamp":"2026-03-14T20:11:17Z","event":"status_changed","source":"worker.sh","from":"pending","to":"dispatched"}
+{"timestamp":"2026-03-14T20:11:17Z","event":"backend_delegating","source":"worker.sh","script":"/Users/rob/Workbench/sherpa/scripts/backends/claude.sh","backend":"claude","model":"claude-sonnet-4-6"}
+{"timestamp":"2026-03-14T20:11:18.049Z","event":"dispatch_spawned","taskId":"design-overnight-dashboard","pid":13480,"backend":"claude","agent":"architect","mode":"supervised"}
+{"timestamp":"2026-03-14T20:17:30Z","event":"status_changed","source":"worker.sh","from":"dispatched","to":"completed","exitCode":0,"durationSeconds":-24827}

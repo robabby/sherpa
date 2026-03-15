@@ -112,7 +112,16 @@ export function generatePlanningPrompt(
   lines.push(
     ``,
     `The proposal status is ${node.status}. Translate the proposed changes into`,
-    `a session-by-session implementation plan.`
+    `a session-by-session implementation plan.`,
+    ``,
+    `If the plan will impact React, Next.js, or TypeScript files, you MUST invoke`,
+    `these skills before writing the plan:`,
+    `- /feature-dev:feature-dev`,
+    `- /frontend-design:frontend-design`,
+    `- /shadcn`,
+    `- /vercel-react-best-practices`,
+    `- /web-design-guidelines`,
+    `- /vercel-composition-patterns`,
   );
 
   return lines.join("\n");
