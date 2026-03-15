@@ -138,16 +138,15 @@ function formatElapsed(isoDate: string | null): string {
   }
 }
 
-function isToday(isoDate: string | null): boolean {
+function isRecent(isoDate: string | null): boolean {
   if (!isoDate) return false;
   try {
-    const d = new Date(isoDate);
-    const now = new Date();
-    return (
-      d.getFullYear() === now.getFullYear() &&
-      d.getMonth() === now.getMonth() &&
-      d.getDate() === now.getDate()
-    );
+    // worker.sh writes UTC timestamps without Z suffix — normalize
+    const normalized = isoDate.endsWith("Z") ? isoDate : `${isoDate}Z`;
+    const d = new Date(normalized);
+    if (isNaN(d.getTime())) return false;
+    const hoursAgo = (Date.now() - d.getTime()) / (1000 * 60 * 60);
+    return hoursAgo < 24;
   } catch {
     return false;
   }
@@ -945,7 +944,7 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
   );
 
   const completedToday = useMemo(
-    () => tasks.filter((t) => t.status === "completed" && isToday(t.completedAt)),
+    () => tasks.filter((t) => t.status === "completed" && isRecent(t.completedAt)),
     [tasks]
   );
 
