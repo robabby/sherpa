@@ -148,25 +148,31 @@ export function getBackendHealth(projectRoot?: string): BackendHealth[] {
   return allBackends.map(backend => {
     const meta = BACKEND_META[backend]
 
-    // API backends: check env var + run --health via wrapper script
+    // API backends: run --health via wrapper script
+    // Don't pre-check env vars — they may be loaded via .env.local at project root
     if (meta.type === 'api') {
-      if (meta.envKey && !process.env[meta.envKey]) {
-        return {
-          backend,
-          available: false,
-          error: `${meta.envKey} not set`,
-          backendType: meta.type,
-          displayName: meta.displayName,
-        }
-      }
-
       const script = path.join(root, `scripts/backends/${backend}.mjs`)
+
+      // Build env: inherit process.env + load .env.local from project root if present
+      const env = { ...process.env }
+      try {
+        const envFile = path.join(root, '.env.local')
+        const envContent = require('fs').readFileSync(envFile, 'utf-8')
+        for (const line of envContent.split('\n')) {
+          if (line.startsWith('#') || !line.includes('=')) continue
+          const eqIdx = line.indexOf('=')
+          const key = line.slice(0, eqIdx).trim()
+          const val = line.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '')
+          if (key && !env[key]) env[key] = val
+        }
+      } catch { /* no .env.local, that's fine */ }
+
       try {
         const output = execSync(`node "${script}" --health`, {
           timeout: 3000,
           encoding: 'utf-8',
           stdio: ['pipe', 'pipe', 'pipe'],
-          env: { ...process.env },
+          env,
         })
         const data = JSON.parse(output.trim())
         return {

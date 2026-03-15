@@ -669,7 +669,11 @@ function WorkforcePanel({
                     )}
                   >
                     {b.available
-                      ? b.models?.join(" \u00b7 ") ?? "ready"
+                      ? b.models && b.models.length > 0
+                        ? b.models.length === 1
+                          ? b.models[0]
+                          : `${b.models[0]} +${b.models.length - 1}`
+                        : "ready"
                       : "offline"}
                   </span>
                 </button>
@@ -723,7 +727,11 @@ function WorkforcePanel({
                     )}
                   >
                     {b.available
-                      ? b.models?.join(" \u00b7 ") ?? "ready"
+                      ? b.models && b.models.length > 0
+                        ? b.models.length === 1
+                          ? b.models[0]
+                          : `${b.models[0]} +${b.models.length - 1}`
+                        : "ready"
                       : "offline"}
                   </span>
                 </button>
