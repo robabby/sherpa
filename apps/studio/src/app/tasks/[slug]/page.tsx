@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import path from "path";
 
-import { TaskDetailContent } from "@/components/studio/task-detail-content";
 import { getTaskDetail } from "@/lib/studio/tasks";
+import { getTaskEvents } from "@/lib/studio/task-events";
+
+import { MissionDetailStandalone } from "./mission-detail-standalone";
 
 const PROJECT_ROOT = path.resolve(process.cwd(), "../..");
 
@@ -25,5 +27,16 @@ export default async function TaskDetailPage({ params }: PageProps) {
   const task = getTaskDetail(slug, { projectRoot: PROJECT_ROOT });
   if (!task) notFound();
 
-  return <TaskDetailContent task={task} />;
+  const events = getTaskEvents(slug, { projectRoot: PROJECT_ROOT });
+  const defaultTab = task.hasReport ? "report" : "overview";
+
+  return (
+    <div className="mx-auto max-w-4xl px-6 py-6">
+      <MissionDetailStandalone
+        task={task}
+        events={events}
+        defaultTab={defaultTab}
+      />
+    </div>
+  );
 }
