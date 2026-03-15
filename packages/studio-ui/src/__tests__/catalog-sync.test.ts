@@ -23,7 +23,7 @@ const barrelModules = extractBarrelModules(barrelSource)
 
 describe("Component catalog ↔ barrel export sync", () => {
   it("barrel has expected number of module exports", () => {
-    expect(barrelModules.length).toBeGreaterThanOrEqual(90)
+    expect(barrelModules.length).toBeGreaterThanOrEqual(100)
   })
 
   // Every barrel module has at least one catalog entry
