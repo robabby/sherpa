@@ -84,7 +84,7 @@ export function registerAuthorityTools(
     "authority://{scope}",
     { description: "Read-only authority state for a scope" },
     async (uri) => {
-      const scope = uri.pathname.replace(/^\/\//, "")
+      const scope = uri.href.replace(/^authority:\/\//, "")
       const lease = checkAuthority(db, scope)
       return {
         contents: [{

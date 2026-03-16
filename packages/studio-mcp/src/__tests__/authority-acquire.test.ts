@@ -120,4 +120,20 @@ describe("acquireAuthority", () => {
       .get("file:src/foo.ts") as any
     expect(lease.task_id).toBe("task-abc")
   })
+
+  it("stores timestamps in SQLite datetime format", () => {
+    acquireAuthority(db, { scope: "file:fmt.ts", agentId: "agent-1", ttlSeconds: 300 })
+    const lease = db.prepare("SELECT acquired_at, expires_at FROM authority_leases WHERE scope = ?")
+      .get("file:fmt.ts") as { acquired_at: string; expires_at: string }
+
+    // SQLite datetime format: YYYY-MM-DD HH:MM:SS (no T, no Z, no milliseconds)
+    expect(lease.acquired_at).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    expect(lease.expires_at).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+
+    // expires_at should be found by datetime('now') comparison
+    const found = db.prepare(
+      "SELECT 1 as ok FROM authority_leases WHERE scope = ? AND expires_at > datetime('now')"
+    ).get("file:fmt.ts")
+    expect(found).toBeTruthy()
+  })
 })

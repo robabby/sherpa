@@ -102,8 +102,10 @@ export function acquireAuthority(db: Database.Database, input: AcquireInput): Ac
       "SELECT current_value FROM fence_token_seq"
     ).get() as { current_value: number }
 
-    const now = new Date().toISOString()
-    const expiresAt = new Date(Date.now() + ttl * 1000).toISOString()
+    const { now } = db.prepare("SELECT datetime('now') as now").get() as { now: string }
+    const { expiresAt } = db.prepare(
+      "SELECT datetime('now', '+' || ? || ' seconds') as expiresAt"
+    ).get(ttl) as { expiresAt: string }
 
     db.prepare(`
       INSERT INTO authority_leases (scope, agent_id, task_id, fence_token, mode, ttl_seconds, acquired_at, expires_at)
@@ -118,11 +120,19 @@ export function acquireAuthority(db: Database.Database, input: AcquireInput): Ac
 export function releaseAuthority(db: Database.Database, input: ReleaseInput): ReleaseResult {
   return db.transaction(() => {
     const existing = db.prepare(`
-      SELECT agent_id, fence_token FROM authority_leases WHERE scope = ?
-    `).get(input.scope) as { agent_id: string; fence_token: number } | undefined
+      SELECT agent_id, fence_token, expires_at FROM authority_leases WHERE scope = ?
+    `).get(input.scope) as { agent_id: string; fence_token: number; expires_at: string } | undefined
 
     if (!existing) {
       return { released: false, reason: "not_found" }
+    }
+
+    // Check if expired
+    const { expired } = db.prepare(
+      "SELECT ? <= datetime('now') as expired"
+    ).get(existing.expires_at) as { expired: number }
+    if (expired) {
+      return { released: false, reason: "expired" }
     }
 
     if (existing.agent_id !== input.agentId) {
@@ -160,8 +170,10 @@ export function renewAuthority(db: Database.Database, input: RenewInput): RenewR
     }
 
     const ttl = input.ttlSeconds ?? existing.ttl_seconds
-    const expiresAt = new Date(Date.now() + ttl * 1000).toISOString()
-    const now = new Date().toISOString()
+    const { now } = db.prepare("SELECT datetime('now') as now").get() as { now: string }
+    const { expiresAt } = db.prepare(
+      "SELECT datetime('now', '+' || ? || ' seconds') as expiresAt"
+    ).get(ttl) as { expiresAt: string }
 
     db.prepare(`
       UPDATE authority_leases SET expires_at = ?, renewed_at = ?, ttl_seconds = ? WHERE scope = ?
@@ -219,16 +231,20 @@ export function listActiveLeases(db: Database.Database, agentId?: string): Lease
 
 /** Delete all expired leases. Returns count of reaped rows. */
 export function reapExpiredLeases(db: Database.Database): number {
-  const result = db.prepare(
-    "DELETE FROM authority_leases WHERE expires_at <= datetime('now')"
-  ).run()
-  return result.changes
+  return db.transaction(() => {
+    const result = db.prepare(
+      "DELETE FROM authority_leases WHERE expires_at <= datetime('now')"
+    ).run()
+    return result.changes
+  }).immediate()
 }
 
 /** Release all leases held by an agent. Used on session end. */
 export function releaseAllForAgent(db: Database.Database, agentId: string): number {
-  const result = db.prepare(
-    "DELETE FROM authority_leases WHERE agent_id = ?"
-  ).run(agentId)
-  return result.changes
+  return db.transaction(() => {
+    const result = db.prepare(
+      "DELETE FROM authority_leases WHERE agent_id = ?"
+    ).run(agentId)
+    return result.changes
+  }).immediate()
 }
