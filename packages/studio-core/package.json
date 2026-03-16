@@ -27,7 +27,8 @@
     "./patterns": "./src/patterns.ts",
     "./playbooks": "./src/playbooks.ts",
     "./dispatch-meta": "./src/dispatch-meta.ts",
-    "./task-events": "./src/task-events.ts"
+    "./task-events": "./src/task-events.ts",
+    "./db": "./src/db/index.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

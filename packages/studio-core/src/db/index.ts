@@ -1,0 +1,5 @@
+export { openDb, closeAll, resolveDbPaths } from "./connection"
+export { applyCoordinationSchema, COORDINATION_SCHEMA_VERSION } from "./coordination-schema"
+export { applyEventsSchema, appendEvent } from "./events-schema"
+export type { ResolvedDbPaths } from "./types"
+export type { EventInput } from "./events-schema"
