@@ -2,1117 +2,803 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build a SQLite-backed knowledge index that syncs markdown files into queryable tables with full-text search, enabling agents to get truthful context at any scale through MCP tools.
+**Goal:** Build a queryable knowledge index with full-text search, TF-IDF embeddings, summary hierarchy, 4 MCP tools, and automatic clustering — giving agents truthful, context-efficient access to system state at any scale.
 
-**Architecture:** Single SQLite file (`.sherpa/knowledge.db`) in WAL mode, synced from the filesystem via `packages/studio-core/src/db/`. Uses `node:sqlite` (built-in, experimental in Node 24). Connection factory abstracts the driver so `better-sqlite3` can be swapped in if needed. The database is derived — deletable and rebuildable from markdown files at any time.
+**Architecture:** SQLite database (`.sherpa/knowledge.db`) in WAL mode via `better-sqlite3`, sharing the connection factory from `@sherpa/studio-core/db`. Standalone FTS5 for full-text search (not external content mode — stress test A6). Pluggable `KnowledgeBackend` interface with algorithmic default (TF-IDF + extractive summaries). 4 MCP tools added to `packages/studio-mcp/src/server.ts`. Rank-based retrieval for similarity (top-K, not threshold-based — stress test A7).
 
-**Tech Stack:** `node:sqlite` (DatabaseSync), gray-matter (already a dependency), vitest for tests.
+**Tech Stack:** better-sqlite3, gray-matter, vitest, @modelcontextprotocol/sdk, zod
 
 ---
 
-## Session 1: SQLite Schema + Sync Pipeline
+## Completed: Sessions 1-2
 
-### Task 1: Connection Factory
+### Session 1: SQLite Index + Sync Pipeline (DONE)
+
+Committed as `20b6642`. Created:
+- `packages/studio-core/src/db/knowledge-schema.ts` — files, edges, FTS5, schema_version
+- `packages/studio-core/src/db/classify.ts` — file classifier, edge extractor, content hashing
+- `packages/studio-core/src/db/knowledge-sync.ts` — filesystem → SQLite sync with hash-based skip
+- `packages/studio-core/src/db/__tests__/classify.test.ts` — 13 tests
+- `packages/studio-core/src/db/__tests__/knowledge.test.ts` — 11 tests
+- `scripts/sync-knowledge-db.mjs` — `pnpm sync:db` CLI
+
+Modified: `db/types.ts` (added knowledge path), `db/connection.ts` (added knowledge.db), `db/index.ts` (exports), `package.json` (sync:db script), `.gitignore` (.sherpa/)
+
+Performance: 507 files in 733ms (first sync), 36ms re-sync, 254 edges, 18MB DB.
+
+### Session 2: FTS5 Search + Summary MCP Tools (DONE)
+
+Committed as `7414c84`. Added to `packages/studio-mcp/src/server.ts`:
+- `search_knowledge` — FTS5 BM25 search with kind/initiative filters, snippet extraction, 3 modes (text functional, semantic/hybrid stubbed)
+- `get_summary` — structured metadata for file path or initiative slug, includes edges
+
+Added `@sherpa/studio-core` as workspace dependency of `@sherpa/studio-mcp`.
+
+---
+
+## Session 3: Pluggable Backend + Algorithmic TF-IDF
+
+### Task 1: KnowledgeBackend interface + AlgorithmicBackend
 
 **Files:**
-- Create: `packages/studio-core/src/db/connection.ts`
-- Test: `packages/studio-core/src/db/__tests__/connection.test.ts`
+- Create: `packages/studio-core/src/knowledge/types.ts`
+- Create: `packages/studio-core/src/knowledge/algorithmic.ts`
+- Create: `packages/studio-core/src/knowledge/index.ts`
+- Test: `packages/studio-core/src/db/__tests__/algorithmic.test.ts`
 
 **Step 1: Write the failing test**
 
 ```typescript
-// packages/studio-core/src/db/__tests__/connection.test.ts
-import { describe, it, expect, afterEach } from "vitest"
-import fs from "node:fs"
-import path from "node:path"
-import os from "node:os"
-import { openKnowledgeDb, closeKnowledgeDb } from "../connection"
-
-describe("openKnowledgeDb", () => {
-  let tmpDir: string
-
-  afterEach(() => {
-    closeKnowledgeDb()
-    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true })
-  })
-
-  it("creates the database file and parent directory", () => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sek-"))
-    const dbPath = path.join(tmpDir, ".sherpa", "knowledge.db")
-    const db = openKnowledgeDb(dbPath)
-    expect(db).toBeDefined()
-    expect(fs.existsSync(dbPath)).toBe(true)
-  })
-
-  it("configures WAL mode", () => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sek-"))
-    const dbPath = path.join(tmpDir, ".sherpa", "knowledge.db")
-    const db = openKnowledgeDb(dbPath)
-    const row = db.prepare("PRAGMA journal_mode").get() as { journal_mode: string }
-    expect(row.journal_mode).toBe("wal")
-  })
-
-  it("returns the same instance on repeated calls", () => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sek-"))
-    const dbPath = path.join(tmpDir, ".sherpa", "knowledge.db")
-    const db1 = openKnowledgeDb(dbPath)
-    const db2 = openKnowledgeDb(dbPath)
-    expect(db1).toBe(db2)
-  })
-})
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cd packages/studio-core && pnpm exec vitest run src/db/__tests__/connection.test.ts`
-Expected: FAIL — module not found
-
-**Step 3: Write minimal implementation**
-
-```typescript
-// packages/studio-core/src/db/connection.ts
-import { DatabaseSync } from "node:sqlite"
-import fs from "node:fs"
-import path from "node:path"
-
-let _db: DatabaseSync | null = null
-let _dbPath: string | null = null
-
-/**
- * Open (or return existing) knowledge database.
- * Creates parent directories and configures WAL mode.
- */
-export function openKnowledgeDb(dbPath: string): DatabaseSync {
-  if (_db && _dbPath === dbPath) return _db
-
-  // Close existing connection if path changed
-  if (_db) {
-    _db.close()
-    _db = null
-    _dbPath = null
-  }
-
-  // Ensure parent directory exists
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true })
-
-  const db = new DatabaseSync(dbPath)
-
-  // Configure for concurrent reads + serialized writes
-  db.exec("PRAGMA journal_mode = WAL")
-  db.exec("PRAGMA synchronous = NORMAL")
-  db.exec("PRAGMA busy_timeout = 5000")
-  db.exec("PRAGMA foreign_keys = ON")
-
-  _db = db
-  _dbPath = dbPath
-  return db
-}
-
-/**
- * Close the knowledge database connection.
- */
-export function closeKnowledgeDb(): void {
-  if (_db) {
-    _db.close()
-    _db = null
-    _dbPath = null
-  }
-}
-
-/**
- * Get the current database instance. Throws if not opened.
- */
-export function getKnowledgeDb(): DatabaseSync {
-  if (!_db) throw new Error("Knowledge database not opened. Call openKnowledgeDb() first.")
-  return _db
-}
-```
-
-**Step 4: Run test to verify it passes**
-
-Run: `cd packages/studio-core && pnpm exec vitest run src/db/__tests__/connection.test.ts`
-Expected: PASS (3 tests)
-
-**Step 5: Commit**
-
-```bash
-git add packages/studio-core/src/db/connection.ts packages/studio-core/src/db/__tests__/connection.test.ts
-git commit -m "feat(knowledge-engine): add SQLite connection factory with WAL mode"
-```
-
----
-
-### Task 2: Schema Module
-
-**Files:**
-- Create: `packages/studio-core/src/db/schema.ts`
-- Test: `packages/studio-core/src/db/__tests__/schema.test.ts`
-
-**Step 1: Write the failing test**
-
-```typescript
-// packages/studio-core/src/db/__tests__/schema.test.ts
-import { describe, it, expect, beforeEach, afterEach } from "vitest"
-import fs from "node:fs"
-import path from "node:path"
-import os from "node:os"
-import { openKnowledgeDb, closeKnowledgeDb } from "../connection"
-import { applySchema, SCHEMA_VERSION } from "../schema"
-
-describe("applySchema", () => {
-  let tmpDir: string
-
-  beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sek-"))
-  })
-
-  afterEach(() => {
-    closeKnowledgeDb()
-    fs.rmSync(tmpDir, { recursive: true, force: true })
-  })
-
-  it("creates all required tables", () => {
-    const db = openKnowledgeDb(path.join(tmpDir, "knowledge.db"))
-    applySchema(db)
-
-    const tables = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
-      .all() as Array<{ name: string }>
-    const names = tables.map((t) => t.name)
-
-    expect(names).toContain("files")
-    expect(names).toContain("edges")
-    expect(names).toContain("summaries")
-    expect(names).toContain("schema_version")
-  })
-
-  it("creates files table with expected columns", () => {
-    const db = openKnowledgeDb(path.join(tmpDir, "knowledge.db"))
-    applySchema(db)
-
-    const cols = db
-      .prepare("PRAGMA table_info(files)")
-      .all() as Array<{ name: string }>
-    const colNames = cols.map((c) => c.name)
-
-    expect(colNames).toContain("path")
-    expect(colNames).toContain("content_hash")
-    expect(colNames).toContain("content")
-    expect(colNames).toContain("frontmatter")
-    expect(colNames).toContain("title")
-    expect(colNames).toContain("kind")
-    expect(colNames).toContain("initiative")
-    expect(colNames).toContain("status")
-    expect(colNames).toContain("updated_at")
-  })
-
-  it("creates edges table with unique constraint", () => {
-    const db = openKnowledgeDb(path.join(tmpDir, "knowledge.db"))
-    applySchema(db)
-
-    // Insert an edge
-    db.prepare("INSERT INTO edges (source, target, kind) VALUES (?, ?, ?)").run("a", "b", "depends-on")
-
-    // Duplicate should fail
-    expect(() => {
-      db.prepare("INSERT INTO edges (source, target, kind) VALUES (?, ?, ?)").run("a", "b", "depends-on")
-    }).toThrow()
-  })
-
-  it("creates FTS5 virtual table for full-text search", () => {
-    const db = openKnowledgeDb(path.join(tmpDir, "knowledge.db"))
-    applySchema(db)
-
-    const tables = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='files_fts'")
-      .all() as Array<{ name: string }>
-    expect(tables).toHaveLength(1)
-  })
-
-  it("stores schema version", () => {
-    const db = openKnowledgeDb(path.join(tmpDir, "knowledge.db"))
-    applySchema(db)
-
-    const row = db.prepare("SELECT version FROM schema_version").get() as { version: number }
-    expect(row.version).toBe(SCHEMA_VERSION)
-  })
-
-  it("is idempotent — safe to call twice", () => {
-    const db = openKnowledgeDb(path.join(tmpDir, "knowledge.db"))
-    applySchema(db)
-    applySchema(db) // should not throw
-
-    const row = db.prepare("SELECT version FROM schema_version").get() as { version: number }
-    expect(row.version).toBe(SCHEMA_VERSION)
-  })
-})
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cd packages/studio-core && pnpm exec vitest run src/db/__tests__/schema.test.ts`
-Expected: FAIL — module not found
-
-**Step 3: Write minimal implementation**
-
-```typescript
-// packages/studio-core/src/db/schema.ts
-import type { DatabaseSync } from "node:sqlite"
-
-export const SCHEMA_VERSION = 1
-
-/**
- * Apply the knowledge engine schema to a database.
- * Idempotent — safe to call on an already-initialized database.
- */
-export function applySchema(db: DatabaseSync): void {
-  const existing = db
-    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'")
-    .get() as { name: string } | undefined
-
-  if (existing) {
-    const row = db.prepare("SELECT version FROM schema_version").get() as { version: number }
-    if (row.version >= SCHEMA_VERSION) return
-  }
-
-  db.exec(`
-    -- Every markdown file in docs/
-    CREATE TABLE IF NOT EXISTS files (
-      path         TEXT PRIMARY KEY,
-      content_hash TEXT NOT NULL,
-      content      TEXT NOT NULL,
-      frontmatter  TEXT,          -- JSON blob
-      title        TEXT,
-      kind         TEXT,          -- initiative | task | research | activity | plan | agent | rule | skill
-      initiative   TEXT,          -- parent initiative slug
-      status       TEXT,
-      updated_at   INTEGER NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_files_kind ON files(kind);
-    CREATE INDEX IF NOT EXISTS idx_files_initiative ON files(initiative);
-    CREATE INDEX IF NOT EXISTS idx_files_status ON files(status);
-
-    -- Explicit relationships from frontmatter
-    CREATE TABLE IF NOT EXISTS edges (
-      source TEXT NOT NULL,
-      target TEXT NOT NULL,
-      kind   TEXT NOT NULL,       -- depends-on | informs | spawned-from | targets | parent-of
-      UNIQUE(source, target, kind)
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_edges_source ON edges(source);
-    CREATE INDEX IF NOT EXISTS idx_edges_target ON edges(target);
-
-    -- Multi-level summaries
-    CREATE TABLE IF NOT EXISTS summaries (
-      id         TEXT PRIMARY KEY,
-      level      TEXT NOT NULL,   -- file | initiative | cluster | portfolio
-      parent_id  TEXT,
-      summary    TEXT NOT NULL,
-      stale      INTEGER NOT NULL DEFAULT 0,
-      updated_at INTEGER NOT NULL
-    );
-
-    -- FTS5 virtual table for full-text search over file content
-    CREATE VIRTUAL TABLE IF NOT EXISTS files_fts USING fts5(
-      path,
-      title,
-      content,
-      content='files',
-      content_rowid='rowid'
-    );
-
-    -- Schema version tracking
-    CREATE TABLE IF NOT EXISTS schema_version (
-      version INTEGER NOT NULL
-    );
-  `)
-
-  // Upsert schema version
-  db.exec("DELETE FROM schema_version")
-  db.prepare("INSERT INTO schema_version (version) VALUES (?)").run(SCHEMA_VERSION)
-}
-```
-
-**Step 4: Run test to verify it passes**
-
-Run: `cd packages/studio-core && pnpm exec vitest run src/db/__tests__/schema.test.ts`
-Expected: PASS (6 tests)
-
-**Step 5: Commit**
-
-```bash
-git add packages/studio-core/src/db/schema.ts packages/studio-core/src/db/__tests__/schema.test.ts
-git commit -m "feat(knowledge-engine): add SQLite schema with files, edges, summaries, FTS5"
-```
-
----
-
-### Task 3: File Classifier + Edge Extractor (pure functions)
-
-**Files:**
-- Create: `packages/studio-core/src/db/classify.ts`
-- Test: `packages/studio-core/src/db/__tests__/classify.test.ts`
-
-**Step 1: Write the failing test**
-
-```typescript
-// packages/studio-core/src/db/__tests__/classify.test.ts
+// packages/studio-core/src/db/__tests__/algorithmic.test.ts
 import { describe, it, expect } from "vitest"
-import { classifyFile, extractEdgesFromFrontmatter, computeContentHash } from "../classify"
+import { AlgorithmicBackend } from "../../knowledge/algorithmic"
 
-describe("classifyFile", () => {
-  it("classifies initiative proposals", () => {
-    expect(classifyFile("docs/initiatives/foo/proposal.md")).toEqual({
-      kind: "initiative",
-      initiative: "foo",
+describe("AlgorithmicBackend", () => {
+  const backend = new AlgorithmicBackend()
+
+  describe("embed", () => {
+    it("returns a numeric vector", () => {
+      const vec = backend.embed("hello world")
+      expect(Array.isArray(vec)).toBe(true)
+      expect(vec.length).toBeGreaterThan(0)
+      expect(vec.every(v => typeof v === "number")).toBe(true)
+    })
+
+    it("returns consistent vectors for same input", () => {
+      const v1 = backend.embed("hello world")
+      const v2 = backend.embed("hello world")
+      expect(v1).toEqual(v2)
+    })
+
+    it("returns different vectors for different input", () => {
+      const v1 = backend.embed("sqlite database")
+      const v2 = backend.embed("react component")
+      expect(v1).not.toEqual(v2)
     })
   })
 
-  it("classifies research files", () => {
-    expect(classifyFile("docs/initiatives/foo/research/iteration-1/vector-a.md")).toEqual({
-      kind: "research",
-      initiative: "foo",
+  describe("summarize", () => {
+    it("extracts title and status from markdown with frontmatter", () => {
+      const md = "---\nstatus: approved\n---\n\n# My Initiative\n\n## Summary\n\nThis does things.\n\n## Rationale\n\nBecause reasons."
+      const summary = backend.summarize(md, 200)
+      expect(summary).toContain("My Initiative")
+      expect(summary).toContain("approved")
+    })
+
+    it("respects maxTokens by truncating", () => {
+      const md = "# Title\n\n## Summary\n\n" + "word ".repeat(500)
+      const short = backend.summarize(md, 50)
+      expect(short.length).toBeLessThan(300) // rough token-to-char
+    })
+
+    it("handles markdown without frontmatter", () => {
+      const md = "# Just a Title\n\nSome content here."
+      const summary = backend.summarize(md, 200)
+      expect(summary).toContain("Just a Title")
     })
   })
 
-  it("classifies task files", () => {
-    expect(classifyFile("docs/tasks/fix-bug.md")).toEqual({
-      kind: "task",
-      initiative: null,
+  describe("cosineSimilarity", () => {
+    it("returns 1.0 for identical vectors", () => {
+      const v = backend.embed("hello world")
+      expect(backend.cosineSimilarity(v, v)).toBeCloseTo(1.0, 5)
+    })
+
+    it("returns higher similarity for related content", () => {
+      const v1 = backend.embed("sqlite database WAL mode concurrent")
+      const v2 = backend.embed("sqlite agentic state store database")
+      const v3 = backend.embed("react component button accessibility")
+      const simRelated = backend.cosineSimilarity(v1, v2)
+      const simUnrelated = backend.cosineSimilarity(v1, v3)
+      expect(simRelated).toBeGreaterThan(simUnrelated)
     })
   })
 
-  it("classifies activity files", () => {
-    expect(classifyFile("docs/initiatives/foo/activity.md")).toEqual({
-      kind: "activity",
-      initiative: "foo",
+  describe("buildCorpusIndex", () => {
+    it("allows embedding relative to a corpus", () => {
+      const docs = [
+        { id: "a", text: "sqlite database WAL mode" },
+        { id: "b", text: "react component button style" },
+        { id: "c", text: "sqlite agentic state coordination" },
+      ]
+      backend.buildCorpusIndex(docs)
+      const va = backend.embedWithCorpus("a")
+      const vb = backend.embedWithCorpus("b")
+      const vc = backend.embedWithCorpus("c")
+      expect(va).toBeDefined()
+      expect(backend.cosineSimilarity(va!, vc!)).toBeGreaterThan(backend.cosineSimilarity(va!, vb!))
     })
-  })
-
-  it("classifies plan files", () => {
-    expect(classifyFile("docs/initiatives/foo/plan.md")).toEqual({
-      kind: "plan",
-      initiative: "foo",
-    })
-  })
-
-  it("classifies agent role files", () => {
-    expect(classifyFile("agents/code-reviewer.md")).toEqual({
-      kind: "agent",
-      initiative: null,
-    })
-    expect(classifyFile("docs/agents/roles/planner.md")).toEqual({
-      kind: "agent",
-      initiative: null,
-    })
-  })
-
-  it("classifies rule files", () => {
-    expect(classifyFile(".claude/rules/effort-estimation.md")).toEqual({
-      kind: "rule",
-      initiative: null,
-    })
-  })
-
-  it("classifies skill files", () => {
-    expect(classifyFile(".claude/skills/rr/SKILL.md")).toEqual({
-      kind: "skill",
-      initiative: null,
-    })
-  })
-
-  it("returns null kind for unknown paths", () => {
-    expect(classifyFile("README.md")).toEqual({
-      kind: null,
-      initiative: null,
-    })
-  })
-})
-
-describe("extractEdgesFromFrontmatter", () => {
-  it("extracts depends-on edges", () => {
-    const edges = extractEdgesFromFrontmatter("my-initiative", {
-      dependencies: ["sqlite-agentic-state", "mcp-coordination-layer"],
-    })
-    expect(edges).toContainEqual({ source: "my-initiative", target: "sqlite-agentic-state", kind: "depends-on" })
-    expect(edges).toContainEqual({ source: "my-initiative", target: "mcp-coordination-layer", kind: "depends-on" })
-  })
-
-  it("extracts informs edges", () => {
-    const edges = extractEdgesFromFrontmatter("my-initiative", {
-      informs: ["studio-desktop-app"],
-    })
-    expect(edges).toContainEqual({ source: "my-initiative", target: "studio-desktop-app", kind: "informs" })
-  })
-
-  it("extracts spawned-from edge", () => {
-    const edges = extractEdgesFromFrontmatter("child-initiative", {
-      "spawned-from": "parent-initiative",
-    })
-    expect(edges).toContainEqual({ source: "child-initiative", target: "parent-initiative", kind: "spawned-from" })
-  })
-
-  it("extracts targets edges", () => {
-    const edges = extractEdgesFromFrontmatter("my-initiative", {
-      targets: ["packages/studio-core/src/db/", "packages/studio-mcp/src/server.ts"],
-    })
-    expect(edges).toHaveLength(2)
-    expect(edges[0]!.kind).toBe("targets")
-  })
-
-  it("handles missing fields gracefully", () => {
-    const edges = extractEdgesFromFrontmatter("my-initiative", {})
-    expect(edges).toEqual([])
-  })
-})
-
-describe("computeContentHash", () => {
-  it("returns consistent SHA-256 hex", () => {
-    const hash1 = computeContentHash("hello world")
-    const hash2 = computeContentHash("hello world")
-    expect(hash1).toBe(hash2)
-    expect(hash1).toMatch(/^[a-f0-9]{64}$/)
-  })
-
-  it("changes when content changes", () => {
-    const hash1 = computeContentHash("hello")
-    const hash2 = computeContentHash("world")
-    expect(hash1).not.toBe(hash2)
   })
 })
 ```
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd packages/studio-core && pnpm exec vitest run src/db/__tests__/classify.test.ts`
+Run: `cd packages/studio-core && pnpm exec vitest run src/db/__tests__/algorithmic.test.ts`
 Expected: FAIL — module not found
 
-**Step 3: Write minimal implementation**
+**Step 3: Write the types**
 
 ```typescript
-// packages/studio-core/src/db/classify.ts
-import { createHash } from "node:crypto"
+// packages/studio-core/src/knowledge/types.ts
 
-export interface FileClassification {
-  kind: string | null
-  initiative: string | null
-}
+/** Pluggable backend for embeddings and summaries. */
+export interface KnowledgeBackend {
+  /** Embed a text string into a numeric vector. */
+  embed(text: string): number[]
 
-/**
- * Classify a markdown file by its path.
- * Returns the file kind and parent initiative slug.
- */
-export function classifyFile(relativePath: string): FileClassification {
-  // Initiative files
-  const initMatch = relativePath.match(/^docs\/initiatives\/([^/]+)\//)
-  if (initMatch) {
-    const slug = initMatch[1]!
-    const rest = relativePath.slice(initMatch[0].length)
+  /** Generate an extractive summary of markdown content. */
+  summarize(text: string, maxTokens: number): string
 
-    if (rest === "proposal.md") return { kind: "initiative", initiative: slug }
-    if (rest === "activity.md") return { kind: "activity", initiative: slug }
-    if (rest === "plan.md") return { kind: "plan", initiative: slug }
-    if (rest.startsWith("research/")) return { kind: "research", initiative: slug }
-    return { kind: null, initiative: slug }
-  }
+  /** Compute cosine similarity between two vectors. */
+  cosineSimilarity(a: number[], b: number[]): number
 
-  // Task files
-  if (relativePath.startsWith("docs/tasks/") && relativePath.endsWith(".md")) {
-    return { kind: "task", initiative: null }
-  }
+  /**
+   * Build a TF-IDF corpus index from a set of documents.
+   * After calling this, embedWithCorpus() returns IDF-weighted vectors.
+   */
+  buildCorpusIndex(docs: Array<{ id: string; text: string }>): void
 
-  // Agent roles
-  if (relativePath.startsWith("agents/") || relativePath.startsWith("docs/agents/roles/")) {
-    return { kind: "agent", initiative: null }
-  }
-
-  // Rules
-  if (relativePath.startsWith(".claude/rules/")) {
-    return { kind: "rule", initiative: null }
-  }
-
-  // Skills
-  if (relativePath.startsWith(".claude/skills/")) {
-    return { kind: "skill", initiative: null }
-  }
-
-  return { kind: null, initiative: null }
-}
-
-export interface Edge {
-  source: string
-  target: string
-  kind: string
-}
-
-/**
- * Extract relationship edges from initiative frontmatter.
- */
-export function extractEdgesFromFrontmatter(
-  initiativeSlug: string,
-  frontmatter: Record<string, unknown>,
-): Edge[] {
-  const edges: Edge[] = []
-
-  const deps = frontmatter.dependencies
-  if (Array.isArray(deps)) {
-    for (const dep of deps) {
-      if (typeof dep === "string") {
-        edges.push({ source: initiativeSlug, target: dep, kind: "depends-on" })
-      }
-    }
-  }
-
-  const informs = frontmatter.informs
-  if (Array.isArray(informs)) {
-    for (const target of informs) {
-      if (typeof target === "string") {
-        edges.push({ source: initiativeSlug, target, kind: "informs" })
-      }
-    }
-  }
-
-  const spawnedFrom = frontmatter["spawned-from"]
-  if (typeof spawnedFrom === "string") {
-    edges.push({ source: initiativeSlug, target: spawnedFrom, kind: "spawned-from" })
-  }
-
-  const targets = frontmatter.targets
-  if (Array.isArray(targets)) {
-    for (const target of targets) {
-      if (typeof target === "string") {
-        edges.push({ source: initiativeSlug, target, kind: "targets" })
-      }
-    }
-  }
-
-  return edges
-}
-
-/**
- * Compute SHA-256 hash of content for change detection.
- */
-export function computeContentHash(content: string): string {
-  return createHash("sha256").update(content).digest("hex")
+  /** Embed using the corpus IDF weights. Returns null if id not in corpus. */
+  embedWithCorpus(id: string): number[] | null
 }
 ```
 
-**Step 4: Run test to verify it passes**
-
-Run: `cd packages/studio-core && pnpm exec vitest run src/db/__tests__/classify.test.ts`
-Expected: PASS (11 tests)
-
-**Step 5: Commit**
-
-```bash
-git add packages/studio-core/src/db/classify.ts packages/studio-core/src/db/__tests__/classify.test.ts
-git commit -m "feat(knowledge-engine): add file classifier and edge extractor"
-```
-
----
-
-### Task 4: Sync Pipeline
-
-**Files:**
-- Create: `packages/studio-core/src/db/sync.ts`
-- Test: `packages/studio-core/src/db/__tests__/sync.test.ts`
-
-**Step 1: Write the failing test**
+**Step 4: Write the AlgorithmicBackend implementation**
 
 ```typescript
-// packages/studio-core/src/db/__tests__/sync.test.ts
-import { describe, it, expect, beforeEach, afterEach } from "vitest"
-import fs from "node:fs"
-import path from "node:path"
-import os from "node:os"
-import { openKnowledgeDb, closeKnowledgeDb } from "../connection"
-import { applySchema } from "../schema"
-import { syncFromFilesystem } from "../sync"
-
-function writeFixture(dir: string, relativePath: string, content: string) {
-  const abs = path.join(dir, relativePath)
-  fs.mkdirSync(path.dirname(abs), { recursive: true })
-  fs.writeFileSync(abs, content)
-}
-
-describe("syncFromFilesystem", () => {
-  let tmpDir: string
-  let dbPath: string
-
-  beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sek-sync-"))
-    dbPath = path.join(tmpDir, ".sherpa", "knowledge.db")
-
-    // Create a minimal initiative fixture
-    writeFixture(tmpDir, "docs/initiatives/test-init/proposal.md", [
-      "---",
-      "status: approved",
-      "initiative: test-init",
-      "created: 2026-03-16",
-      "updated: '2026-03-16'",
-      "type: new-plan",
-      "risk: additive",
-      "targets:",
-      "  - packages/studio-core/src/foo.ts",
-      "dependencies:",
-      "  - sqlite-agentic-state",
-      "informs:",
-      "  - studio-desktop-app",
-      "spawned-from: null",
-      "---",
-      "",
-      "# Test Initiative",
-      "",
-      "## Summary",
-      "",
-      "A test initiative for sync testing.",
-    ].join("\n"))
-
-    // Create a task fixture
-    writeFixture(tmpDir, "docs/tasks/fix-bug.md", [
-      "---",
-      "id: fix-bug",
-      "status: pending",
-      "role: engineer",
-      "priority: medium",
-      "---",
-      "",
-      "# Fix Bug",
-      "",
-      "Fix the thing.",
-    ].join("\n"))
-  })
-
-  afterEach(() => {
-    closeKnowledgeDb()
-    fs.rmSync(tmpDir, { recursive: true, force: true })
-  })
-
-  it("indexes markdown files into the files table", () => {
-    const db = openKnowledgeDb(dbPath)
-    applySchema(db)
-    const stats = syncFromFilesystem(db, tmpDir)
-
-    expect(stats.filesProcessed).toBe(2)
-    expect(stats.filesSkipped).toBe(0)
-
-    const rows = db.prepare("SELECT path, kind, initiative, status FROM files ORDER BY path").all() as Array<{
-      path: string; kind: string; initiative: string | null; status: string
-    }>
-    expect(rows).toHaveLength(2)
-    expect(rows[0]!.kind).toBe("initiative")
-    expect(rows[0]!.initiative).toBe("test-init")
-    expect(rows[0]!.status).toBe("approved")
-    expect(rows[1]!.kind).toBe("task")
-  })
-
-  it("extracts edges from frontmatter", () => {
-    const db = openKnowledgeDb(dbPath)
-    applySchema(db)
-    syncFromFilesystem(db, tmpDir)
-
-    const edges = db.prepare("SELECT source, target, kind FROM edges ORDER BY kind").all() as Array<{
-      source: string; target: string; kind: string
-    }>
-
-    expect(edges).toContainEqual({ source: "test-init", target: "sqlite-agentic-state", kind: "depends-on" })
-    expect(edges).toContainEqual({ source: "test-init", target: "studio-desktop-app", kind: "informs" })
-    expect(edges).toContainEqual({ source: "test-init", target: "packages/studio-core/src/foo.ts", kind: "targets" })
-  })
-
-  it("skips unchanged files on second sync", () => {
-    const db = openKnowledgeDb(dbPath)
-    applySchema(db)
-    syncFromFilesystem(db, tmpDir)
-    const stats2 = syncFromFilesystem(db, tmpDir)
-
-    expect(stats2.filesSkipped).toBe(2)
-    expect(stats2.filesProcessed).toBe(0)
-  })
-
-  it("re-indexes changed files", () => {
-    const db = openKnowledgeDb(dbPath)
-    applySchema(db)
-    syncFromFilesystem(db, tmpDir)
-
-    // Modify the proposal
-    writeFixture(tmpDir, "docs/initiatives/test-init/proposal.md", [
-      "---",
-      "status: in-progress",
-      "initiative: test-init",
-      "created: 2026-03-16",
-      "updated: '2026-03-16'",
-      "type: new-plan",
-      "risk: additive",
-      "targets: []",
-      "dependencies: []",
-      "spawned-from: null",
-      "---",
-      "",
-      "# Test Initiative",
-      "",
-      "## Summary",
-      "",
-      "Updated content.",
-    ].join("\n"))
-
-    const stats2 = syncFromFilesystem(db, tmpDir)
-    expect(stats2.filesProcessed).toBe(1)
-
-    const row = db.prepare("SELECT status FROM files WHERE initiative = ?").get("test-init") as { status: string }
-    expect(row.status).toBe("in-progress")
-  })
-
-  it("populates FTS5 index for search", () => {
-    const db = openKnowledgeDb(dbPath)
-    applySchema(db)
-    syncFromFilesystem(db, tmpDir)
-
-    const results = db
-      .prepare("SELECT path FROM files_fts WHERE files_fts MATCH ?")
-      .all("test initiative sync") as Array<{ path: string }>
-    expect(results.length).toBeGreaterThan(0)
-  })
-
-  it("removes files from DB that no longer exist on disk", () => {
-    const db = openKnowledgeDb(dbPath)
-    applySchema(db)
-    syncFromFilesystem(db, tmpDir)
-
-    // Delete the task file
-    fs.unlinkSync(path.join(tmpDir, "docs/tasks/fix-bug.md"))
-
-    const stats2 = syncFromFilesystem(db, tmpDir)
-    expect(stats2.filesRemoved).toBe(1)
-
-    const rows = db.prepare("SELECT path FROM files").all()
-    expect(rows).toHaveLength(1)
-  })
-})
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cd packages/studio-core && pnpm exec vitest run src/db/__tests__/sync.test.ts`
-Expected: FAIL — module not found
-
-**Step 3: Write minimal implementation**
-
-```typescript
-// packages/studio-core/src/db/sync.ts
-import type { DatabaseSync } from "node:sqlite"
-import fs from "node:fs"
-import path from "node:path"
+// packages/studio-core/src/knowledge/algorithmic.ts
 import matter from "gray-matter"
-import { classifyFile, extractEdgesFromFrontmatter, computeContentHash } from "./classify"
-import { extractTitle } from "../markdown"
-
-export interface SyncStats {
-  filesProcessed: number
-  filesSkipped: number
-  filesRemoved: number
-  edgesCreated: number
-}
-
-/** Directories to scan for markdown files, relative to project root. */
-const SCAN_DIRS = [
-  "docs/initiatives",
-  "docs/tasks",
-  "docs/agents/roles",
-  "agents",
-  ".claude/rules",
-  ".claude/skills",
-]
+import type { KnowledgeBackend } from "./types"
 
 /**
- * Walk a directory recursively and collect markdown file paths.
- * Returns paths relative to projectRoot.
+ * Zero-dependency algorithmic backend: TF-IDF vectors + extractive summaries.
+ * Effective for 70-80% of use cases on governance corpora with consistent vocabulary.
  */
-function walkMarkdownFiles(projectRoot: string, relativeDir: string): string[] {
-  const absDir = path.join(projectRoot, relativeDir)
-  if (!fs.existsSync(absDir)) return []
+export class AlgorithmicBackend implements KnowledgeBackend {
+  private corpusDf = new Map<string, number>()
+  private corpusN = 0
+  private corpusDocs = new Map<string, Map<string, number>>()
 
-  const results: string[] = []
-  const entries = fs.readdirSync(absDir, { withFileTypes: true, recursive: true })
-
-  for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith(".md")) continue
-    if (entry.name === "README.md") continue
-
-    const parentDir = "parentPath" in entry && typeof entry.parentPath === "string"
-      ? entry.parentPath
-      : (entry as unknown as { path?: string }).path ?? absDir
-    const absPath = path.join(parentDir, entry.name)
-    results.push(path.relative(projectRoot, absPath))
+  embed(text: string): number[] {
+    const tf = this.termFrequency(this.tokenize(text))
+    // Without corpus, return raw TF vector (normalized)
+    return this.normalizeVector(Object.values(Object.fromEntries(tf)))
   }
 
-  return results
-}
-
-/**
- * Sync all markdown files from the filesystem into the knowledge database.
- * Skips files whose content hash hasn't changed. Removes DB entries for deleted files.
- */
-export function syncFromFilesystem(db: DatabaseSync, projectRoot: string): SyncStats {
-  const stats: SyncStats = { filesProcessed: 0, filesSkipped: 0, filesRemoved: 0, edgesCreated: 0 }
-
-  // Collect all markdown files to index
-  const allFiles = new Set<string>()
-  for (const dir of SCAN_DIRS) {
-    for (const file of walkMarkdownFiles(projectRoot, dir)) {
-      allFiles.add(file)
-    }
-  }
-
-  // Prepared statements
-  const getHash = db.prepare("SELECT content_hash FROM files WHERE path = ?")
-  const upsertFile = db.prepare(`
-    INSERT INTO files (path, content_hash, content, frontmatter, title, kind, initiative, status, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(path) DO UPDATE SET
-      content_hash = excluded.content_hash,
-      content = excluded.content,
-      frontmatter = excluded.frontmatter,
-      title = excluded.title,
-      kind = excluded.kind,
-      initiative = excluded.initiative,
-      status = excluded.status,
-      updated_at = excluded.updated_at
-  `)
-  const deleteEdgesForSource = db.prepare("DELETE FROM edges WHERE source = ?")
-  const insertEdge = db.prepare("INSERT OR IGNORE INTO edges (source, target, kind) VALUES (?, ?, ?)")
-  const deleteFts = db.prepare("DELETE FROM files_fts WHERE path = ?")
-  const insertFts = db.prepare("INSERT INTO files_fts (path, title, content) VALUES (?, ?, ?)")
-
-  // Process each file
-  for (const relativePath of allFiles) {
-    const absPath = path.join(projectRoot, relativePath)
-    const content = fs.readFileSync(absPath, "utf-8")
-    const hash = computeContentHash(content)
-
-    // Skip if unchanged
-    const existing = getHash.get(relativePath) as { content_hash: string } | undefined
-    if (existing?.content_hash === hash) {
-      stats.filesSkipped++
-      continue
-    }
-
-    // Parse frontmatter
-    let frontmatterData: Record<string, unknown> | null = null
-    let bodyContent = content
+  summarize(text: string, maxTokens: number): string {
+    // Extract frontmatter
+    let status: string | null = null
+    let body = text
     try {
-      const parsed = matter(content)
-      if (parsed.data && Object.keys(parsed.data).length > 0) {
-        frontmatterData = parsed.data
-      }
-      bodyContent = parsed.content
-    } catch {
-      // If parsing fails, treat as plain content
-    }
+      const parsed = matter(text)
+      if (parsed.data?.status) status = String(parsed.data.status)
+      body = parsed.content
+    } catch { /* use raw text */ }
 
-    const title = extractTitle(content)
-    const { kind, initiative } = classifyFile(relativePath)
-    const status = frontmatterData?.status as string | null ?? null
-    const now = Date.now()
+    // Extract title (first H1)
+    const titleMatch = body.match(/^#\s+(.+)$/m)
+    const title = titleMatch?.[1]?.trim() ?? null
 
-    // Upsert file row
-    upsertFile.run(
-      relativePath,
-      hash,
-      content,
-      frontmatterData ? JSON.stringify(frontmatterData) : null,
-      title,
-      kind,
-      initiative,
-      status,
-      now,
-    )
-
-    // Update FTS index
-    deleteFts.run(relativePath)
-    insertFts.run(relativePath, title ?? "", bodyContent)
-
-    // Extract and upsert edges (only for initiatives)
-    if (kind === "initiative" && initiative && frontmatterData) {
-      deleteEdgesForSource.run(initiative)
-      const edges = extractEdgesFromFrontmatter(initiative, frontmatterData)
-      for (const edge of edges) {
-        insertEdge.run(edge.source, edge.target, edge.kind)
-        stats.edgesCreated++
+    // Extract first sentence from each H2 section
+    const sections: string[] = []
+    const h2Regex = /^##\s+(.+)$/gm
+    let match
+    while ((match = h2Regex.exec(body)) !== null) {
+      const sectionName = match[1]!.trim()
+      const afterHeading = body.slice(match.index + match[0].length)
+      const nextH2 = afterHeading.search(/^##\s/m)
+      const sectionBody = (nextH2 > -1 ? afterHeading.slice(0, nextH2) : afterHeading).trim()
+      const firstSentence = sectionBody.match(/^[^\n]+/)?.[0]?.trim()
+      if (firstSentence && firstSentence.length > 10) {
+        sections.push(`${sectionName}: ${firstSentence}`)
       }
     }
 
-    stats.filesProcessed++
+    // Assemble summary
+    const parts: string[] = []
+    if (title) parts.push(title)
+    if (status) parts.push(`[${status}]`)
+    parts.push(...sections)
+
+    let summary = parts.join(" — ")
+
+    // Rough truncation (4 chars per token approximation)
+    const maxChars = maxTokens * 4
+    if (summary.length > maxChars) {
+      summary = summary.slice(0, maxChars - 3) + "..."
+    }
+
+    return summary
   }
 
-  // Remove DB entries for files that no longer exist on disk
-  const dbPaths = db.prepare("SELECT path FROM files").all() as Array<{ path: string }>
-  const deleteFile = db.prepare("DELETE FROM files WHERE path = ?")
-  for (const { path: dbPath } of dbPaths) {
-    if (!allFiles.has(dbPath)) {
-      deleteFile.run(dbPath)
-      deleteFts.run(dbPath)
-      stats.filesRemoved++
+  cosineSimilarity(a: number[], b: number[]): number {
+    if (a.length !== b.length || a.length === 0) return 0
+    let dot = 0, magA = 0, magB = 0
+    for (let i = 0; i < a.length; i++) {
+      dot += a[i]! * b[i]!
+      magA += a[i]! * a[i]!
+      magB += b[i]! * b[i]!
+    }
+    const denom = Math.sqrt(magA) * Math.sqrt(magB)
+    return denom === 0 ? 0 : dot / denom
+  }
+
+  buildCorpusIndex(docs: Array<{ id: string; text: string }>): void {
+    this.corpusDf.clear()
+    this.corpusDocs.clear()
+    this.corpusN = docs.length
+
+    for (const doc of docs) {
+      const tokens = this.tokenize(doc.text)
+      const tf = this.termFrequency(tokens)
+      this.corpusDocs.set(doc.id, tf)
+
+      // Count document frequency
+      for (const term of tf.keys()) {
+        this.corpusDf.set(term, (this.corpusDf.get(term) ?? 0) + 1)
+      }
     }
   }
 
-  return stats
+  embedWithCorpus(id: string): number[] | null {
+    const tf = this.corpusDocs.get(id)
+    if (!tf) return null
+
+    // Build TF-IDF vector using shared vocabulary
+    const allTerms = Array.from(this.corpusDf.keys()).sort()
+    const vec = allTerms.map(term => {
+      const termTf = tf.get(term) ?? 0
+      const df = this.corpusDf.get(term) ?? 0
+      const idf = Math.log((this.corpusN + 1) / (df + 1))
+      return termTf * idf
+    })
+
+    return this.normalizeVector(vec)
+  }
+
+  // --- internals ---
+
+  private tokenize(text: string): string[] {
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .split(/\s+/)
+      .filter(t => t.length >= 3)
+  }
+
+  private termFrequency(tokens: string[]): Map<string, number> {
+    const tf = new Map<string, number>()
+    for (const token of tokens) {
+      tf.set(token, (tf.get(token) ?? 0) + 1)
+    }
+    // Normalize by document length
+    const len = tokens.length || 1
+    for (const [term, count] of tf) {
+      tf.set(term, count / len)
+    }
+    return tf
+  }
+
+  private normalizeVector(vec: number[]): number[] {
+    const mag = Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0))
+    return mag === 0 ? vec : vec.map(v => v / mag)
+  }
 }
 ```
-
-**Step 4: Run test to verify it passes**
-
-Run: `cd packages/studio-core && pnpm exec vitest run src/db/__tests__/sync.test.ts`
-Expected: PASS (6 tests)
-
-**Step 5: Commit**
-
-```bash
-git add packages/studio-core/src/db/sync.ts packages/studio-core/src/db/__tests__/sync.test.ts
-git commit -m "feat(knowledge-engine): add filesystem-to-SQLite sync pipeline"
-```
-
----
-
-### Task 5: Barrel Export + Package Wiring
-
-**Files:**
-- Create: `packages/studio-core/src/db/index.ts`
-- Modify: `packages/studio-core/package.json` (add export)
-
-**Step 1: Create barrel export**
 
 ```typescript
-// packages/studio-core/src/db/index.ts
-export { openKnowledgeDb, closeKnowledgeDb, getKnowledgeDb } from "./connection"
-export { applySchema, SCHEMA_VERSION } from "./schema"
-export { syncFromFilesystem, type SyncStats } from "./sync"
-export { classifyFile, extractEdgesFromFrontmatter, computeContentHash, type FileClassification, type Edge } from "./classify"
+// packages/studio-core/src/knowledge/index.ts
+export type { KnowledgeBackend } from "./types"
+export { AlgorithmicBackend } from "./algorithmic"
 ```
 
-**Step 2: Add export to package.json**
+**Step 5: Run test to verify it passes**
+
+Run: `cd packages/studio-core && pnpm exec vitest run src/db/__tests__/algorithmic.test.ts`
+Expected: PASS
+
+**Step 6: Add package.json export + typecheck**
 
 In `packages/studio-core/package.json`, add to `exports`:
 ```json
-"./db": "./src/db/index.ts"
+"./knowledge": "./src/knowledge/index.ts"
 ```
 
-**Step 3: Run typecheck**
+Run: `pnpm check`
+Expected: PASS
 
-Run: `cd packages/studio-core && pnpm check`
-Expected: PASS — no type errors
+**Step 7: Commit**
 
-**Step 4: Run all tests**
+```bash
+git add packages/studio-core/src/knowledge/ packages/studio-core/src/db/__tests__/algorithmic.test.ts packages/studio-core/package.json
+git commit -m "feat(knowledge-engine): pluggable KnowledgeBackend interface with AlgorithmicBackend (TF-IDF + extractive)"
+```
+
+---
+
+### Task 2: KnowledgeConfig in sherpa.config.ts
+
+**Files:**
+- Modify: `packages/studio-core/src/config/types.ts`
+- Modify: `packages/studio-core/src/config/defaults.ts`
+- Modify: `packages/studio-core/src/config/schema.ts`
+
+**Step 1: Add KnowledgeConfig type**
+
+Add to `packages/studio-core/src/config/types.ts`:
+
+```typescript
+export interface KnowledgeConfig {
+  /** Knowledge backend type. Defaults to 'algorithmic'. */
+  backend?: "algorithmic" | "ollama" | "api" | "dispatch"
+  /** Ollama server config (when backend='ollama'). */
+  ollama?: { host: string }
+  /** API config (when backend='api'). */
+  api?: { provider: "anthropic" | "openai" | "voyage"; model?: string }
+  /** Database path override. Defaults to .sherpa/knowledge.db */
+  dbPath?: string
+}
+```
+
+Add `knowledge?: KnowledgeConfig` to `SherpaUserConfig` and `knowledge: Required<KnowledgeConfig>` to `SherpaConfig`.
+
+**Step 2: Add defaults and schema validation**
+
+In `defaults.ts`, add default knowledge config:
+```typescript
+knowledge: {
+  backend: "algorithmic",
+  ollama: { host: "http://localhost:11434" },
+  api: { provider: "anthropic", model: undefined },
+  dbPath: undefined,
+}
+```
+
+In `schema.ts`, add zod validation for the knowledge config fields.
+
+**Step 3: Typecheck**
+
+Run: `pnpm check`
+Expected: PASS
+
+**Step 4: Commit**
+
+```bash
+git add packages/studio-core/src/config/
+git commit -m "feat(knowledge-engine): add KnowledgeConfig to sherpa.config.ts"
+```
+
+---
+
+### Task 3: Add embeddings table to schema + populate during sync
+
+**Files:**
+- Modify: `packages/studio-core/src/db/knowledge-schema.ts` — add summaries table (embeddings stored as JSON blobs for algorithmic backend; sqlite-vec deferred to when a semantic backend is configured)
+- Modify: `packages/studio-core/src/db/knowledge-sync.ts` — after syncing files, compute embeddings for initiative proposals using the backend
+- Test: `packages/studio-core/src/db/__tests__/knowledge.test.ts` — add embedding sync test
+
+**Step 1: Add summaries table to schema**
+
+Add to `SCHEMA_SQL` in `knowledge-schema.ts`:
+```sql
+-- Multi-level summaries with embeddings
+CREATE TABLE IF NOT EXISTS summaries (
+  id         TEXT PRIMARY KEY,
+  level      TEXT NOT NULL,   -- 'file' | 'initiative' | 'cluster' | 'portfolio'
+  parent_id  TEXT,
+  summary    TEXT NOT NULL,
+  embedding  TEXT,            -- JSON array of floats (algorithmic backend)
+  stale      INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL
+);
+
+-- Inferred relationships from embedding similarity
+CREATE TABLE IF NOT EXISTS inferred_edges (
+  source     TEXT NOT NULL,
+  target     TEXT NOT NULL,
+  similarity REAL NOT NULL,
+  kind       TEXT NOT NULL,   -- 'semantic-neighbor' | 'cross-pollination-candidate'
+  created_at INTEGER NOT NULL,
+  UNIQUE(source, target, kind)
+);
+```
+
+Bump `KNOWLEDGE_SCHEMA_VERSION` to 2. In `applyKnowledgeSchema`, if version < 2, run the new DDL.
+
+**Step 2: Extend sync to populate summaries for initiatives**
+
+Add a `syncEmbeddings(db, backend, projectRoot)` function that:
+1. Reads all initiative proposals from the `files` table
+2. Builds a corpus index via `backend.buildCorpusIndex()`
+3. For each initiative, computes embedding via `backend.embedWithCorpus()`
+4. Generates extractive summary via `backend.summarize()`
+5. Upserts into `summaries` table
+6. Computes pairwise similarity for top-K pairs → inserts into `inferred_edges`
+
+**Step 3: Test embedding sync**
+
+Add test to `knowledge.test.ts` that:
+1. Creates fixtures with 3 initiative proposals (related and unrelated topics)
+2. Runs sync + embedding sync
+3. Verifies summaries table has entries
+4. Verifies inferred_edges has at least one entry
+5. Verifies related initiatives have higher similarity than unrelated
+
+**Step 4: Run tests**
 
 Run: `cd packages/studio-core && pnpm test`
-Expected: PASS — all tests pass (existing + new)
+Expected: PASS
 
 **Step 5: Commit**
 
 ```bash
-git add packages/studio-core/src/db/index.ts packages/studio-core/package.json
-git commit -m "feat(knowledge-engine): add db barrel export and package wiring"
+git add packages/studio-core/src/db/ packages/studio-core/src/knowledge/
+git commit -m "feat(knowledge-engine): summaries table, embedding sync, inferred edges"
 ```
 
 ---
 
-### Task 6: CLI Sync Command
+### Task 4: Activate semantic + hybrid modes in search_knowledge
 
 **Files:**
-- Create: `scripts/sync-knowledge-db.ts`
+- Modify: `packages/studio-mcp/src/server.ts` — replace semantic stub with real embedding search, implement hybrid via reciprocal rank fusion
 
-**Step 1: Write the script**
+**Step 1: Implement semantic mode**
 
-```typescript
-// scripts/sync-knowledge-db.ts
-/**
- * Sync the knowledge database from the filesystem.
- * Usage: pnpm sync:db
- */
-import path from "node:path"
-import { openKnowledgeDb, closeKnowledgeDb, applySchema, syncFromFilesystem } from "@sherpa/studio-core/db"
+When `mode === "semantic"`:
+1. Embed the query using the backend
+2. Load all initiative embeddings from summaries table
+3. Compute cosine similarity, return top-K
 
-const projectRoot = process.cwd()
-const dbPath = path.join(projectRoot, ".sherpa", "knowledge.db")
+**Step 2: Implement hybrid mode**
 
-console.log(`Syncing knowledge database...`)
-console.log(`  Project root: ${projectRoot}`)
-console.log(`  Database: ${dbPath}`)
-
-const db = openKnowledgeDb(dbPath)
-applySchema(db)
-
-const start = Date.now()
-const stats = syncFromFilesystem(db, projectRoot)
-const elapsed = Date.now() - start
-
-console.log(`\nSync complete in ${elapsed}ms:`)
-console.log(`  Files processed: ${stats.filesProcessed}`)
-console.log(`  Files skipped (unchanged): ${stats.filesSkipped}`)
-console.log(`  Files removed: ${stats.filesRemoved}`)
-console.log(`  Edges created: ${stats.edgesCreated}`)
-
-const fileCount = (db.prepare("SELECT COUNT(*) as count FROM files").get() as { count: number }).count
-const edgeCount = (db.prepare("SELECT COUNT(*) as count FROM edges").get() as { count: number }).count
-console.log(`\nDatabase totals:`)
-console.log(`  Files indexed: ${fileCount}`)
-console.log(`  Edges tracked: ${edgeCount}`)
-
-closeKnowledgeDb()
+Reciprocal rank fusion: run both FTS5 and semantic search, combine scores:
 ```
+rrf_score = 1/(k + fts_rank) + 1/(k + semantic_rank)
+```
+where k=60 (standard RRF constant).
 
-**Step 2: Add script to root package.json**
+**Step 3: Add backend + capabilities to all MCP tool responses**
 
-In root `package.json`, add to `scripts`:
+Every response includes:
 ```json
-"sync:db": "tsx scripts/sync-knowledge-db.ts"
+{
+  "backend": "algorithmic",
+  "capabilities": {
+    "full_text_search": true,
+    "semantic_similarity": true,
+    "creative_discovery": true,
+    "summary_quality": "extractive"
+  }
+}
 ```
 
-**Step 3: Add `.sherpa/` to .gitignore**
+**Step 4: Typecheck + test**
 
-Append to `.gitignore`:
-```
-# Knowledge engine database (derived, rebuildable)
-.sherpa/
-```
+Run: `pnpm check && cd packages/studio-core && pnpm test`
+Expected: PASS
 
-**Step 4: Run it against the real codebase**
-
-Run: `pnpm sync:db`
-Expected: Indexes all markdown files, reports counts, creates `.sherpa/knowledge.db`
-
-**Step 5: Verify with a quick query**
-
-Run: `node -e "const { DatabaseSync } = require('node:sqlite'); const db = new DatabaseSync('.sherpa/knowledge.db'); console.log('Files:', db.prepare('SELECT COUNT(*) as c FROM files').get()); console.log('Edges:', db.prepare('SELECT COUNT(*) as c FROM edges').get()); console.log('Sample:', db.prepare('SELECT path, kind, initiative FROM files LIMIT 5').all()); db.close()"`
-Expected: Shows real file counts and sample rows from the Sherpa codebase
-
-**Step 6: Commit**
+**Step 5: Commit**
 
 ```bash
-git add scripts/sync-knowledge-db.ts package.json .gitignore
-git commit -m "feat(knowledge-engine): add pnpm sync:db command"
+git add packages/studio-mcp/src/server.ts
+git commit -m "feat(knowledge-engine): activate semantic + hybrid search modes with RRF"
 ```
 
 ---
 
-## Session 2: FTS5 Search + search_knowledge MCP Tool
+## Session 4: get_context + Enhanced get_summary
 
-> Detailed steps to be planned after Session 1 validates the foundation.
+### Task 5: Enhanced get_summary with summary hierarchy
 
-## Session 3: Pluggable Backend Interface + Algorithmic Backend
+**Files:**
+- Modify: `packages/studio-mcp/src/server.ts` — enhance get_summary to return extractive summaries from the summaries table, with stale flag and changed-files list
+- Modify: `packages/studio-core/src/db/knowledge-sync.ts` — add staleness propagation logic
 
-> Detailed steps to be planned after Session 2.
+**Step 1: Add `level` parameter to get_summary**
 
-## Session 4: get_context + get_summary MCP Tools
+Extend get_summary to accept `level: "file" | "initiative" | "portfolio"`. When `level=initiative`, return the initiative's summary from the summaries table (not just raw file metadata). Include `stale` flag and list of files changed since last summary generation.
 
-> Detailed steps to be planned after Session 3.
+When `level=portfolio`, return all initiative summaries weighted by status:
+- in-progress: full detail
+- approved/pending: full detail
+- integrated < 2 weeks: moderate (1 sentence)
+- integrated > 2 weeks: mention only (title + status)
+- archived: excluded
 
-## Session 5: query_related MCP Tool + Clustering
+**Step 2: Add staleness tracking**
 
-> Detailed steps to be planned after Session 4.
+When a file's content_hash changes during sync, mark its parent initiative summary as stale (set `stale=1` in summaries where `id = initiative_slug`). When an initiative summary is regenerated, mark parent cluster/portfolio as stale.
 
-## Session 6: Git Hooks + File Watcher + Studio Settings
+**Step 3: Test + commit**
 
-> Detailed steps to be planned after Session 5.
+Run: `pnpm check && cd packages/studio-core && pnpm test`
+
+```bash
+git commit -m "feat(knowledge-engine): enhanced get_summary with hierarchy, staleness, temporal weighting"
+```
+
+---
+
+### Task 6: get_context MCP tool
+
+**Files:**
+- Modify: `packages/studio-mcp/src/server.ts` — add get_context tool
+
+**Step 1: Implement get_context**
+
+Parameters:
+- `role`: string (worker, planner, judge, researcher)
+- `initiative?`: string (slug — narrows scope)
+- `max_tokens?`: number (default varies by role)
+
+Response structure:
+```json
+{
+  "scope": "initiative summary if scoped, null otherwise",
+  "neighborhood": "adjacent initiatives + shared targets",
+  "system": "portfolio summary, blocked items, recent completions",
+  "alerts": ["initiative X just landed changes to files you target"],
+  "backend": "algorithmic",
+  "capabilities": { ... }
+}
+```
+
+Role scaling:
+- Worker: deep scope (full initiative summary + all file titles), shallow system (status counts only), small token budget (1500)
+- Planner: shallow scope (initiative titles only), deep system (full portfolio summary + blocked list + edge map), large token budget (3000)
+- Judge: deep scope + neighborhood (initiative summary + all adjacent initiative summaries), medium token budget (2000)
+- Researcher: deep scope + deep system (full everything), largest budget (4000)
+
+**Step 2: Build the response from DB queries**
+
+Scope: `SELECT * FROM summaries WHERE id = ? AND level = 'initiative'`
+Neighborhood: `SELECT * FROM edges WHERE source = ? OR target = ?` + join with summaries
+System: `SELECT * FROM summaries WHERE level = 'portfolio'` + `SELECT * FROM files WHERE status = 'blocked' OR status = 'in-progress'`
+Alerts: `SELECT * FROM files WHERE updated_at > ? AND initiative IN (neighbor list)`
+
+Truncate each section to fit within token budget using the role-specific allocation.
+
+**Step 3: Test + commit**
+
+Run: `pnpm check`
+
+```bash
+git commit -m "feat(knowledge-engine): add get_context MCP tool with role-scaled bootstrap"
+```
+
+---
+
+## Session 5: query_related + Clustering
+
+### Task 7: query_related MCP tool
+
+**Files:**
+- Modify: `packages/studio-mcp/src/server.ts` — add query_related tool
+
+**Step 1: Implement query_related**
+
+Parameters:
+- `source`: string (initiative slug or file path)
+- `mode`: "explicit" | "emergent" | "creative" (default: "explicit")
+- `limit?`: number (default: 10)
+
+Mode implementations:
+- **explicit**: Traverse edges table at depth 1-2 hops. Return edges with source → target → kind.
+- **emergent**: Query inferred_edges where similarity > threshold AND no explicit edge exists between the pair. These are high-similarity pairs that frontmatter doesn't declare.
+- **creative**: Query inferred_edges where graph_distance(source, target) > 3 AND similarity is in top-K. These are semantically close but structurally far pairs.
+
+For graph distance, use a BFS on the edges table (recursive CTE):
+```sql
+WITH RECURSIVE hops(node, depth) AS (
+  VALUES(?, 0)
+  UNION ALL
+  SELECT CASE WHEN e.source = h.node THEN e.target ELSE e.source END, h.depth + 1
+  FROM edges e JOIN hops h ON (e.source = h.node OR e.target = h.node)
+  WHERE h.depth < 4
+)
+SELECT node, MIN(depth) as distance FROM hops GROUP BY node
+```
+
+**Step 2: Test explicit mode against real data**
+
+After implementation, verify:
+- `query_related({ source: "semantic-knowledge-engine", mode: "explicit" })` returns mcp-coordination-layer (informs) and studio-desktop-app (informs)
+- `query_related({ source: "mcp-coordination-layer", mode: "explicit" })` returns sqlite-agentic-state (depends-on)
+
+**Step 3: Commit**
+
+```bash
+git commit -m "feat(knowledge-engine): add query_related MCP tool with explicit/emergent/creative modes"
+```
+
+---
+
+### Task 8: Agglomerative clustering
+
+**Files:**
+- Create: `packages/studio-core/src/knowledge/clustering.ts`
+- Modify: `packages/studio-core/src/db/knowledge-schema.ts` — add clusters table
+- Modify: `packages/studio-core/src/db/knowledge-sync.ts` — add cluster computation after embedding sync
+- Test: `packages/studio-core/src/db/__tests__/clustering.test.ts`
+
+**Step 1: Add clusters table**
+
+```sql
+CREATE TABLE IF NOT EXISTS clusters (
+  cluster_id TEXT PRIMARY KEY,
+  label      TEXT,
+  member_ids TEXT NOT NULL,  -- JSON array of initiative slugs
+  updated_at INTEGER NOT NULL
+);
+```
+
+**Step 2: Implement agglomerative clustering**
+
+```typescript
+// packages/studio-core/src/knowledge/clustering.ts
+/**
+ * Simple agglomerative clustering with single-linkage.
+ * At current scale (40-100 initiatives) this is O(n²) which is fine.
+ * Upgrade path to HDBSCAN documented for 500+ initiatives.
+ */
+export function agglomerativeClusters(
+  items: Array<{ id: string; embedding: number[] }>,
+  similarityFn: (a: number[], b: number[]) => number,
+  minSimilarity: number = 0.08, // Based on stress test A7 — avg is 0.05
+): Array<{ members: string[] }>
+```
+
+Algorithm:
+1. Start with each item as its own cluster
+2. Compute pairwise similarity matrix
+3. Merge the two most similar clusters if similarity > minSimilarity
+4. Repeat until no merges possible
+5. Filter out singleton clusters
+
+**Step 3: Generate cluster labels**
+
+For each cluster, the label is the 3 highest-IDF terms shared across all member documents.
+
+**Step 4: Test + commit**
+
+Run: `cd packages/studio-core && pnpm test`
+
+```bash
+git commit -m "feat(knowledge-engine): agglomerative clustering with auto-labels"
+```
+
+---
+
+## Session 6: Git Hook + File Watcher + Studio Config
+
+### Task 9: Git post-commit hook
+
+**Files:**
+- Create: `scripts/hooks/post-commit-sync.sh`
+
+**Step 1: Write the hook**
+
+```bash
+#!/bin/sh
+# Incremental knowledge DB sync after commit.
+# Runs in background so it doesn't block git.
+pnpm sync:db &
+```
+
+**Step 2: Document installation**
+
+Add to initiative activity.md: hook is opt-in, installed via `git config core.hooksPath scripts/hooks` or by copying to `.git/hooks/post-commit`.
+
+**Step 3: Commit**
+
+```bash
+git commit -m "feat(knowledge-engine): git post-commit hook for automatic sync"
+```
+
+---
+
+### Task 10: Chokidar file watcher for pnpm dev
+
+**Files:**
+- Create: `packages/studio-core/src/db/knowledge-watcher.ts`
+- Modify: Root `package.json` — add watch:db script or integrate with pnpm dev
+
+**Step 1: Implement the watcher**
+
+```typescript
+// packages/studio-core/src/db/knowledge-watcher.ts
+import chokidar from "chokidar"
+// Watch docs/ for .md changes, debounce at 500ms, run syncFromFilesystem.
+// Single-writer enforcement: only the watcher process writes to knowledge.db.
+// MCP server processes are read-only.
+```
+
+Key constraints from premortem:
+- Debounce at 500ms to avoid thrashing
+- Ignore .sherpa/ directory (prevent infinite loop)
+- On rename: the hash-based skip handles it (old path removed, new path added)
+- If git hook fires simultaneously, the second sync is a no-op (hashes match)
+
+**Step 2: Add chokidar dependency**
+
+```bash
+pnpm add -w chokidar
+```
+
+**Step 3: Test manually**
+
+Start watcher, edit a markdown file, verify DB updates within 1 second.
+
+**Step 4: Commit**
+
+```bash
+git commit -m "feat(knowledge-engine): chokidar file watcher with debounce for pnpm dev"
+```
+
+---
+
+### Task 11: Studio Settings page for backend configuration
+
+**Files:**
+- Create: `apps/studio/src/app/settings/knowledge/page.tsx`
+
+**Step 1: Build the settings page**
+
+Display:
+- Current backend: "algorithmic" (badge)
+- Capabilities: full_text_search ✓, semantic_similarity ✓, creative_discovery ✓, summary_quality: "extractive"
+- Database stats: file count, edge count, summary count, DB file size, last sync time
+- "Sync Now" button that triggers `pnpm sync:db`
+- Backend configuration hint: "Configure in sherpa.config.ts under knowledge.backend. Available: algorithmic (default), ollama, api, dispatch."
+
+**Step 2: Read config from sherpa.config.ts**
+
+Use the existing `defineConfig` / `SherpaConfig` to read the knowledge section.
+
+**Step 3: Commit**
+
+```bash
+git commit -m "feat(knowledge-engine): Studio Settings page for backend configuration"
+```
+
+---
+
+## Verification Checklist
+
+After all 6 sessions, verify:
+
+- [ ] `pnpm sync:db` indexes full corpus in <1s
+- [ ] `search_knowledge` returns relevant results in text, semantic, and hybrid modes
+- [ ] `get_context` returns role-appropriate state under token budgets
+- [ ] `get_summary` returns summaries at file/initiative/portfolio levels with staleness
+- [ ] `query_related` explicit mode matches frontmatter edges
+- [ ] `query_related` emergent mode finds unlinked-but-related pairs
+- [ ] `query_related` creative mode finds distant-but-similar pairs
+- [ ] Clustering produces meaningful groups (not all-singleton or all-one-cluster)
+- [ ] Git hook auto-syncs after commits
+- [ ] File watcher syncs during `pnpm dev`
+- [ ] Studio Settings page shows backend config and DB stats
+- [ ] `pnpm check` passes across all packages
+- [ ] All tests pass
