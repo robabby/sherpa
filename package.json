@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently --names mcp,studio --prefix-colors blue,green \"pnpm mcp\" \"pnpm --filter @sherpa/studio-app dev\"",
     "dev:studio": "pnpm --filter @sherpa/studio-app dev",
-    "mcp": "bun run packages/studio-mcp/src/main.ts",
+    "mcp": "pnpm dlx tsx packages/studio-mcp/src/main.ts",
     "dev:web": "pnpm --filter @sherpa/website dev",
     "build": "pnpm --filter @sherpa/studio-app build",
     "build:web": "pnpm --filter @sherpa/website build",
