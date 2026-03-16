@@ -8,6 +8,9 @@ export * from "./playbooks"
 export * from "./dispatch"
 export * from "./process-nodes-shared"
 
+// Workflow canvas
+export * from "./workflow"
+
 // Self-contained modules
 export * from "./tasks"
 export * from "./task-events"

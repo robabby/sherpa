@@ -1,5 +1,5 @@
 // Auto-generated barrel export for @sherpa/studio-ui
-// 106 domain-agnostic studio components
+// 112 domain-agnostic studio components
 
 export * from "./abstraction-ladder"
 export * from "./abstraction-spine"
@@ -111,4 +111,10 @@ export * from "./tree-node"
 export * from "./type-detail-panel"
 export * from "./unified-card-client"
 export * from "./unified-initiative-card"
+export * from "./workflow-canvas"
+export * from "./workflow-nodes"
+export * from "./workflow-edge"
+export * from "./workflow-detail-pane"
+export * from "./workflow-legend"
+export * from "./workflow-toolbar"
 export * from "./workforce-content"

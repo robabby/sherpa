@@ -1,104 +1,105 @@
 import type { Metadata } from "next";
-
 import { SectionHeader } from "@/components/studio/section-header";
-
-import { MermaidDiagram } from "@/components/studio/mermaid-diagram";
+import { WorkflowCanvas } from "@/components/studio/workflow-canvas";
+import {
+  WORKFLOW_NODES,
+  WORKFLOW_EDGES,
+  WORKFLOW_PHASE_GROUPS,
+} from "@sherpa/studio-core";
+import { Position, type Node, type Edge } from "@xyflow/react";
 
 export const metadata: Metadata = {
   title: "Workflow | Studio",
   robots: "noindex, nofollow",
 };
 
-const WORKFLOW_DIAGRAM = `flowchart TB
-  idea(["Incoming Idea"])
-  nightly(["Nightly Trigger"])
+function buildFlowNodes(): Node[] {
+  const nodes: Node[] = [];
 
-  subgraph Discovery["Discovery"]
-    direction TB
-    curate["Curate | /curate"]
-    research["Research | /rr"]
-    synthesize["Synthesize | /synthesize"]
-    curate --> research
-    research --> synthesize
-  end
+  // Add phase group nodes first (parents must come before children)
+  for (const group of WORKFLOW_PHASE_GROUPS) {
+    nodes.push({
+      id: `group-${group.id}`,
+      type: "workflow-phase-group",
+      data: { label: group.label, phase: group.id },
+      position: { x: 0, y: 0 },
+      style: {
+        width: 300,
+        height: 200,
+      },
+    });
+  }
 
-  idea --> research
+  // Add workflow nodes
+  for (const node of WORKFLOW_NODES) {
+    // Map data-model nodeType to React Flow custom node type
+    let rfType: string;
+    switch (node.nodeType) {
+      case "trigger":
+        rfType = "workflow-trigger";
+        break;
+      case "decision":
+        rfType = "workflow-decision";
+        break;
+      default:
+        rfType = "workflow-stage";
+        break;
+    }
 
-  subgraph Governance["Governance"]
-    direction TB
-    propose["Propose | proposal.md"]
-    intreview["Review | /integration-review"]
-    decide{{"Approve / Decline"}}
-    propose --> intreview
-    intreview --> decide
-  end
+    const flowNode: Node = {
+      id: node.id,
+      data: { ...node },
+      position: { x: 0, y: 0 },
+      type: rfType,
+    };
 
-  synthesize --> propose
-  decide -->|Declined| research
+    // If node belongs to a phase, set parentId
+    if (node.phase) {
+      flowNode.parentId = `group-${node.phase}`;
+      flowNode.extent = "parent";
+    }
 
-  subgraph Execution["Execution"]
-    direction TB
-    plan["Plan | /plan-tasks"]
-    dispatch{{"Dispatch"}}
-    claude["Claude Worker | worktree isolation"]
-    lmstudio["LM Studio | Qwen 3.5 9B"]
-    cli["CLI Agent | opencode · codex · gemini"]
-    judge{{"Judge | verdict"}}
-    plan --> dispatch
-    dispatch -->|"Code tasks"| claude
-    dispatch -->|"Content / research"| lmstudio
-    dispatch -->|"Code review"| cli
-    claude --> judge
-    lmstudio --> judge
-    cli --> judge
-  end
+    nodes.push(flowNode);
+  }
 
-  decide -->|Approved| plan
-  judge -->|"Needs changes"| dispatch
+  return nodes;
+}
 
-  subgraph Delivery["Delivery"]
-    direction TB
-    codereview["Code Review | PR"]
-    ship["Ship | merge to main"]
-    codereview --> ship
-  end
+const SIDE_TO_POSITION: Record<string, Position> = {
+  top: Position.Top,
+  bottom: Position.Bottom,
+  left: Position.Left,
+  right: Position.Right,
+};
 
-  judge -->|Approved| codereview
-
-  subgraph Audit["Nightly Audit"]
-    direction TB
-    profiles["Profiles | audit-profiles.json"]
-    chunk["Chunk | rules + source files"]
-    auditrun["Dispatch | nightly-audit.mjs"]
-    report["Report | audit-report.mjs"]
-    archive["Archive | logs/archive/YYYY-MM-DD"]
-    profiles --> chunk
-    chunk --> auditrun
-    auditrun --> report
-    report --> archive
-  end
-
-  nightly --> profiles
-
-  subgraph MorningReview["Morning Review"]
-    direction TB
-    morning["Review Results | /morning"]
-    triage{{"Triage"}}
-    morning --> triage
-  end
-
-  archive --> morning
-  ship --> morning
-  triage -->|"Fix tasks"| plan
-  triage -->|"New ideas"| curate
-`;
+function buildFlowEdges(): Edge[] {
+  return WORKFLOW_EDGES.map((edge) => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    type: "data-flow",
+    data: {
+      edgeType: edge.edgeType,
+      label: edge.label,
+      ...(edge.sourceSide && {
+        sourcePosition: SIDE_TO_POSITION[edge.sourceSide],
+      }),
+      ...(edge.targetSide && {
+        targetPosition: SIDE_TO_POSITION[edge.targetSide],
+      }),
+    },
+  }));
+}
 
 export default function WorkflowPage() {
+  const nodes = buildFlowNodes();
+  const edges = buildFlowEdges();
+
   return (
-    <div className="space-y-10">
+    <div className="flex flex-col flex-1 min-h-0 gap-6">
       <SectionHeader label="Process" title="Product Workflow" />
-      <div className="rounded-lg border border-[var(--border-gold)]/30 bg-background p-6">
-        <MermaidDiagram definition={WORKFLOW_DIAGRAM} />
+      <div className="flex-1 min-h-0 rounded-lg border border-[var(--color-gold)]/10 overflow-hidden">
+        <WorkflowCanvas initialNodes={nodes} initialEdges={edges} />
       </div>
     </div>
   );
