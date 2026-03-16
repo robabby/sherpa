@@ -69,9 +69,9 @@ interface ElkResult {
   }>;
 }
 
-const DEFAULT_NODE_WIDTH = 180;
-const DEFAULT_NODE_HEIGHT = 50;
-const GROUP_PADDING = 40;
+const DEFAULT_NODE_WIDTH = 200;
+const DEFAULT_NODE_HEIGHT = 56;
+const GROUP_PADDING = 50;
 
 async function computeElkLayout(
   nodes: Node[],
@@ -117,9 +117,10 @@ async function computeElkLayout(
       layoutOptions: {
         "elk.algorithm": "layered",
         "elk.direction": "DOWN",
-        "elk.padding": `[top=${GROUP_PADDING},left=${GROUP_PADDING},bottom=${GROUP_PADDING},right=${GROUP_PADDING}]`,
-        "elk.spacing.nodeNode": "30",
-        "elk.layered.spacing.nodeNodeBetweenLayers": "40",
+        "elk.padding": `[top=${GROUP_PADDING + 10},left=${GROUP_PADDING},bottom=${GROUP_PADDING},right=${GROUP_PADDING}]`,
+        "elk.spacing.nodeNode": "40",
+        "elk.layered.spacing.nodeNodeBetweenLayers": "50",
+        "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
       },
     });
   }
@@ -136,8 +137,11 @@ async function computeElkLayout(
     layoutOptions: {
       "elk.algorithm": "layered",
       "elk.direction": "DOWN",
-      "elk.spacing.nodeNode": "50",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "60",
+      "elk.spacing.nodeNode": "80",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
+      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+      "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
+      "elk.separateConnectedComponents": "false",
     },
     children: topLevelChildren,
     edges: elkEdges,
