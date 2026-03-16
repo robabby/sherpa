@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import {
   type EdgeProps,
   type Position,
@@ -12,7 +13,8 @@ import {
 } from "@sherpa/studio-core";
 
 // ---------------------------------------------------------------------------
-// WorkflowDataFlowEdge — custom edge with glow, main path, and flow animation
+// WorkflowDataFlowEdge — custom edge with glow, main path, flow animation,
+// and particle dots (Layer 4) for data-flow visualization
 // ---------------------------------------------------------------------------
 
 function WorkflowDataFlowEdge({
@@ -43,6 +45,49 @@ function WorkflowDataFlowEdge({
 
   const markerId = `marker-${id}`;
 
+  // Refs for particle animation (direct DOM manipulation, no React state)
+  const pathRef = useRef<SVGPathElement>(null);
+  const particle1Ref = useRef<SVGCircleElement>(null);
+  const particle2Ref = useRef<SVGCircleElement>(null);
+
+  useEffect(() => {
+    if (!style.particles) return;
+    const pathEl = pathRef.current;
+    const p1 = particle1Ref.current;
+    if (!pathEl || !p1) return;
+
+    const totalLength = pathEl.getTotalLength();
+    const p2 = particle2Ref.current; // may be null for short paths
+    let offset = 0;
+    let lastTime = 0;
+    let frameId: number;
+
+    const animate = (time: number) => {
+      if (lastTime === 0) lastTime = time;
+      const dt = (time - lastTime) / 1000; // seconds
+      lastTime = time;
+
+      offset = (offset + style.particleSpeed * dt) % totalLength;
+
+      const pt1 = pathEl.getPointAtLength(offset);
+      p1.setAttribute("cx", String(pt1.x));
+      p1.setAttribute("cy", String(pt1.y));
+
+      if (p2 && totalLength > 200) {
+        const pt2 = pathEl.getPointAtLength(
+          (offset + totalLength / 2) % totalLength,
+        );
+        p2.setAttribute("cx", String(pt2.x));
+        p2.setAttribute("cy", String(pt2.y));
+      }
+
+      frameId = requestAnimationFrame(animate);
+    };
+
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [style.particles, style.particleSpeed, edgePath]);
+
   return (
     <>
       {/* Arrow marker definition */}
@@ -72,6 +117,7 @@ function WorkflowDataFlowEdge({
 
       {/* Layer 2 — Main path */}
       <path
+        ref={style.particles ? pathRef : undefined}
         d={edgePath}
         fill="none"
         stroke={style.color}
@@ -93,6 +139,24 @@ function WorkflowDataFlowEdge({
           strokeLinecap="round"
           style={{ animation: "edge-flow 1.5s linear infinite" }}
         />
+      )}
+
+      {/* Layer 4 — Particle dots (animated via rAF, no React state) */}
+      {style.particles && (
+        <>
+          <circle
+            ref={particle1Ref}
+            r={3}
+            fill={style.color}
+            opacity={0.8}
+          />
+          <circle
+            ref={particle2Ref}
+            r={2}
+            fill={style.color}
+            opacity={0.5}
+          />
+        </>
       )}
 
       {/* Label */}
