@@ -47,4 +47,15 @@ worktree: null
   - `.claude/rules/initiative-convention.md` — added optional `personas:` frontmatter field
   - `.claude/skills/propose/SKILL.md` — added `personas:` to frontmatter template with guidance
   - `.claude/rules/content-quality.md` — updated persona-aligned criterion to reference both business and product personas
-- All three proposal deliverables shipped. Initiative ready for integration review.
+- `/shape` skill reviewed and improved: added Step 3 (Ground in Evidence) with customer evidence, success metrics, and personas served
+- All three proposal deliverables shipped.
+- Follow-on initiative proposed: `persona-aware-quality-system` (scorecard registry + `/design-critique` skill)
+
+## Seeds
+
+- **Scorecard registry** — → initiative: persona-aware-quality-system
+- **`/design-critique` skill** — → initiative: design-critique-skill
+- **Schema-driven form generation in Studio** — Generate proposal/initiative forms from Zod schemas in studio-core so non-engineers never write YAML frontmatter. Technical spike needed.
+- **Marketing persona research** — Second-wave persona. Content pipelines map to Sherpa's lifecycle. Brand governance functions like linting. 65% of marketing teams have designated AI roles.
+- **Figma ↔ Sherpa bidirectional governance** — DDRs with Figma branch URLs as frontmatter. Design token sync between W3C JSON and Sherpa conventions.
+- **PM artifact templates** — Product Brief, PDR, Customer Evidence Summary, Scope Boundary templates delivered through convention-at-creation (Studio forms or file templates).

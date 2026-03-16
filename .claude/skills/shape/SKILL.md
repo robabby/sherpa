@@ -40,7 +40,15 @@ Ask: "How much time is this worth?" not "How long will it take?"
 
 These are defaults. Override based on the initiative's actual value and risk.
 
-### Step 3: Define the Shaped Solution
+### Step 3: Ground in Evidence
+
+Before sketching the solution, establish *why this shape matters*:
+
+- **Customer evidence** — What user pain, feedback, or observed behavior justifies this scope? Reference specific sources (interviews, support tickets, usage data, research iterations). If none exist, state "based on builder judgment" — that's honest, not a gap.
+- **Success metrics** — How will we know this worked? 1-3 measurable outcomes. "Measurable" means observable after shipping, not aspirational. Examples: "PM can create a proposal in Studio without editing YAML", "Design review scorecard reduces post-ship accessibility issues."
+- **Personas served** — Which product personas does this shape target? (`engineer`, `product-manager`, `designer` — see `docs/ux/product-personas.md`). This informs which quality scorecard the Judge applies to the output.
+
+### Step 4: Define the Shaped Solution
 
 Write a **fat-marker sketch** — broad strokes, not details. Describe:
 
@@ -50,7 +58,7 @@ Write a **fat-marker sketch** — broad strokes, not details. Describe:
 
 **The level:** Specific enough that a worker knows what to build. Abstract enough that implementation choices remain open. Think "blueprint" not "specification."
 
-### Step 4: Identify Rabbit Holes
+### Step 5: Identify Rabbit Holes
 
 Places where a worker could burn sessions without realizing it:
 
@@ -61,13 +69,13 @@ Places where a worker could burn sessions without realizing it:
 
 For each rabbit hole: name it, explain why it's dangerous, and state how to avoid it.
 
-### Step 5: Mark No-Gos
+### Step 6: Mark No-Gos
 
 Explicitly out of scope. Not "we'll do it later" — "we're not doing this, period, in this initiative."
 
 No-gos prevent scope creep during implementation. A worker who encounters a no-go knows to stop and check in rather than building it.
 
-### Step 6: Write Kill Criteria
+### Step 7: Write Kill Criteria
 
 Conditions under which work should stop and the initiative should be reshaped or abandoned:
 
@@ -77,7 +85,7 @@ Conditions under which work should stop and the initiative should be reshaped or
 
 Kill criteria are checkpoints, not predictions. They give workers permission to stop.
 
-### Step 7: Write the Shape
+### Step 8: Write the Shape
 
 Write `docs/initiatives/<slug>/shape.md`:
 
@@ -91,12 +99,13 @@ shaped: YYYY-MM-DD
 Sections:
 
 1. **Appetite** — budget and rationale for the number
-2. **Shaped Solution** — fat-marker sketch
-3. **Rabbit Holes** — numbered, with avoidance strategy per item
-4. **No-Gos** — bulleted, explicit exclusions
-5. **Kill Criteria** — numbered, with trigger conditions
+2. **Evidence & Success** — customer evidence, success metrics, personas served
+3. **Shaped Solution** — fat-marker sketch
+4. **Rabbit Holes** — numbered, with avoidance strategy per item
+5. **No-Gos** — bulleted, explicit exclusions
+6. **Kill Criteria** — numbered, with trigger conditions
 
-### Step 8: Present for Review
+### Step 9: Present for Review
 
 Present the shape to the human. Highlight:
 
