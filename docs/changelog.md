@@ -12,6 +12,7 @@ source-initiatives:
   - studio-ux-patterns
   - studio-agent-missions
   - agent-narrative-streaming
+  - sqlite-agentic-state
 ---
 
 > **AI-generated** 2026-03-16 · Awaiting human review
@@ -19,6 +20,21 @@ source-initiatives:
 # Changelog
 
 Reverse-chronological record of integrated initiatives and their system impact.
+
+## 2026-03-16 — SQLite Agentic State Foundation
+
+Introduced SQLite as Sherpa's embedded state store, following the Fossil SCM pattern: markdown files remain canonical, SQLite provides derived queryable indexes. Resolved circular dependency between sqlite-agentic-state and mcp-coordination-layer. Built the shared DB module that mcp-coordination-layer and semantic-knowledge-engine now build on top of.
+
+**Initiative:** [sqlite-agentic-state](initiatives/sqlite-agentic-state/proposal.md)
+**Pillar:** Execution Pipeline
+**Key changes:**
+- `packages/studio-core/src/db/` — connection factory with WAL mode, pooled connections, standard pragmas
+- `coordination.db` schema: agent_sessions, task_claims (CAS via version columns), schema_version
+- `events.db` schema: append-only audit trail with ULID-keyed events
+- Barrel export at `@sherpa/studio-core/db` — consumed by mcp-coordination-layer and semantic-knowledge-engine
+- Drizzle ORM composability validated — downstream consumers wrap raw connection with ORM
+- `pnpm.onlyBuiltDependencies` config for better-sqlite3 native addon
+- 7 commits, 814 lines, 141 tests
 
 ## 2026-03-16 — Agent Narrative Streaming
 

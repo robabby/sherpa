@@ -1,5 +1,5 @@
 ---
-status: approved
+status: integrated
 initiative: sqlite-agentic-state
 created: 2026-03-11
 updated: 2026-03-16
