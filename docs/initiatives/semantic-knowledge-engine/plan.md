@@ -691,6 +691,22 @@ git commit -m "feat(knowledge-engine): agglomerative clustering with auto-labels
 
 ---
 
+## ⚑ WAYPOINT: Review Session 6 approach before proceeding
+
+After Session 5 completes, **stop and reassess Session 6** before implementing. By that point we'll have the full engine running (4 MCP tools, TF-IDF, clustering) and real-world usage data. Questions to revisit:
+
+1. **Git hook vs. lazy sync on MCP tool call:** The current `ensureKnowledgeDb()` already syncs on first call. Is a post-commit hook necessary, or is lazy sync sufficient? The 36ms re-sync means on-demand is nearly free.
+
+2. **Chokidar vs. simpler alternatives:** The premortem flagged race conditions with git operations (double-fire, partial writes, edge loss on rename). Is a file watcher worth the complexity, or should we just re-sync on every MCP tool call if the DB is older than N seconds?
+
+3. **Studio Settings page scope:** Is a dedicated settings page the right UI, or should backend info surface inline on the existing dashboard/process pages where agents are already visible?
+
+4. **What did agents actually use?** By session 5, we'll have data on which tools agents call and how. That should inform whether session 6 is the right next investment or if a different session (e.g., improving search quality, adding more edge types) would deliver more value.
+
+Run `/brainstorming` or a quick evaluation at this waypoint. Then proceed or reshape.
+
+---
+
 ## Session 6: Git Hook + File Watcher + Studio Config
 
 ### Task 9: Git post-commit hook
