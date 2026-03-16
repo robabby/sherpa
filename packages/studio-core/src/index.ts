@@ -33,8 +33,8 @@ export * from "./velocity"
 export * from "./deliverables"
 export * from "./research-report"
 
-// Doc tree
-export * from "./doc-tree"
+// Doc tree (types + pure functions only — fs-dependent functions via sub-path "@sherpa/studio-core/doc-tree")
+export * from "./doc-tree-types"
 
 // Composites
 export * from "./file-tree"

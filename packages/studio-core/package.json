@@ -28,6 +28,7 @@
     "./playbooks": "./src/playbooks.ts",
     "./dispatch-meta": "./src/dispatch-meta.ts",
     "./task-events": "./src/task-events.ts",
+    "./doc-tree": "./src/doc-tree.ts",
     "./db": "./src/db/index.ts",
     "./knowledge": "./src/knowledge/index.ts"
   },

@@ -7,10 +7,10 @@ import { ClipboardCheck, FileText } from "lucide-react";
 import type { DocTreeSection, Provenance, ProvenanceState } from "@sherpa/studio-core";
 
 import { cn } from "./lib/utils";
-import { DocTree } from "./doc-tree.js";
-import { DocSearch } from "./doc-search.js";
-import { ProvenanceHeader } from "./provenance-header.js";
-import { DocRenderer } from "./doc-renderer.js";
+import { DocTree } from "./doc-tree";
+import { DocSearch } from "./doc-search";
+import { ProvenanceHeader } from "./provenance-header";
+import { DocRenderer } from "./doc-renderer";
 import { ResizeHandle } from "./resize-handle";
 
 // ---------------------------------------------------------------------------
