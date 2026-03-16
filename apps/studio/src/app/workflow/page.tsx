@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { SectionHeader } from "@/components/studio/section-header";
 import { WorkflowCanvas } from "@/components/studio/workflow-canvas";
 import {
   WORKFLOW_NODES,
@@ -96,11 +95,8 @@ export default function WorkflowPage() {
   const edges = buildFlowEdges();
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 gap-6">
-      <SectionHeader label="Process" title="Product Workflow" />
-      <div className="flex-1 min-h-0 rounded-lg border border-[var(--color-gold)]/10 overflow-hidden">
-        <WorkflowCanvas initialNodes={nodes} initialEdges={edges} />
-      </div>
+    <div className="flex flex-col" style={{ height: "calc(100vh - 57px)" }}>
+      <WorkflowCanvas initialNodes={nodes} initialEdges={edges} />
     </div>
   );
 }
