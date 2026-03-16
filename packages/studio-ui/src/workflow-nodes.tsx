@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { Handle, Position, NodeToolbar, type NodeProps } from "@xyflow/react";
 import { cn } from "./lib/utils";
-import { WORKFLOW_PHASE_LABELS, type WorkflowPhase } from "@sherpa/studio-core";
+import { WORKFLOW_PHASE_LABELS, type WorkflowPhase } from "@sherpa/studio-core/workflow";
 
 // ---------------------------------------------------------------------------
 // Phase dot color mapping

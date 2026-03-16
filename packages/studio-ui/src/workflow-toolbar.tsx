@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { exportWorkflowAsMermaid } from "@sherpa/studio-core";
+import { exportWorkflowAsMermaid } from "@sherpa/studio-core/workflow";
 import { ClipboardCopy, RotateCcw } from "lucide-react";
 import { cn } from "./lib/utils";
 

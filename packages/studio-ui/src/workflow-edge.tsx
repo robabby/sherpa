@@ -10,7 +10,7 @@ import {
 import {
   WORKFLOW_EDGE_STYLES,
   type WorkflowEdgeType,
-} from "@sherpa/studio-core";
+} from "@sherpa/studio-core/workflow";
 
 // ---------------------------------------------------------------------------
 // WorkflowDataFlowEdge — custom edge with glow, main path, flow animation,

@@ -30,7 +30,8 @@
     "./task-events": "./src/task-events.ts",
     "./doc-tree": "./src/doc-tree.ts",
     "./db": "./src/db/index.ts",
-    "./knowledge": "./src/knowledge/index.ts"
+    "./knowledge": "./src/knowledge/index.ts",
+    "./workflow": "./src/workflow.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

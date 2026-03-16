@@ -19,7 +19,7 @@ import {
   WORKFLOW_EDGES,
   WORKFLOW_EDGE_TYPES,
   type WorkflowEdgeType,
-} from "@sherpa/studio-core";
+} from "@sherpa/studio-core/workflow";
 import { workflowNodeTypes } from "./workflow-nodes";
 import { workflowEdgeTypes } from "./workflow-edge";
 import { ResizeHandle } from "./resize-handle";

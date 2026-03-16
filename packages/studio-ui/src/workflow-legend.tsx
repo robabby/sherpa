@@ -5,7 +5,7 @@ import {
   WORKFLOW_EDGE_TYPES,
   WORKFLOW_EDGE_STYLES,
   type WorkflowEdgeType,
-} from "@sherpa/studio-core";
+} from "@sherpa/studio-core/workflow";
 
 // ---------------------------------------------------------------------------
 // Display names for edge types

@@ -8,7 +8,7 @@ import {
   type WorkflowEdge,
   WORKFLOW_EDGE_STYLES,
   WORKFLOW_PHASE_LABELS,
-} from "@sherpa/studio-core";
+} from "@sherpa/studio-core/workflow";
 import { cn } from "./lib/utils";
 
 // ---------------------------------------------------------------------------
