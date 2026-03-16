@@ -1186,6 +1186,170 @@ ${deliverables}
     },
   )
 
+  // --- Tool: query_related ---
+
+  server.tool(
+    "query_related",
+    "Find related initiatives. 'explicit' traverses frontmatter edges (depends-on, informs, spawned-from). 'emergent' finds initiatives with high embedding similarity but no explicit edge — hidden connections. 'creative' finds initiatives that are semantically close but structurally far apart — cross-pollination candidates.",
+    {
+      source: z.string().describe("Initiative slug to find relationships for"),
+      mode: z
+        .enum(["explicit", "emergent", "creative"])
+        .default("explicit")
+        .describe("Relationship mode"),
+      limit: z.number().min(1).max(20).default(10).describe("Maximum results"),
+    },
+    async ({ source, mode, limit: resultLimit }) => {
+      const db = ensureKnowledgeDb()
+
+      if (mode === "explicit") {
+        // Direct edge traversal — 1-2 hops
+        const directEdges = db.prepare(`
+          SELECT source, target, kind FROM edges
+          WHERE source = ? OR target = ?
+          ORDER BY kind
+        `).all(source, source) as Array<{ source: string; target: string; kind: string }>
+
+        // Second hop: edges connected to direct neighbors
+        const neighborSlugs = new Set<string>()
+        for (const e of directEdges) {
+          if (e.source !== source) neighborSlugs.add(e.source)
+          if (e.target !== source) neighborSlugs.add(e.target)
+        }
+
+        const secondHop: Array<{ source: string; target: string; kind: string; via: string }> = []
+        for (const neighbor of neighborSlugs) {
+          const hopEdges = db.prepare(`
+            SELECT source, target, kind FROM edges
+            WHERE (source = ? OR target = ?) AND source != ? AND target != ?
+          `).all(neighbor, neighbor, source, source) as Array<{ source: string; target: string; kind: string }>
+
+          for (const e of hopEdges) {
+            secondHop.push({ ...e, via: neighbor })
+          }
+        }
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              source,
+              mode: "explicit",
+              directEdges,
+              secondHop: secondHop.slice(0, resultLimit),
+              backend: "algorithmic",
+              capabilities: KNOWLEDGE_CAPABILITIES,
+            }, null, 2),
+          }],
+        }
+      }
+
+      if (mode === "emergent") {
+        // High similarity + no explicit edge
+        const explicitPairs = new Set<string>()
+        const allExplicit = db.prepare("SELECT source, target FROM edges").all() as Array<{ source: string; target: string }>
+        for (const e of allExplicit) {
+          explicitPairs.add(`${e.source}:${e.target}`)
+          explicitPairs.add(`${e.target}:${e.source}`)
+        }
+
+        const inferred = db.prepare(`
+          SELECT target, similarity FROM inferred_edges
+          WHERE source = ?
+          ORDER BY similarity DESC
+        `).all(source) as Array<{ target: string; similarity: number }>
+
+        const emergent = inferred
+          .filter(r => !explicitPairs.has(`${source}:${r.target}`))
+          .slice(0, resultLimit)
+          .map(r => {
+            const summary = db.prepare(
+              "SELECT summary FROM summaries WHERE id = ? AND level = 'initiative'"
+            ).get(r.target) as { summary: string } | undefined
+            return {
+              target: r.target,
+              similarity: Math.round(r.similarity * 10000) / 10000,
+              summary: summary?.summary ?? null,
+            }
+          })
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              source,
+              mode: "emergent",
+              description: "High embedding similarity with no explicit frontmatter edge — hidden connections",
+              results: emergent,
+              backend: "algorithmic",
+              capabilities: KNOWLEDGE_CAPABILITIES,
+            }, null, 2),
+          }],
+        }
+      }
+
+      // Creative mode: high similarity + high graph distance
+      // Use recursive CTE for BFS graph distance
+      const graphDistances = db.prepare(`
+        WITH RECURSIVE hops(node, depth) AS (
+          VALUES(?, 0)
+          UNION ALL
+          SELECT CASE WHEN e.source = h.node THEN e.target ELSE e.source END, h.depth + 1
+          FROM edges e
+          JOIN hops h ON (e.source = h.node OR e.target = h.node)
+          WHERE h.depth < 5
+        )
+        SELECT node, MIN(depth) as distance FROM hops
+        GROUP BY node
+      `).all(source) as Array<{ node: string; distance: number }>
+
+      const distanceMap = new Map<string, number>()
+      for (const row of graphDistances) {
+        distanceMap.set(row.node, row.distance)
+      }
+
+      const inferred = db.prepare(`
+        SELECT target, similarity FROM inferred_edges
+        WHERE source = ?
+        ORDER BY similarity DESC
+      `).all(source) as Array<{ target: string; similarity: number }>
+
+      const creative = inferred
+        .map(r => ({
+          target: r.target,
+          similarity: r.similarity,
+          graphDistance: distanceMap.get(r.target) ?? Infinity,
+        }))
+        .filter(r => r.graphDistance >= 3 || r.graphDistance === Infinity)
+        .slice(0, resultLimit)
+        .map(r => {
+          const summary = db.prepare(
+            "SELECT summary FROM summaries WHERE id = ? AND level = 'initiative'"
+          ).get(r.target) as { summary: string } | undefined
+          return {
+            target: r.target,
+            similarity: Math.round(r.similarity * 10000) / 10000,
+            graphDistance: r.graphDistance === Infinity ? "unreachable" : r.graphDistance,
+            summary: summary?.summary ?? null,
+          }
+        })
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            source,
+            mode: "creative",
+            description: "Semantically similar but structurally distant — cross-pollination candidates",
+            results: creative,
+            backend: "algorithmic",
+            capabilities: KNOWLEDGE_CAPABILITIES,
+          }, null, 2),
+        }],
+      }
+    },
+  )
+
   // --- Authority tools (only when coordination DB is provided) ---
   if (opts?.coordinationDb) {
     registerAuthorityTools(server, opts.coordinationDb, projectRoot)
