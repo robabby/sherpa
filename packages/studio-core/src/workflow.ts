@@ -650,3 +650,91 @@ export const WORKFLOW_PHASE_GROUPS: WorkflowPhaseGroup[] = [
     nodes: ["morning", "triage"],
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Mermaid export
+// ---------------------------------------------------------------------------
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Generate a Mermaid `flowchart TB` string from the canonical workflow data.
+ * Pure function — no side effects.
+ */
+export function exportWorkflowAsMermaid(): string {
+  const nodeMap = new Map<string, WorkflowNode>();
+  for (const node of WORKFLOW_NODES) {
+    nodeMap.set(node.id, node);
+  }
+
+  // Build nodeId → groupId lookup
+  const nodeGroup = new Map<string, string>();
+  for (const group of WORKFLOW_PHASE_GROUPS) {
+    for (const nid of group.nodes) {
+      nodeGroup.set(nid, group.id);
+    }
+  }
+
+  const lines: string[] = ["flowchart TB"];
+
+  // Trigger nodes (outside subgraphs)
+  for (const node of WORKFLOW_NODES) {
+    if (node.nodeType === "trigger") {
+      lines.push(`  ${node.id}(["${node.label}"])`);
+    }
+  }
+
+  // Phase-group subgraphs
+  for (const group of WORKFLOW_PHASE_GROUPS) {
+    lines.push("");
+    lines.push(`  subgraph ${capitalize(group.id)}["${group.label}"]`);
+    lines.push("    direction TB");
+
+    // Nodes in this group
+    for (const nid of group.nodes) {
+      const node = nodeMap.get(nid);
+      if (!node) continue;
+
+      if (node.nodeType === "decision") {
+        lines.push(`    ${node.id}{{"${node.label}"}}`);
+      } else {
+        const text =
+          node.subtitle ? `${node.label} | ${node.subtitle}` : node.label;
+        lines.push(`    ${node.id}["${text}"]`);
+      }
+    }
+
+    // Intra-group edges
+    const groupNodeSet = new Set(group.nodes);
+    for (const edge of WORKFLOW_EDGES) {
+      if (groupNodeSet.has(edge.source) && groupNodeSet.has(edge.target)) {
+        if (edge.label) {
+          lines.push(`    ${edge.source} -->|"${edge.label}"| ${edge.target}`);
+        } else {
+          lines.push(`    ${edge.source} --> ${edge.target}`);
+        }
+      }
+    }
+
+    lines.push("  end");
+  }
+
+  // Cross-group edges (and edges involving triggers)
+  lines.push("");
+  for (const edge of WORKFLOW_EDGES) {
+    const sg = nodeGroup.get(edge.source);
+    const tg = nodeGroup.get(edge.target);
+    // Skip if both are in the same group (already emitted above)
+    if (sg && tg && sg === tg) continue;
+
+    if (edge.label) {
+      lines.push(`  ${edge.source} -->|"${edge.label}"| ${edge.target}`);
+    } else {
+      lines.push(`  ${edge.source} --> ${edge.target}`);
+    }
+  }
+
+  return lines.join("\n") + "\n";
+}
