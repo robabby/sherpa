@@ -6,6 +6,7 @@ import {
   Background,
   BackgroundVariant,
   Controls,
+  MiniMap,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -24,6 +25,7 @@ import { workflowEdgeTypes } from "./workflow-edge";
 import { ResizeHandle } from "./resize-handle";
 import { WorkflowDetailPane } from "./workflow-detail-pane";
 import { WorkflowLegend } from "./workflow-legend";
+import { WorkflowToolbar } from "./workflow-toolbar";
 
 // ---------------------------------------------------------------------------
 // ELK layout helper
@@ -202,6 +204,7 @@ interface WorkflowCanvasInnerProps {
   initialNodes: Node[];
   initialEdges: Edge[];
   hiddenEdgeTypes: Set<WorkflowEdgeType>;
+  flowEnabled: boolean;
   onNodeClick?: (_: React.MouseEvent, node: Node) => void;
   onPaneClick?: () => void;
 }
@@ -210,6 +213,7 @@ function WorkflowCanvasInner({
   initialNodes,
   initialEdges,
   hiddenEdgeTypes,
+  flowEnabled,
   onNodeClick,
   onPaneClick,
 }: WorkflowCanvasInnerProps) {
@@ -217,10 +221,15 @@ function WorkflowCanvasInner({
   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
   const { fitView } = useReactFlow();
 
-  // Filter edges by hidden types
-  const visibleEdges = edges.filter(
-    (e) => !hiddenEdgeTypes.has(e.data?.edgeType as WorkflowEdgeType),
-  );
+  // Filter edges by hidden types, inject flowEnabled into edge data
+  const visibleEdges = edges
+    .filter(
+      (e) => !hiddenEdgeTypes.has(e.data?.edgeType as WorkflowEdgeType),
+    )
+    .map((e) => ({
+      ...e,
+      data: { ...e.data, flowEnabled },
+    }));
 
   const runLayout = useCallback(async () => {
     try {
@@ -260,6 +269,21 @@ function WorkflowCanvasInner({
         color="rgba(212,165,116,0.15)"
       />
       <Controls />
+      <MiniMap
+        position="bottom-right"
+        nodeColor={(node) => {
+          if (node.type === "workflow-phase-group")
+            return "rgba(212, 165, 116, 0.1)";
+          const phase = (node.data as Record<string, unknown>)?.phase;
+          if (phase === "audit") return "#8b7355";
+          if (phase === "morning-review") return "#c49a6c";
+          return "#d4a574";
+        }}
+        maskColor="rgba(0, 0, 0, 0.7)"
+        style={{ backgroundColor: "rgba(8, 8, 10, 0.85)" }}
+        pannable
+        zoomable
+      />
     </ReactFlow>
   );
 }
@@ -279,6 +303,20 @@ export function WorkflowCanvas({
 }: WorkflowCanvasProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [detailWidth, setDetailWidth] = useState(360);
+
+  // Flow animation toggle — persisted to localStorage
+  const [flowEnabled, setFlowEnabled] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("workflow-flow-enabled") !== "false";
+  });
+
+  const toggleFlow = useCallback(() => {
+    setFlowEnabled((prev) => {
+      const next = !prev;
+      localStorage.setItem("workflow-flow-enabled", String(next));
+      return next;
+    });
+  }, []);
 
   // Hidden edge types — persisted to localStorage
   const [hiddenEdgeTypes, setHiddenEdgeTypes] = useState<Set<WorkflowEdgeType>>(() => {
@@ -344,6 +382,7 @@ export function WorkflowCanvas({
             initialNodes={initialNodes}
             initialEdges={initialEdges}
             hiddenEdgeTypes={hiddenEdgeTypes}
+            flowEnabled={flowEnabled}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
           />
@@ -353,6 +392,12 @@ export function WorkflowCanvas({
               onToggleType={toggleEdgeType}
               onShowAll={showAllEdgeTypes}
               onHideAll={hideAllEdgeTypes}
+            />
+          </div>
+          <div className="absolute bottom-3 left-3 z-10">
+            <WorkflowToolbar
+              flowEnabled={flowEnabled}
+              onToggleFlow={toggleFlow}
             />
           </div>
         </div>

@@ -1,9 +1,9 @@
 "use client";
 
 import { memo } from "react";
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Handle, Position, NodeToolbar, type NodeProps } from "@xyflow/react";
 import { cn } from "./lib/utils";
-import type { WorkflowPhase } from "@sherpa/studio-core";
+import { WORKFLOW_PHASE_LABELS, type WorkflowPhase } from "@sherpa/studio-core";
 
 // ---------------------------------------------------------------------------
 // Phase dot color mapping
@@ -43,39 +43,56 @@ const WorkflowStageNode = memo(function WorkflowStageNode({
   const displaySubtitle = subtitle || skill;
 
   return (
-    <div
-      className={cn(
-        "min-w-[140px] rounded-lg border px-3 py-2",
-        "border-[var(--color-gold)]/20 bg-[var(--color-warm-charcoal)]",
-        selected &&
-          "border-[var(--color-gold)]/50 shadow-[0_0_20px_rgba(212,165,116,0.08)]"
+    <>
+      {!selected && (
+        <NodeToolbar position={Position.Top} isVisible={undefined}>
+          <div className="rounded-lg bg-[rgba(24,24,27,0.95)] border border-[var(--color-gold)]/20 px-3 py-2 text-xs shadow-lg">
+            <div className="font-medium text-foreground">{label}</div>
+            {phase && (
+              <div className="text-muted-foreground">
+                {WORKFLOW_PHASE_LABELS[phase]}
+              </div>
+            )}
+            {skill && (
+              <div className="font-mono text-muted-foreground">{skill}</div>
+            )}
+          </div>
+        </NodeToolbar>
       )}
-    >
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="!bg-[var(--color-gold)]/40 !border-none !w-2 !h-2"
-      />
-      <div className="flex items-center gap-2">
-        <span
-          className="inline-block size-1.5 shrink-0 rounded-full"
-          style={{ backgroundColor: phaseDotColor(phase ?? null) }}
+      <div
+        className={cn(
+          "min-w-[140px] rounded-lg border px-3 py-2",
+          "border-[var(--color-gold)]/20 bg-[var(--color-warm-charcoal)]",
+          selected &&
+            "border-[var(--color-gold)]/50 shadow-[0_0_20px_rgba(212,165,116,0.08)]"
+        )}
+      >
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="!bg-[var(--color-gold)]/40 !border-none !w-2 !h-2"
         />
-        <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-foreground">{label}</span>
-          {displaySubtitle ? (
-            <span className="font-mono text-xs text-muted-foreground">
-              {displaySubtitle}
-            </span>
-          ) : null}
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-block size-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: phaseDotColor(phase ?? null) }}
+          />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium text-foreground">{label}</span>
+            {displaySubtitle ? (
+              <span className="font-mono text-xs text-muted-foreground">
+                {displaySubtitle}
+              </span>
+            ) : null}
+          </div>
         </div>
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="!bg-[var(--color-gold)]/40 !border-none !w-2 !h-2"
+        />
       </div>
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!bg-[var(--color-gold)]/40 !border-none !w-2 !h-2"
-      />
-    </div>
+    </>
   );
 });
 
@@ -96,32 +113,46 @@ const WorkflowDecisionNode = memo(function WorkflowDecisionNode({
   const { label, phase } = data as DecisionNodeData;
 
   return (
-    <div
-      className={cn(
-        "min-w-[140px] rounded-lg border border-dashed px-3 py-2",
-        "border-[var(--color-gold)]/25 bg-[var(--color-warm-charcoal)]",
-        selected &&
-          "border-[var(--color-gold)]/50 shadow-[0_0_20px_rgba(212,165,116,0.08)]"
+    <>
+      {!selected && (
+        <NodeToolbar position={Position.Top} isVisible={undefined}>
+          <div className="rounded-lg bg-[rgba(24,24,27,0.95)] border border-[var(--color-gold)]/20 px-3 py-2 text-xs shadow-lg">
+            <div className="font-medium text-foreground">{label}</div>
+            {phase && (
+              <div className="text-muted-foreground">
+                {WORKFLOW_PHASE_LABELS[phase]}
+              </div>
+            )}
+          </div>
+        </NodeToolbar>
       )}
-    >
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="!bg-[var(--color-gold)]/40 !border-none !w-2 !h-2"
-      />
-      <div className="flex items-center gap-2">
-        <span
-          className="inline-block size-1.5 shrink-0 rounded-full"
-          style={{ backgroundColor: phaseDotColor(phase ?? null) }}
+      <div
+        className={cn(
+          "min-w-[140px] rounded-lg border border-dashed px-3 py-2",
+          "border-[var(--color-gold)]/25 bg-[var(--color-warm-charcoal)]",
+          selected &&
+            "border-[var(--color-gold)]/50 shadow-[0_0_20px_rgba(212,165,116,0.08)]"
+        )}
+      >
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="!bg-[var(--color-gold)]/40 !border-none !w-2 !h-2"
         />
-        <span className="text-sm font-medium text-foreground">{label}</span>
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-block size-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: phaseDotColor(phase ?? null) }}
+          />
+          <span className="text-sm font-medium text-foreground">{label}</span>
+        </div>
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="!bg-[var(--color-gold)]/40 !border-none !w-2 !h-2"
+        />
       </div>
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!bg-[var(--color-gold)]/40 !border-none !w-2 !h-2"
-      />
-    </div>
+    </>
   );
 });
 
@@ -141,27 +172,37 @@ const WorkflowTriggerNode = memo(function WorkflowTriggerNode({
   const { label } = data as TriggerNodeData;
 
   return (
-    <div
-      className={cn(
-        "min-w-[140px] rounded-2xl border px-3 py-2",
-        "border-[var(--color-copper)]/25 bg-[var(--color-warm-charcoal)]",
-        selected &&
-          "border-[var(--color-copper)]/50 shadow-[0_0_20px_rgba(196,154,108,0.08)]"
+    <>
+      {!selected && (
+        <NodeToolbar position={Position.Top} isVisible={undefined}>
+          <div className="rounded-lg bg-[rgba(24,24,27,0.95)] border border-[var(--color-gold)]/20 px-3 py-2 text-xs shadow-lg">
+            <div className="font-medium text-foreground">{label}</div>
+            <div className="text-muted-foreground">Trigger</div>
+          </div>
+        </NodeToolbar>
       )}
-    >
-      <div className="flex items-center gap-2">
-        <span
-          className="inline-block size-1.5 shrink-0 rounded-full"
-          style={{ backgroundColor: "var(--color-copper)" }}
+      <div
+        className={cn(
+          "min-w-[140px] rounded-2xl border px-3 py-2",
+          "border-[var(--color-copper)]/25 bg-[var(--color-warm-charcoal)]",
+          selected &&
+            "border-[var(--color-copper)]/50 shadow-[0_0_20px_rgba(196,154,108,0.08)]"
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-block size-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: "var(--color-copper)" }}
+          />
+          <span className="text-sm font-medium text-foreground">{label}</span>
+        </div>
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="!bg-[var(--color-copper)]/40 !border-none !w-2 !h-2"
         />
-        <span className="text-sm font-medium text-foreground">{label}</span>
       </div>
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!bg-[var(--color-copper)]/40 !border-none !w-2 !h-2"
-      />
-    </div>
+    </>
   );
 });
 

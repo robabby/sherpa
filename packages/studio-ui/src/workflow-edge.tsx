@@ -43,6 +43,8 @@ function WorkflowDataFlowEdge({
   const style =
     WORKFLOW_EDGE_STYLES[(data?.edgeType as WorkflowEdgeType) ?? "ideas"];
 
+  const flowEnabled = (data?.flowEnabled as boolean) ?? true;
+
   const markerId = `marker-${id}`;
 
   // Refs for particle animation (direct DOM manipulation, no React state)
@@ -51,7 +53,7 @@ function WorkflowDataFlowEdge({
   const particle2Ref = useRef<SVGCircleElement>(null);
 
   useEffect(() => {
-    if (!style.particles) return;
+    if (!style.particles || !flowEnabled) return;
     const pathEl = pathRef.current;
     const p1 = particle1Ref.current;
     if (!pathEl || !p1) return;
@@ -86,7 +88,7 @@ function WorkflowDataFlowEdge({
 
     frameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frameId);
-  }, [style.particles, style.particleSpeed, edgePath]);
+  }, [style.particles, style.particleSpeed, edgePath, flowEnabled]);
 
   return (
     <>
@@ -127,8 +129,8 @@ function WorkflowDataFlowEdge({
         markerEnd={`url(#${markerId})`}
       />
 
-      {/* Layer 3 — Flow dashes (animated) */}
-      {style.animated && (
+      {/* Layer 3 — Flow dashes (animated, hidden when flow disabled) */}
+      {style.animated && flowEnabled && (
         <path
           d={edgePath}
           fill="none"
@@ -141,8 +143,8 @@ function WorkflowDataFlowEdge({
         />
       )}
 
-      {/* Layer 4 — Particle dots (animated via rAF, no React state) */}
-      {style.particles && (
+      {/* Layer 4 — Particle dots (animated via rAF, hidden when flow disabled) */}
+      {style.particles && flowEnabled && (
         <>
           <circle
             ref={particle1Ref}
