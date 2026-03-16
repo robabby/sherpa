@@ -89,6 +89,7 @@ export interface DocsWorkspaceProps {
   } | null;
   initialSlug: string | null;
   searchItems: { relativePath: string; fileName: string; title: string }[];
+  onMarkReviewed?: (relativePath: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -100,6 +101,7 @@ export function DocsWorkspace({
   initialDoc,
   initialSlug,
   searchItems,
+  onMarkReviewed,
 }: DocsWorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -273,6 +275,16 @@ export function DocsWorkspace({
               <ProvenanceHeader
                 provenance={doc.provenance}
                 state={provenanceState}
+                onMarkReviewed={
+                  provenanceState === "awaiting-review" && onMarkReviewed
+                    ? async () => {
+                        const result = await onMarkReviewed(doc.relativePath);
+                        if (result.success) {
+                          router.refresh();
+                        }
+                      }
+                    : undefined
+                }
               />
             )}
             <DocRenderer

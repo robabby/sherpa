@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { DocsWorkspace } from "@/components/studio/docs-workspace";
 import { getDocTree, getDocContent, getDocsByCategory } from "@/lib/studio";
 import { getResearchByTrack } from "@/lib/studio";
+import { markDocReviewed } from "./actions";
 
 export const metadata: Metadata = {
   title: "Docs | Studio",
@@ -38,6 +39,7 @@ export default async function DocsPage({
       initialDoc={initialDoc}
       initialSlug={slug}
       searchItems={searchItems}
+      onMarkReviewed={markDocReviewed}
     />
   );
 }
