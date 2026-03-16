@@ -20,26 +20,37 @@ function buildFlowNodes(): Node[] {
   for (const group of WORKFLOW_PHASE_GROUPS) {
     nodes.push({
       id: `group-${group.id}`,
-      type: "group", // built-in xyflow group type for now
-      data: { label: group.label },
+      type: "workflow-phase-group",
+      data: { label: group.label, phase: group.id },
       position: { x: 0, y: 0 },
       style: {
         width: 300,
         height: 200,
-        backgroundColor: "rgba(212, 165, 116, 0.02)",
-        border: "1px solid rgba(212, 165, 116, 0.08)",
-        borderRadius: "12px",
       },
     });
   }
 
   // Add workflow nodes
   for (const node of WORKFLOW_NODES) {
+    // Map data-model nodeType to React Flow custom node type
+    let rfType: string;
+    switch (node.nodeType) {
+      case "trigger":
+        rfType = "workflow-trigger";
+        break;
+      case "decision":
+        rfType = "workflow-decision";
+        break;
+      default:
+        rfType = "workflow-stage";
+        break;
+    }
+
     const flowNode: Node = {
       id: node.id,
       data: { ...node },
       position: { x: 0, y: 0 },
-      type: "default", // will be replaced with custom types in Task 4
+      type: rfType,
     };
 
     // If node belongs to a phase, set parentId

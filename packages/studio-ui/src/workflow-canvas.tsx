@@ -13,6 +13,7 @@ import {
   type Edge,
 } from "@xyflow/react";
 import { useEffect, useCallback } from "react";
+import { workflowNodeTypes } from "./workflow-nodes";
 
 // ---------------------------------------------------------------------------
 // ELK layout helper
@@ -68,8 +69,8 @@ async function computeElkLayout(
   const elk = new ELK();
 
   // Separate group (parent) nodes from child nodes
-  const groupNodes = nodes.filter((n) => n.type === "group");
-  const childNodes = nodes.filter((n) => n.type !== "group");
+  const groupNodes = nodes.filter((n) => n.type === "group" || n.type === "workflow-phase-group");
+  const childNodes = nodes.filter((n) => n.type !== "group" && n.type !== "workflow-phase-group");
 
   // Build a map of group id -> child elk nodes
   const groupChildMap = new Map<string, ElkNode[]>();
@@ -171,7 +172,7 @@ async function computeElkLayout(
     };
 
     // For group nodes, update their dimensions from ELK
-    if (node.type === "group" && pos.width && pos.height) {
+    if ((node.type === "group" || node.type === "workflow-phase-group") && pos.width && pos.height) {
       updated.style = {
         ...node.style,
         width: pos.width,
@@ -223,6 +224,7 @@ function WorkflowCanvasInner({
       edges={edges}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
+      nodeTypes={workflowNodeTypes}
       fitView
       minZoom={0.1}
       maxZoom={2}
