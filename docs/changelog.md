@@ -13,6 +13,7 @@ source-initiatives:
   - studio-agent-missions
   - agent-narrative-streaming
   - sqlite-agentic-state
+  - mcp-coordination-layer
 ---
 
 > **AI-generated** 2026-03-16 · Awaiting human review
@@ -20,6 +21,23 @@ source-initiatives:
 # Changelog
 
 Reverse-chronological record of integrated initiatives and their system impact.
+
+## 2026-03-16 — MCP Coordination Layer
+
+Replaced stdio MCP transport with Streamable HTTP and built an authority lease system for multi-agent coordination. The MCP server now handles multiple concurrent Claude Code clients, each with independent sessions. Authority leases with globally monotonic fencing tokens enable safe concurrent access to shared files — though enforcement is deferred until autonomous dispatch is routine.
+
+**Initiative:** [mcp-coordination-layer](initiatives/mcp-coordination-layer/proposal.md)
+**Pillar:** Execution Pipeline
+**Key changes:**
+- `packages/studio-mcp/src/http-server.ts` — Streamable HTTP transport replacing stdio, multi-client session manager
+- `packages/studio-mcp/src/authority/` — Schema, operations (acquire/release/renew/check), reaper, MCP tool registrations
+- `packages/studio-mcp/src/dashboard.ts` — `get_dashboard` bootstrap tool returning leases, tasks, system summary
+- Authority leases backed by SQLite `coordination.db` with `BEGIN IMMEDIATE` transactions
+- Fence tokens globally monotonic via `fence_token_seq` counter table
+- TTL reaper cleans expired leases every 60 seconds
+- `authority://{scope}` MCP resource for read-only observation
+- Decision: authority enforcement scoped to autonomous agents only (hooks deferred)
+- 18 commits across 2 phases, 45 tests across 11 files
 
 ## 2026-03-16 — SQLite Agentic State Foundation
 

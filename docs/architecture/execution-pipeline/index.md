@@ -10,10 +10,11 @@ source-initiatives:
   - agent-narrative-streaming
   - studio-agent-missions
   - sqlite-agentic-state
+  - mcp-coordination-layer
 ---
 
 > **AI-generated** 2026-03-16 · Awaiting human review
-> Sources: dispatch-center, agent-narrative-streaming, studio-agent-missions, sqlite-agentic-state
+> Sources: dispatch-center, agent-narrative-streaming, studio-agent-missions, sqlite-agentic-state, mcp-coordination-layer
 
 # Execution Pipeline
 
@@ -148,7 +149,9 @@ Status lifecycle: `pending` → `dispatched` → `completed`/`failed` → `revie
 
 **SQLite State Layer:** Task coordination and agent session state backed by SQLite in WAL mode (`@sherpa/studio-core/db`). Connection factory at `packages/studio-core/src/db/connection.ts` with pooled connections and standard pragmas. Coordination database (`.sherpa/coordination.db`) stores agent_sessions and task_claims with CAS via version columns. Events database (`.sherpa/events.db`) provides append-only audit trail with ULID-keyed entries. See [0007 — SQLite embedded state, Fossil pattern](../../decisions/0007-sqlite-embedded-state-fossil-pattern.md).
 
-**Seeds (from completed initiatives):** MCP HTTP streamable transport, scheduled dispatch, cost tracking dashboard, parallel dispatch, live terminal feed, backend-specific log parsers.
+**MCP Coordination Server:** Single-process MCP server at `packages/studio-mcp/` serving Streamable HTTP on port 3100 (`/mcp` endpoint). Multi-client session management — each connecting Claude Code client gets its own `McpServer` + `StreamableHTTPServerTransport` pair, routed by `mcp-session-id` header. Health check at `/health`. Authority lease system backed by SQLite `coordination.db` with three tools (`authority_acquire`, `authority_release`, `authority_renew`), one resource (`authority://{scope}`), and a `get_dashboard` bootstrap tool. Fencing tokens are globally monotonic via a `fence_token_seq` counter. TTL reaper cleans expired leases every 60 seconds. Authority enforcement (hooks) is deferred — applies only to autonomous agents, not collaborative sessions. See [0008 — Authority enforcement scoped to autonomous agents](../../decisions/0008-authority-enforcement-autonomous-only.md).
+
+**Seeds (from completed initiatives):** Scheduled dispatch, cost tracking dashboard, parallel dispatch, live terminal feed, backend-specific log parsers, hook enforcement for autonomous agents, bootstrap protocol with resource subscriptions, implicit authority via task dispatch.
 
 ## Related
 
@@ -162,3 +165,4 @@ Status lifecycle: `pending` → `dispatched` → `completed`/`failed` → `revie
 - [0005 — Mission control over table board](../../decisions/0005-mission-control-over-table-board.md)
 - [0006 — SSE streaming for agent events](../../decisions/0006-sse-streaming-for-agent-events.md)
 - [0007 — SQLite embedded state, Fossil pattern](../../decisions/0007-sqlite-embedded-state-fossil-pattern.md)
+- [0008 — Authority enforcement scoped to autonomous agents](../../decisions/0008-authority-enforcement-autonomous-only.md)
