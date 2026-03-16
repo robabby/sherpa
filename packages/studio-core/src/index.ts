@@ -33,6 +33,9 @@ export * from "./velocity"
 export * from "./deliverables"
 export * from "./research-report"
 
+// Doc tree
+export * from "./doc-tree"
+
 // Composites
 export * from "./file-tree"
 export * from "./process-nodes"
