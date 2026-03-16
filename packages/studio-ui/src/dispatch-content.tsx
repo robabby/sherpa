@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, MotionConfig } from "motion/react";
 import { formatDistanceToNowStrict } from "date-fns";
 import {
@@ -925,11 +925,13 @@ interface DispatchContentProps {
   tasks: TaskBoardEntry[];
   roles: AgentRole[];
   health: BackendHealth[];
+  initialMode?: DispatchMode;
 }
 
-export function DispatchContent({ tasks, roles, health }: DispatchContentProps) {
+export function DispatchContent({ tasks, roles, health, initialMode = "supervised" }: DispatchContentProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<DispatchMode>("supervised");
+  const pathname = usePathname();
+  const [mode, setMode] = useState<DispatchMode>(initialMode);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedBackend, setSelectedBackend] = useState<string | null>(null);
@@ -988,6 +990,16 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
   const handleModeChange = useCallback(
     (newMode: DispatchMode) => {
       setMode(newMode);
+      // URL-persist mode (omit param for default "supervised")
+      const params = new URLSearchParams(window.location.search);
+      if (newMode === "supervised") {
+        params.delete("mode");
+      } else {
+        params.set("mode", newMode);
+      }
+      const qs = params.toString();
+      router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+
       if (newMode === "overnight") {
         setSelectedIds((prev) => {
           const next = new Set(prev);
@@ -1001,7 +1013,7 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
         });
       }
     },
-    [pendingTasks]
+    [pendingTasks, router, pathname]
   );
 
   // Toggle task selection — clears agent/backend when selection changes

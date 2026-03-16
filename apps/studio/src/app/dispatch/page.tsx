@@ -16,14 +16,28 @@ export const dynamic = "force-dynamic";
 
 const PROJECT_ROOT = path.resolve(process.cwd(), "../..");
 
-export default function DispatchPage() {
+const VALID_MODES = ["interactive", "supervised", "overnight"] as const;
+type DispatchMode = (typeof VALID_MODES)[number];
+
+export default async function DispatchPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>;
+}) {
+  const params = await searchParams;
   const tasks = getTaskBoard({ projectRoot: PROJECT_ROOT });
   const roles = getAgentRoles();
   const health = getBackendHealth(PROJECT_ROOT);
 
+  const mode: DispatchMode = (VALID_MODES as readonly string[]).includes(
+    params.mode ?? "",
+  )
+    ? (params.mode as DispatchMode)
+    : "supervised";
+
   return (
     <Suspense>
-      <DispatchContent tasks={tasks} roles={roles} health={health} />
+      <DispatchContent tasks={tasks} roles={roles} health={health} initialMode={mode} />
     </Suspense>
   );
 }
