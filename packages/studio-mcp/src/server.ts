@@ -847,25 +847,27 @@ ${deliverables}
 
   server.tool(
     "get_summary",
-    "Get structured metadata for a file or all files in an initiative. Returns frontmatter, classification, status, and relationship edges — without reading file content into context.",
+    "Get structured metadata and summaries at different zoom levels. 'file' returns metadata for a single file. 'initiative' returns generated summary, file list, and edges. 'portfolio' returns all initiative summaries weighted by status — the system-wide view.",
     {
-      path: z.string().optional().describe("File path (relative to project root) to get metadata for"),
-      initiative: z.string().optional().describe("Initiative slug — returns metadata for all files in this initiative"),
+      path: z.string().optional().describe("File path (relative to project root) — used when level='file'"),
+      initiative: z.string().optional().describe("Initiative slug — used when level='initiative'"),
+      level: z
+        .enum(["file", "initiative", "portfolio"])
+        .default("initiative")
+        .describe("Summary level. 'file' = single file metadata. 'initiative' = initiative summary + files + edges. 'portfolio' = all initiative summaries."),
     },
-    async ({ path: filePath, initiative: initSlug }) => {
-      if (!filePath && !initSlug) {
-        return {
-          content: [{
-            type: "text" as const,
-            text: "Error: Provide either 'path' (file path) or 'initiative' (slug).",
-          }],
-          isError: true,
-        }
-      }
-
+    async ({ path: filePath, initiative: initSlug, level }) => {
       const db = ensureKnowledgeDb()
 
-      if (filePath) {
+      // --- File level ---
+      if (level === "file") {
+        if (!filePath) {
+          return {
+            content: [{ type: "text" as const, text: "Error: 'path' is required when level='file'." }],
+            isError: true,
+          }
+        }
+
         const row = db.prepare(`
           SELECT path, title, kind, initiative, status, frontmatter, updated_at
           FROM files WHERE path = ?
@@ -877,7 +879,7 @@ ${deliverables}
 
         if (!row) {
           return {
-            content: [{ type: "text" as const, text: `File not found in knowledge index: ${filePath}. Run 'pnpm sync:db' to rebuild.` }],
+            content: [{ type: "text" as const, text: `File not found: ${filePath}. Run 'pnpm sync:db' to rebuild.` }],
             isError: true,
           }
         }
@@ -886,23 +888,102 @@ ${deliverables}
           content: [{
             type: "text" as const,
             text: JSON.stringify({
+              level: "file",
               ...row,
               frontmatter: row.frontmatter ? JSON.parse(row.frontmatter) : null,
+              backend: "algorithmic",
+              capabilities: KNOWLEDGE_CAPABILITIES,
             }, null, 2),
           }],
         }
       }
 
-      // Initiative summary — all files + edges + generated summary
+      // --- Portfolio level ---
+      if (level === "portfolio") {
+        const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000
+        const twoWeeksAgo = Date.now() - TWO_WEEKS_MS
+
+        const allSummaries = db.prepare(`
+          SELECT s.id, s.summary, s.stale, s.updated_at, f.status
+          FROM summaries s
+          JOIN files f ON f.initiative = s.id AND f.kind = 'initiative'
+          WHERE s.level = 'initiative'
+          ORDER BY
+            CASE f.status
+              WHEN 'in-progress' THEN 0
+              WHEN 'approved' THEN 1
+              WHEN 'pending' THEN 2
+              WHEN 'integrated' THEN 3
+              WHEN 'declined' THEN 4
+              WHEN 'archived' THEN 5
+              ELSE 6
+            END,
+            s.updated_at DESC
+        `).all() as Array<{
+          id: string; summary: string; stale: number
+          updated_at: number; status: string | null
+        }>
+
+        // Temporal weighting: full detail for active, compressed for old integrated, exclude archived
+        const initiatives = allSummaries
+          .filter(s => s.status !== "archived" && s.status !== "declined")
+          .map(s => {
+            const isOldIntegrated = s.status === "integrated" && s.updated_at < twoWeeksAgo
+            return {
+              initiative: s.id,
+              status: s.status,
+              summary: isOldIntegrated ? s.summary.split(" — ")[0] ?? s.summary : s.summary,
+              stale: Boolean(s.stale),
+              detail: isOldIntegrated ? "mention" as const : "full" as const,
+            }
+          })
+
+        const statusCounts: Record<string, number> = {}
+        for (const s of allSummaries) {
+          const st = s.status ?? "unknown"
+          statusCounts[st] = (statusCounts[st] ?? 0) + 1
+        }
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              level: "portfolio",
+              totalInitiatives: allSummaries.length,
+              statusCounts,
+              initiatives,
+              backend: "algorithmic",
+              capabilities: KNOWLEDGE_CAPABILITIES,
+            }, null, 2),
+          }],
+        }
+      }
+
+      // --- Initiative level (default) ---
+      if (!initSlug && !filePath) {
+        return {
+          content: [{ type: "text" as const, text: "Error: Provide 'initiative' (slug) or 'path' (file path)." }],
+          isError: true,
+        }
+      }
+
+      const slug = initSlug ?? filePath?.match(/docs\/initiatives\/([^/]+)\//)?.[1]
+      if (!slug) {
+        return {
+          content: [{ type: "text" as const, text: "Error: Could not determine initiative slug." }],
+          isError: true,
+        }
+      }
+
       const summaryRow = db.prepare(
         "SELECT summary, stale, updated_at FROM summaries WHERE id = ? AND level = 'initiative'"
-      ).get(initSlug) as { summary: string; stale: number; updated_at: number } | undefined
+      ).get(slug) as { summary: string; stale: number; updated_at: number } | undefined
 
       const files = db.prepare(`
         SELECT path, title, kind, status, updated_at
         FROM files WHERE initiative = ?
         ORDER BY kind, path
-      `).all(initSlug) as Array<{
+      `).all(slug) as Array<{
         path: string; title: string | null; kind: string | null
         status: string | null; updated_at: number
       }>
@@ -911,13 +992,22 @@ ${deliverables}
         SELECT source, target, kind FROM edges
         WHERE source = ? OR target = ?
         ORDER BY kind
-      `).all(initSlug, initSlug) as Array<{
+      `).all(slug, slug) as Array<{
         source: string; target: string; kind: string
       }>
 
+      // Stale file list — files changed after the summary was generated
+      let changedSinceSummary: string[] = []
+      if (summaryRow) {
+        changedSinceSummary = (db.prepare(`
+          SELECT path FROM files
+          WHERE initiative = ? AND updated_at > ?
+        `).all(slug, summaryRow.updated_at) as Array<{ path: string }>).map(r => r.path)
+      }
+
       if (files.length === 0 && edges.length === 0) {
         return {
-          content: [{ type: "text" as const, text: `Initiative not found in knowledge index: ${initSlug}. Run 'pnpm sync:db' to rebuild.` }],
+          content: [{ type: "text" as const, text: `Initiative not found: ${slug}. Run 'pnpm sync:db' to rebuild.` }],
           isError: true,
         }
       }
@@ -926,9 +1016,11 @@ ${deliverables}
         content: [{
           type: "text" as const,
           text: JSON.stringify({
-            initiative: initSlug,
+            level: "initiative",
+            initiative: slug,
             summary: summaryRow?.summary ?? null,
             stale: summaryRow ? Boolean(summaryRow.stale) : null,
+            changedSinceSummary: changedSinceSummary.length > 0 ? changedSinceSummary : undefined,
             fileCount: files.length,
             files,
             edges,

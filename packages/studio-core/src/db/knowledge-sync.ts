@@ -77,6 +77,7 @@ export function syncFromFilesystem(db: Database.Database, projectRoot: string): 
   const insertFts = db.prepare("INSERT INTO files_fts (path, title, content) VALUES (?, ?, ?)")
   const deleteEdgesForSource = db.prepare("DELETE FROM edges WHERE source = ?")
   const insertEdge = db.prepare("INSERT OR IGNORE INTO edges (source, target, kind) VALUES (?, ?, ?)")
+  const markSummaryStale = db.prepare("UPDATE summaries SET stale = 1 WHERE id = ? AND stale = 0")
 
   // Transactional upsert for a single file — file + FTS + edges in one transaction
   const syncFile = db.transaction((
@@ -104,6 +105,11 @@ export function syncFromFilesystem(db: Database.Database, projectRoot: string): 
         insertEdge.run(edge.source, edge.target, edge.kind)
         stats.edgesCreated++
       }
+    }
+
+    // Mark parent initiative summary as stale when any file in it changes
+    if (initiative) {
+      markSummaryStale.run(initiative)
     }
   })
 
