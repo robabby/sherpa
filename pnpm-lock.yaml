@@ -420,6 +420,9 @@ importers:
       '@sherpa/studio-core':
         specifier: workspace:*
         version: link:../studio-core
+      drizzle-orm:
+        specifier: ^0.45.1
+        version: 0.45.1(@opentelemetry/api@1.9.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.8.0)
       zod:
         specifier: ^3.25.76
         version: 3.25.76
