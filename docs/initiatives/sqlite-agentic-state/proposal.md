@@ -1,15 +1,18 @@
 ---
-status: pending
+status: approved
 initiative: sqlite-agentic-state
 created: 2026-03-11
-updated: 2026-03-11
+updated: 2026-03-16
 type: research-synthesis
 risk: structural
 targets:
   - packages/studio-core/src/db/
   - packages/studio-mcp/src/tools/
-dependencies:
+dependencies: []
+informs:
   - mcp-coordination-layer
+  - semantic-knowledge-engine
+spawned-from: null
 ---
 
 # SQLite as Sherpa's Agentic State Store
@@ -28,9 +31,8 @@ Sherpa currently stores all state in Markdown files under `docs/initiatives/`. T
 
 New module providing the SQLite access layer:
 
-**Architecture — 3 separate SQLite files:**
-- `sherpa-meta.db` — Initiative/task metadata, derived from filesystem, rebuildable
-- `sherpa-coordination.db` — Agent state, heartbeats, task claims (ephemeral)
+**Architecture — 2 SQLite files** (the metadata/knowledge index is owned by `semantic-knowledge-engine`):
+- `sherpa-coordination.db` — Agent state, heartbeats, task claims (ephemeral). Schema extended by `mcp-coordination-layer` with authority_leases and state_versions tables.
 - `sherpa-events.db` — Activity log, audit trail (append-only)
 
 **Concurrency stack:**
@@ -85,7 +87,13 @@ ACID per tool handler. No exposed transaction tools.
 
 ## Dependencies
 
-- `mcp-coordination-layer` — The MCP tool surface defined here is the implementation of that initiative's coordination concept
+None. This is the foundation layer — it provides the SQLite infrastructure, concurrency stack, and filesystem-database duality that downstream initiatives build on.
+
+**Informs:**
+- `mcp-coordination-layer` — Provides the DB module, WAL configuration, and `sherpa-coordination.db` schema that the coordination layer extends with authority leases and enforcement
+- `semantic-knowledge-engine` — Provides the shared DB infrastructure pattern (WAL config, connection factory, migration runner) that the knowledge index reuses for its own `.sherpa/knowledge.db`
+
+**Scope boundary with `semantic-knowledge-engine`:** The original `sherpa-meta.db` (initiative/task metadata index) is absorbed by the semantic-knowledge-engine, which extends it with embeddings, summaries, and clustering. This initiative retains `sherpa-coordination.db` (ephemeral agent state) and `sherpa-events.db` (audit trail).
 
 ## Review Notes
 

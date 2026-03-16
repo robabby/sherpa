@@ -2,7 +2,7 @@
 status: approved
 initiative: mcp-coordination-layer
 created: 2026-03-11T00:00:00.000Z
-updated: '2026-03-14'
+updated: '2026-03-16'
 type: research-synthesis
 risk: structural
 targets:
@@ -10,6 +10,7 @@ targets:
   - packages/studio-core/
 dependencies:
   - sqlite-agentic-state
+informs:
   - distributed-agent-consistency
 spawned-from: null
 ---
@@ -113,8 +114,10 @@ Authority record schema:
 
 ## Dependencies
 
-- `sqlite-agentic-state` — Schema design and SQLite configuration
-- `distributed-agent-consistency` — Consistency model for authority and concurrency
+- `sqlite-agentic-state` — Provides the DB foundation: WAL configuration, connection factory, `sherpa-coordination.db` schema, and concurrency stack. This initiative extends that schema with `authority_leases` and `state_versions` tables.
+
+**Informs:**
+- `distributed-agent-consistency` — The authority model and enforcement hooks designed here inform the consistency layer's Phase 4 (coordination locks), which may be mediated through the MCP server rather than POSIX primitives
 
 ## Review Notes
 

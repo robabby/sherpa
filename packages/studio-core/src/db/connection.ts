@@ -11,7 +11,11 @@ import path from "node:path"
 import type { ResolvedDbPaths } from "./types"
 
 const DEFAULT_DIR = ".sherpa"
-const DB_FILES = { coordination: "coordination.db", events: "events.db" } as const
+const DB_FILES = {
+  coordination: "coordination.db",
+  events: "events.db",
+  knowledge: "knowledge.db",
+} as const
 
 /** Resolve absolute DB paths from project root. Convention: .sherpa/*.db */
 export function resolveDbPaths(projectRoot: string, dbDir?: string): ResolvedDbPaths {
@@ -20,6 +24,7 @@ export function resolveDbPaths(projectRoot: string, dbDir?: string): ResolvedDbP
     dir,
     coordination: path.join(dir, DB_FILES.coordination),
     events: path.join(dir, DB_FILES.events),
+    knowledge: path.join(dir, DB_FILES.knowledge),
   }
 }
 

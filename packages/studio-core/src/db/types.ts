@@ -3,4 +3,5 @@ export interface ResolvedDbPaths {
   dir: string
   coordination: string
   events: string
+  knowledge: string
 }

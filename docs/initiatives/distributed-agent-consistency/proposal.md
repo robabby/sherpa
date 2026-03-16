@@ -2,15 +2,14 @@
 status: pending
 initiative: distributed-agent-consistency
 created: 2026-03-11
-updated: 2026-03-12
+updated: 2026-03-16
 type: research-synthesis
 risk: additive
 targets:
   - docs/initiatives/distributed-agent-consistency/
   - packages/studio-core/
-dependencies:
-  - section-level-prose-sync
-  - sqlite-agentic-state
+dependencies: []
+informs:
   - mcp-coordination-layer
 spawned-from: null
 ---
@@ -95,9 +94,15 @@ Research archive with findings from 5 vectors across actor models, optimistic co
 
 ## Dependencies
 
-- `section-level-prose-sync` — Phase 1/2 ETags and version vectors need to survive section-level merges
+None. Phases 0-1 (atomic writes, conflict detection) are zero-dependency, zero-risk additive changes using only POSIX primitives.
+
+**Future phase relationships (non-blocking):**
+- `section-level-prose-sync` — Phase 1/2 ETags and version vectors need to survive section-level merges. Not a hard gate — ETags work independently; section-level sync extends their reach.
 - `sqlite-agentic-state` — Phase 3 JSONL events may eventually migrate to SQLite for query performance
-- `mcp-coordination-layer` — Phase 4 coordination locks may be mediated through MCP server
+- `mcp-coordination-layer` — Phase 4 coordination locks may be mediated through MCP server instead of POSIX mkdir primitives
+
+**Informs:**
+- `mcp-coordination-layer` — The consistency model (ETags, version vectors, conflict detection) informs the authority system's concurrency design
 
 ## Review Notes
 
