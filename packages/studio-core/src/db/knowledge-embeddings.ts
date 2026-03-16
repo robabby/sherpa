@@ -1,9 +1,11 @@
 import type Database from "better-sqlite3"
 import type { KnowledgeBackend } from "../knowledge/types"
+import { agglomerativeClusters, labelCluster } from "../knowledge/clustering"
 
 export interface EmbeddingSyncStats {
   summariesCreated: number
   inferredEdgesCreated: number
+  clustersCreated: number
 }
 
 /**
@@ -19,7 +21,7 @@ export function syncEmbeddings(
   backend: KnowledgeBackend,
   topK: number = 5,
 ): EmbeddingSyncStats {
-  const stats: EmbeddingSyncStats = { summariesCreated: 0, inferredEdgesCreated: 0 }
+  const stats: EmbeddingSyncStats = { summariesCreated: 0, inferredEdgesCreated: 0, clustersCreated: 0 }
 
   // Load all initiative proposals
   const proposals = db.prepare(`
@@ -108,6 +110,32 @@ export function syncEmbeddings(
       insertInferred.run(source, pair.target, pair.similarity, kind, now)
       stats.inferredEdgesCreated++
     }
+  }
+
+  // Phase 3: Agglomerative clustering
+  const clusterItems = Array.from(embeddings.entries()).map(([id, embedding]) => ({ id, embedding }))
+  const clusters = agglomerativeClusters(clusterItems, backend)
+
+  const clearClusters = db.prepare("DELETE FROM clusters")
+  const insertCluster = db.prepare(
+    "INSERT INTO clusters (cluster_id, label, member_ids, updated_at) VALUES (?, ?, ?, ?)"
+  )
+
+  clearClusters.run()
+  for (let i = 0; i < clusters.length; i++) {
+    const cluster = clusters[i]!
+    const memberTexts = proposals
+      .filter(p => cluster.members.includes(p.initiative))
+      .map(p => ({ id: p.initiative, text: p.content }))
+    const label = labelCluster(memberTexts)
+
+    insertCluster.run(
+      `cluster-${i}`,
+      label,
+      JSON.stringify(cluster.members),
+      now,
+    )
+    stats.clustersCreated++
   }
 
   return stats

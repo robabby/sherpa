@@ -39,15 +39,18 @@ const embedElapsed = Date.now() - embedStart
 console.log(`\nEmbedding sync in ${embedElapsed}ms:`)
 console.log(`  Summaries created/updated: ${embedStats.summariesCreated}`)
 console.log(`  Inferred edges created:    ${embedStats.inferredEdgesCreated}`)
+console.log(`  Clusters formed:           ${embedStats.clustersCreated}`)
 
 const fileCount = /** @type {{ count: number }} */ (db.prepare("SELECT COUNT(*) as count FROM files").get()).count
 const edgeCount = /** @type {{ count: number }} */ (db.prepare("SELECT COUNT(*) as count FROM edges").get()).count
 const summaryCount = /** @type {{ count: number }} */ (db.prepare("SELECT COUNT(*) as count FROM summaries").get()).count
 const inferredCount = /** @type {{ count: number }} */ (db.prepare("SELECT COUNT(*) as count FROM inferred_edges").get()).count
+const clusterCount = /** @type {{ count: number }} */ (db.prepare("SELECT COUNT(*) as count FROM clusters").get()).count
 console.log(`\nDatabase totals:`)
 console.log(`  Files indexed:     ${fileCount}`)
 console.log(`  Explicit edges:    ${edgeCount}`)
 console.log(`  Summaries:         ${summaryCount}`)
 console.log(`  Inferred edges:    ${inferredCount}`)
+console.log(`  Clusters:          ${clusterCount}`)
 
 closeAll()

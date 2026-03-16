@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3"
 
-export const KNOWLEDGE_SCHEMA_VERSION = 2
+export const KNOWLEDGE_SCHEMA_VERSION = 3
 
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS schema_version (
@@ -80,6 +80,14 @@ const SCHEMA_SQL = `
     ON inferred_edges (source);
   CREATE INDEX IF NOT EXISTS idx_inferred_target
     ON inferred_edges (target);
+
+  -- Auto-formed initiative clusters from embedding similarity
+  CREATE TABLE IF NOT EXISTS clusters (
+    cluster_id TEXT PRIMARY KEY,
+    label      TEXT,
+    member_ids TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
 `
 
 /** Apply knowledge schema. Idempotent — safe to call on every startup. */
