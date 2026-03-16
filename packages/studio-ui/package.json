@@ -37,7 +37,9 @@
     "react-markdown": ">=9",
     "remark-gfm": ">=4",
     "fuse.js": ">=7",
-    "mermaid": ">=11"
+    "mermaid": ">=11",
+    "@xyflow/react": ">=12",
+    "elkjs": ">=0.9"
   },
   "peerDependenciesMeta": {
     "d3-axis": { "optional": true },
@@ -50,7 +52,9 @@
     "react-markdown": { "optional": true },
     "remark-gfm": { "optional": true },
     "fuse.js": { "optional": true },
-    "mermaid": { "optional": true }
+    "mermaid": { "optional": true },
+    "@xyflow/react": { "optional": true },
+    "elkjs": { "optional": true }
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
