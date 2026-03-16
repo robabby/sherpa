@@ -7,6 +7,7 @@ import type { TaskEvent } from "@sherpa/studio-core/task-events";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocRenderer } from "./doc-renderer";
+import { MissionLogViewer } from "./mission-log-viewer";
 import { MissionTimeline } from "./mission-timeline";
 import { cn } from "./lib/utils";
 import {
@@ -356,6 +357,12 @@ export function MissionDetailPane({
           <TabsTrigger value="report" className={TAB_TRIGGER_CLASS}>
             Report
           </TabsTrigger>
+          <TabsTrigger value="log" className={cn(TAB_TRIGGER_CLASS, "relative")}>
+            Log
+            {isStreaming && events.some((e) => e.event === "agent_output") && (
+              <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-[var(--color-copper)] animate-[pulse_2s_ease-in-out_infinite]" />
+            )}
+          </TabsTrigger>
           <TabsTrigger value="verdict" className={TAB_TRIGGER_CLASS}>
             Verdict
           </TabsTrigger>
@@ -419,6 +426,11 @@ export function MissionDetailPane({
               </p>
             </div>
           )}
+        </TabsContent>
+
+        {/* Log tab */}
+        <TabsContent value="log" className="overflow-hidden">
+          <MissionLogViewer events={events} isStreaming={isStreaming} />
         </TabsContent>
 
         {/* Verdict tab */}
