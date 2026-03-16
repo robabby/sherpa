@@ -1,18 +1,13 @@
 import "@radix-ui/themes/styles.css"
 import "@/styles/globals.css"
 
-import dynamic from "next/dynamic"
 import type { Metadata, Viewport } from "next"
 import { Fraunces, DM_Sans, JetBrains_Mono } from "next/font/google"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { StudioSidebar } from "@/components/studio/studio-sidebar"
 import { StudioShellHeader } from "@/components/studio/studio-shell-header"
-
-const CommandPalette = dynamic(
-  () => import("@/components/studio/command-palette").then((m) => ({ default: m.CommandPalette })),
-  { ssr: false }
-)
+import { CommandPalette } from "@/components/studio/command-palette"
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
