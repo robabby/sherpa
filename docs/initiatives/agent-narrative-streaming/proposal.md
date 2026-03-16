@@ -1,5 +1,5 @@
 ---
-status: approved
+status: integrated
 initiative: agent-narrative-streaming
 created: 2026-03-16
 updated: '2026-03-16'
