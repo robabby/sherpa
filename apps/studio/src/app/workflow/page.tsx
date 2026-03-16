@@ -6,7 +6,7 @@ import {
   WORKFLOW_EDGES,
   WORKFLOW_PHASE_GROUPS,
 } from "@sherpa/studio-core";
-import type { Node, Edge } from "@xyflow/react";
+import { Position, type Node, type Edge } from "@xyflow/react";
 
 export const metadata: Metadata = {
   title: "Workflow | Studio",
@@ -65,14 +65,29 @@ function buildFlowNodes(): Node[] {
   return nodes;
 }
 
+const SIDE_TO_POSITION: Record<string, Position> = {
+  top: Position.Top,
+  bottom: Position.Bottom,
+  left: Position.Left,
+  right: Position.Right,
+};
+
 function buildFlowEdges(): Edge[] {
   return WORKFLOW_EDGES.map((edge) => ({
     id: edge.id,
     source: edge.source,
     target: edge.target,
-    label: edge.label ?? undefined,
-    type: "smoothstep", // will be replaced with custom edge in Task 5
-    data: { edgeType: edge.edgeType, label: edge.label },
+    type: "data-flow",
+    data: {
+      edgeType: edge.edgeType,
+      label: edge.label,
+      ...(edge.sourceSide && {
+        sourcePosition: SIDE_TO_POSITION[edge.sourceSide],
+      }),
+      ...(edge.targetSide && {
+        targetPosition: SIDE_TO_POSITION[edge.targetSide],
+      }),
+    },
   }));
 }
 

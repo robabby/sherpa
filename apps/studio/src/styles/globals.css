@@ -310,6 +310,10 @@
   50% { box-shadow: 0 0 12px 4px rgba(212, 165, 116, 0.25); }
 }
 
+@keyframes edge-flow {
+  to { stroke-dashoffset: -16; }
+}
+
 /* ── Rail node connectors ─────────────────────────────────────── */
 
 .rail-node { position: relative; }

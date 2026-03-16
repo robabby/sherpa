@@ -14,6 +14,7 @@ import {
 } from "@xyflow/react";
 import { useEffect, useCallback } from "react";
 import { workflowNodeTypes } from "./workflow-nodes";
+import { workflowEdgeTypes } from "./workflow-edge";
 
 // ---------------------------------------------------------------------------
 // ELK layout helper
@@ -225,6 +226,7 @@ function WorkflowCanvasInner({
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       nodeTypes={workflowNodeTypes}
+      edgeTypes={workflowEdgeTypes}
       fitView
       minZoom={0.1}
       maxZoom={2}
