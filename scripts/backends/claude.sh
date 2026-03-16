@@ -40,6 +40,8 @@ _model="${SHERPA_MODEL:-claude-sonnet-4-6}"
 
 ARGS=(
   --print
+  --output-format stream-json
+  --verbose
   --model "$_model"
   --permission-mode acceptEdits
 )

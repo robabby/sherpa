@@ -168,12 +168,26 @@ fi
 
 log_event "backend_delegating" ",\"script\":\"$BACKEND_SCRIPT\",\"backend\":\"$BACKEND\",\"model\":\"$MODEL\""
 
+# ── Start log streamer sidecar ────────────────────────────────────────
+STREAMER_PID=""
+if [[ -n "${SHERPA_LOG_FILE:-}" ]]; then
+  bash "$SCRIPT_DIR/agent-log-streamer.sh" \
+    "$SHERPA_LOG_FILE" "$EVENTS_FILE" "$TASK_SLUG" &
+  STREAMER_PID=$!
+fi
+
 # ── Delegate to backend ───────────────────────────────────────────────
 EXIT_CODE=0
 if [[ "$BACKEND_SCRIPT" == *.mjs ]]; then
   node "$BACKEND_SCRIPT" || EXIT_CODE=$?
 else
   bash "$BACKEND_SCRIPT" || EXIT_CODE=$?
+fi
+
+# ── Stop log streamer sidecar ─────────────────────────────────────────
+if [[ -n "$STREAMER_PID" ]]; then
+  kill "$STREAMER_PID" 2>/dev/null || true
+  wait "$STREAMER_PID" 2>/dev/null || true
 fi
 
 # ── Update final status ──────────────────────────────────────────────

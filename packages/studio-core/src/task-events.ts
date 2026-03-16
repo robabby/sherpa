@@ -1,6 +1,20 @@
 import fs from "fs";
 import path from "path";
 
+/**
+ * A single event from a task's NDJSON event log.
+ *
+ * Event types:
+ * - `dispatch_requested` — Task dispatch initiated from Studio UI
+ * - `task_updated` — Task frontmatter field changed
+ * - `worker_started` — Worker.sh began processing
+ * - `status_changed` — Task status transition (pending→dispatched→completed/failed)
+ * - `backend_delegating` — Worker delegating to backend script
+ * - `dispatch_spawned` — Backend process started (PID assigned)
+ * - `dispatch_failed` — Backend process failed to start
+ * - `agent_output` — Batched text lines from agent's runtime output.
+ *   Data: { lines: string[], batch: number, byteOffset: number, lineCount: number }
+ */
 export interface TaskEvent {
   timestamp: string;
   event: string;
