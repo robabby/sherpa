@@ -67,6 +67,15 @@ export const userConfigSchema = z.object({
     configPath: z.string().optional(),
     taskLogsPath: z.string().optional(),
   }).optional(),
+  knowledge: z.object({
+    backend: z.enum(["algorithmic", "ollama", "api", "dispatch"]).optional(),
+    ollama: z.object({ host: z.string() }).optional(),
+    api: z.object({
+      provider: z.enum(["anthropic", "openai", "voyage"]),
+      model: z.string().optional(),
+    }).optional(),
+    dbPath: z.string().optional(),
+  }).optional(),
   // plugins validated at runtime, not by Zod (function types don't serialize)
   plugins: z.array(z.any()).optional(),
 }).strict()

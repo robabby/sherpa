@@ -2,6 +2,7 @@ import type {
   AdminConfig,
   AgentsConfig,
   EntitiesConfig,
+  KnowledgeConfig,
   McpConfig,
   PathsConfig,
   SherpaConfig,
@@ -78,6 +79,13 @@ export const DEFAULT_MCP: Required<McpConfig> = {
   port: 3100,
 }
 
+export const DEFAULT_KNOWLEDGE: Required<KnowledgeConfig> = {
+  backend: "algorithmic",
+  ollama: { host: "http://localhost:11434" },
+  api: { provider: "anthropic", model: "" },
+  dbPath: "",
+}
+
 /**
  * Merge user config with defaults to produce a fully resolved SherpaConfig.
  */
@@ -99,6 +107,12 @@ export function buildDefaults(userConfig: SherpaUserConfig): SherpaConfig {
       configPath: userConfig.mcp?.configPath ?? paths.mcpConfig,
       taskLogsPath: userConfig.mcp?.taskLogsPath ?? DEFAULT_MCP.taskLogsPath,
       port: userConfig.mcp?.port ?? DEFAULT_MCP.port,
+    },
+    knowledge: {
+      backend: userConfig.knowledge?.backend ?? DEFAULT_KNOWLEDGE.backend,
+      ollama: userConfig.knowledge?.ollama ?? DEFAULT_KNOWLEDGE.ollama,
+      api: userConfig.knowledge?.api ?? DEFAULT_KNOWLEDGE.api,
+      dbPath: userConfig.knowledge?.dbPath ?? DEFAULT_KNOWLEDGE.dbPath,
     },
     dispatch: { ...DEFAULT_DISPATCH, ...userConfig.dispatch },
     plugins: userConfig.plugins ?? [],

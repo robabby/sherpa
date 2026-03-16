@@ -100,6 +100,17 @@ export interface McpConfig {
   port?: number
 }
 
+export interface KnowledgeConfig {
+  /** Knowledge backend type. Defaults to 'algorithmic'. */
+  backend?: "algorithmic" | "ollama" | "api" | "dispatch"
+  /** Ollama server config (when backend='ollama'). */
+  ollama?: { host: string }
+  /** API config (when backend='api'). */
+  api?: { provider: "anthropic" | "openai" | "voyage"; model?: string }
+  /** Database path override relative to project root. Defaults to .sherpa/knowledge.db */
+  dbPath?: string
+}
+
 // ---------------------------------------------------------------------------
 // User config — what consumers write in sherpa.config.ts
 // ---------------------------------------------------------------------------
@@ -121,6 +132,8 @@ export interface SherpaUserConfig {
   agents?: AgentsConfig
   /** MCP server configuration. */
   mcp?: McpConfig
+  /** Knowledge engine configuration. */
+  knowledge?: KnowledgeConfig
   /** Dispatch routing configuration. */
   dispatch?: Partial<DispatchConfig>
   /** Plugins applied in order after defaults are merged. */
@@ -140,6 +153,7 @@ export interface SherpaConfig {
   entities: Required<EntitiesConfig>
   agents: Required<AgentsConfig>
   mcp: Required<McpConfig>
+  knowledge: Required<KnowledgeConfig>
   dispatch: DispatchConfig
   plugins: SherpaPlugin[]
 }

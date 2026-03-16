@@ -53,6 +53,7 @@ export type {
   EntitiesConfig,
   AgentsConfig,
   McpConfig,
+  KnowledgeConfig,
   LifecycleStageDefinition,
 } from "./types"
 export { DEFAULT_PATHS, DEFAULT_VOCABULARY } from "./defaults"
