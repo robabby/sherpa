@@ -332,7 +332,7 @@ function EventLog({ events }: { events: McpEvent[] }) {
   return (
     <motion.div
       variants={cardVariant}
-      className="rounded-xl border border-[var(--color-mcp)]/20 bg-card/30 backdrop-blur-sm"
+      className="overflow-hidden rounded-xl border border-[var(--color-mcp)]/20 bg-card/30 backdrop-blur-sm"
     >
       <div className="flex items-center justify-between border-b border-[var(--color-mcp)]/10 px-6 py-4">
         <div className="flex items-center gap-3">
