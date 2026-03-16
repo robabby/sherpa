@@ -1,8 +1,16 @@
 import { Text } from "@radix-ui/themes";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Zap } from "lucide-react";
 
 import { SectionHeader } from "@/components/studio/section-header";
+import {
+  EmptyState,
+  EmptyStateIcon,
+  EmptyStateTitle,
+  EmptyStateDescription,
+  EmptyStateCommand,
+} from "@sherpa/studio-ui";
 
 import { getSkills } from "@/lib/studio";
 
@@ -15,6 +23,19 @@ export default function SkillsPage() {
   const skills = getSkills();
   const projectSkills = skills.filter((s) => s.isProjectSkill);
   const thirdPartySkills = skills.filter((s) => !s.isProjectSkill);
+
+  if (skills.length === 0) {
+    return (
+      <EmptyState>
+        <EmptyStateIcon><Zap className="size-5" /></EmptyStateIcon>
+        <EmptyStateTitle>Create a skill</EmptyStateTitle>
+        <EmptyStateDescription>
+          Skills extend Claude with specialized workflows and domain knowledge.
+        </EmptyStateDescription>
+        <EmptyStateCommand>.claude/skills/my-skill/SKILL.md</EmptyStateCommand>
+      </EmptyState>
+    );
+  }
 
   return (
     <div className="space-y-10">

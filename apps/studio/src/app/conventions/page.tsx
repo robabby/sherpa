@@ -1,8 +1,16 @@
 import { Text } from "@radix-ui/themes";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { BookOpen } from "lucide-react";
 
 import { SectionHeader } from "@/components/studio/section-header";
+import {
+  EmptyState,
+  EmptyStateIcon,
+  EmptyStateTitle,
+  EmptyStateDescription,
+  EmptyStateCommand,
+} from "@sherpa/studio-ui";
 
 import { getConventions } from "@/lib/studio";
 
@@ -13,6 +21,19 @@ export const metadata: Metadata = {
 
 export default function ConventionsPage() {
   const { rules, claudeMdFiles, uxGuides } = getConventions();
+
+  if (rules.length === 0 && claudeMdFiles.length === 0 && uxGuides.length === 0) {
+    return (
+      <EmptyState>
+        <EmptyStateIcon><BookOpen className="size-5" /></EmptyStateIcon>
+        <EmptyStateTitle>Add a convention</EmptyStateTitle>
+        <EmptyStateDescription>
+          Rules auto-load from .claude/rules/ based on file globs.
+        </EmptyStateDescription>
+        <EmptyStateCommand>.claude/rules/my-rule.md</EmptyStateCommand>
+      </EmptyState>
+    );
+  }
 
   return (
     <div className="space-y-10">

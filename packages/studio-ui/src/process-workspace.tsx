@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
+import { GitBranch, Search } from "lucide-react";
 
 /** Keep searchParams in a ref so callbacks that read it don't need it as a dep. */
 function useStableSearchParams() {
@@ -33,6 +33,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import {
+  EmptyState,
+  EmptyStateIcon,
+  EmptyStateTitle,
+  EmptyStateDescription,
+  EmptyStateCommand,
+} from "./empty-state";
 import { ProcessDetailPane } from "./process-detail-pane";
 import { ProcessItemList } from "./process-item-list";
 import { ProcessKindRail } from "./process-kind-rail";
@@ -347,6 +354,24 @@ export function ProcessWorkspace({
     el.addEventListener("keydown", handleKeyDown);
     return () => el.removeEventListener("keydown", handleKeyDown);
   }, [focusIndex, filteredNodes, onSelect, updateParams, selectedId, mobileShowDetail]);
+
+  // ---------------------------------------------------------------------------
+  // Empty state — no process nodes at all
+  // ---------------------------------------------------------------------------
+  if (allNodes.length === 0) {
+    return (
+      <div className="flex h-[calc(100vh-53px)] items-center justify-center border-t border-[var(--color-dark-bronze)]">
+        <EmptyState>
+          <EmptyStateIcon><GitBranch className="size-5" /></EmptyStateIcon>
+          <EmptyStateTitle>Start an initiative</EmptyStateTitle>
+          <EmptyStateDescription>
+            Initiatives track multi-session work from proposal through implementation.
+          </EmptyStateDescription>
+          <EmptyStateCommand>/propose</EmptyStateCommand>
+        </EmptyState>
+      </div>
+    );
+  }
 
   return (
     <div

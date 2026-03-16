@@ -2,9 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { CheckSquare } from "lucide-react";
 
 import type { TaskBoardEntry, TaskDetail } from "@/lib/studio/tasks";
 import type { TaskEvent } from "@sherpa/studio-core/task-events";
+
+import {
+  EmptyState,
+  EmptyStateIcon,
+  EmptyStateTitle,
+  EmptyStateDescription,
+  EmptyStateCommand,
+  EmptyStateAction,
+} from "./empty-state";
 
 import { useMissionEvents } from "./hooks/use-mission-events";
 import { MissionDetailPane } from "./mission-detail-pane";
@@ -292,10 +302,15 @@ export function MissionWorkspace({
   if (tasks.length === 0) {
     return (
       <div className="flex h-[calc(100vh-53px)] items-center justify-center border-t border-[var(--color-dark-bronze)]">
-        <div className="text-center">
-          <p className="font-display text-lg text-muted-foreground/60">No missions in the pipeline</p>
-          <p className="mt-1 text-sm text-muted-foreground/40">Create tasks via /plan-tasks or the Dispatch center</p>
-        </div>
+        <EmptyState>
+          <EmptyStateIcon><CheckSquare className="size-5" /></EmptyStateIcon>
+          <EmptyStateTitle>Create your first task</EmptyStateTitle>
+          <EmptyStateDescription>
+            Tasks are dispatched to AI agents for autonomous execution.
+          </EmptyStateDescription>
+          <EmptyStateCommand>./scripts/task-board.sh add my-task "description"</EmptyStateCommand>
+          <EmptyStateAction href="/dispatch">Open Dispatch</EmptyStateAction>
+        </EmptyState>
       </div>
     );
   }

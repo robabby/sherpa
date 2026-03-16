@@ -10,11 +10,19 @@ import {
   ChevronRight,
   Play,
   RotateCcw,
+  Send,
   Zap,
 } from "lucide-react";
 
 import { EASE_STANDARD } from "./lib/animation-constants";
 import { cn } from "./lib/utils";
+import {
+  EmptyState,
+  EmptyStateIcon,
+  EmptyStateTitle,
+  EmptyStateDescription,
+  EmptyStateCommand,
+} from "./empty-state";
 import type { TaskBoardEntry } from "@/lib/studio/tasks";
 import type { AgentRole } from "@/lib/studio";
 import type { BackendHealth } from "@sherpa/studio-core";
@@ -1073,6 +1081,24 @@ export function DispatchContent({ tasks, roles, health }: DispatchContentProps) 
   const activeCount = activeTasks.length;
   const failedCount = failedTasks.length;
   const completedTodayCount = completedToday.length;
+
+  // ---------------------------------------------------------------------------
+  // Empty state — no tasks at all
+  // ---------------------------------------------------------------------------
+  if (tasks.length === 0) {
+    return (
+      <div className="flex h-[calc(100vh-53px)] items-center justify-center border-t border-[var(--color-dark-bronze)]">
+        <EmptyState>
+          <EmptyStateIcon><Send className="size-5" /></EmptyStateIcon>
+          <EmptyStateTitle>Dispatch a task</EmptyStateTitle>
+          <EmptyStateDescription>
+            Select tasks from the backlog and assign them to agent backends.
+          </EmptyStateDescription>
+          <EmptyStateCommand>./scripts/dispatch.sh planner</EmptyStateCommand>
+        </EmptyState>
+      </div>
+    );
+  }
 
   return (
     <MotionConfig reducedMotion="user">
