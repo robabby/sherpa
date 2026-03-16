@@ -249,25 +249,57 @@ export function MissionTimeline({ events, isStreaming }: MissionTimelineProps) {
     );
   }
 
-  // Build items: events + gap indicators
+  // Build items: events + gap indicators + collapsed agent-activity blocks
   type TimelineItem =
     | { type: "event"; event: TaskEvent }
-    | { type: "gap"; durationMs: number };
+    | { type: "gap"; durationMs: number }
+    | { type: "agent-activity"; lineCount: number; startTime: string; endTime: string };
 
   const items: TimelineItem[] = [];
+
+  // Accumulator for consecutive agent_output events
+  let agentBlock: { lineCount: number; startTime: string; endTime: string } | null = null;
+
+  function flushAgentBlock() {
+    if (agentBlock) {
+      items.push({ type: "agent-activity", ...agentBlock });
+      agentBlock = null;
+    }
+  }
+
+  let lastNonAgentEvent: TaskEvent | null = null;
+
   for (let i = 0; i < events.length; i++) {
     const ev = events[i]!;
-    items.push({ type: "event", event: ev });
 
-    // Insert gap indicator if >30s between consecutive events
-    if (i < events.length - 1) {
-      const next = events[i + 1]!;
-      const gap = getTimestampMs(next.timestamp) - getTimestampMs(ev.timestamp);
+    if (ev.event === "agent_output") {
+      const lc = typeof ev.data.lineCount === "number" ? ev.data.lineCount : 0;
+      if (agentBlock) {
+        agentBlock.lineCount += lc;
+        agentBlock.endTime = ev.timestamp;
+      } else {
+        agentBlock = { lineCount: lc, startTime: ev.timestamp, endTime: ev.timestamp };
+      }
+      continue;
+    }
+
+    // Non-agent event: flush any accumulated agent block first
+    flushAgentBlock();
+
+    // Insert gap indicator if >30s since last non-agent event
+    if (lastNonAgentEvent) {
+      const gap = getTimestampMs(ev.timestamp) - getTimestampMs(lastNonAgentEvent.timestamp);
       if (gap > 30_000) {
         items.push({ type: "gap", durationMs: gap });
       }
     }
+
+    items.push({ type: "event", event: ev });
+    lastNonAgentEvent = ev;
   }
+
+  // Flush any trailing agent block
+  flushAgentBlock();
 
   return (
     <div className="space-y-5">
@@ -345,6 +377,41 @@ export function MissionTimeline({ events, isStreaming }: MissionTimelineProps) {
                   <span className="font-mono text-[10px] italic text-muted-foreground/50">
                     {formatGap(item.durationMs)}
                   </span>
+                </div>
+              </div>
+            );
+          }
+
+          if (item.type === "agent-activity") {
+            const startFmt = formatTime(item.startTime);
+            const endFmt = formatTime(item.endTime);
+            const timeRange = startFmt === endFmt ? startFmt : `${startFmt}\u2013${endFmt}`;
+            return (
+              <div key={`agent-${i}`} className="relative flex gap-4 pb-6">
+                <div className="relative z-10 mt-1 flex h-4 w-4 shrink-0 items-center justify-center">
+                  <span className="h-2.5 w-2.5 rounded-full border border-zinc-600/40 bg-zinc-700/30" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] text-zinc-600">agent output</span>
+                    <div
+                      className="flex-1 mx-1 h-1.5 rounded-full overflow-hidden bg-zinc-800/50"
+                    >
+                      <div
+                        className="h-full w-full"
+                        style={{
+                          background:
+                            "repeating-linear-gradient(90deg, rgba(196,154,108,0.12) 0px, rgba(196,154,108,0.06) 4px, transparent 8px, transparent 12px)",
+                        }}
+                      />
+                    </div>
+                    <span className="font-mono text-[10px] tabular-nums text-zinc-600">
+                      {timeRange}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-zinc-700">
+                    {item.lineCount} lines &middot; View in Log tab
+                  </p>
                 </div>
               </div>
             );
