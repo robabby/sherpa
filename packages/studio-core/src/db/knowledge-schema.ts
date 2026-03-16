@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3"
 
-export const KNOWLEDGE_SCHEMA_VERSION = 1
+export const KNOWLEDGE_SCHEMA_VERSION = 2
 
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS schema_version (
@@ -49,6 +49,37 @@ const SCHEMA_SQL = `
     title,
     content
   );
+
+  -- Multi-level summaries with embeddings
+  CREATE TABLE IF NOT EXISTS summaries (
+    id         TEXT PRIMARY KEY,
+    level      TEXT NOT NULL,
+    parent_id  TEXT,
+    summary    TEXT NOT NULL,
+    embedding  TEXT,
+    stale      INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_summaries_level
+    ON summaries (level);
+  CREATE INDEX IF NOT EXISTS idx_summaries_stale
+    ON summaries (stale);
+
+  -- Inferred relationships from embedding similarity
+  CREATE TABLE IF NOT EXISTS inferred_edges (
+    source     TEXT NOT NULL,
+    target     TEXT NOT NULL,
+    similarity REAL NOT NULL,
+    kind       TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    UNIQUE(source, target, kind)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_inferred_source
+    ON inferred_edges (source);
+  CREATE INDEX IF NOT EXISTS idx_inferred_target
+    ON inferred_edges (target);
 `
 
 /** Apply knowledge schema. Idempotent — safe to call on every startup. */
