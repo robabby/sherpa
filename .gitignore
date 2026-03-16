@@ -30,6 +30,9 @@ Thumbs.db
 # Worktrees (managed by git, not tracked)
 .worktrees/
 
+# Sherpa databases (derived, rebuildable from filesystem)
+.sherpa/
+
 # Playwright screenshots (ephemeral, attached to PRs manually)
 .screenshots/
 test-results/

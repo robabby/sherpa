@@ -13,7 +13,8 @@
     "storybook": "pnpm --filter @sherpa/storybook dev",
     "build:storybook": "pnpm --filter @sherpa/storybook build && mkdir -p apps/website/public/storybook && cp -r apps/storybook/storybook-static/* apps/website/public/storybook/",
     "build:all": "pnpm build:storybook && pnpm build",
-    "build:all:web": "pnpm build:storybook && pnpm build:web"
+    "build:all:web": "pnpm build:storybook && pnpm build:web",
+    "sync:db": "pnpm dlx tsx scripts/sync-knowledge-db.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
