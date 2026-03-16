@@ -16,11 +16,14 @@ import { useEffect, useCallback, useState } from "react";
 import {
   WORKFLOW_NODES,
   WORKFLOW_EDGES,
+  WORKFLOW_EDGE_TYPES,
+  type WorkflowEdgeType,
 } from "@sherpa/studio-core";
 import { workflowNodeTypes } from "./workflow-nodes";
 import { workflowEdgeTypes } from "./workflow-edge";
 import { ResizeHandle } from "./resize-handle";
 import { WorkflowDetailPane } from "./workflow-detail-pane";
+import { WorkflowLegend } from "./workflow-legend";
 
 // ---------------------------------------------------------------------------
 // ELK layout helper
@@ -198,6 +201,7 @@ async function computeElkLayout(
 interface WorkflowCanvasInnerProps {
   initialNodes: Node[];
   initialEdges: Edge[];
+  hiddenEdgeTypes: Set<WorkflowEdgeType>;
   onNodeClick?: (_: React.MouseEvent, node: Node) => void;
   onPaneClick?: () => void;
 }
@@ -205,12 +209,18 @@ interface WorkflowCanvasInnerProps {
 function WorkflowCanvasInner({
   initialNodes,
   initialEdges,
+  hiddenEdgeTypes,
   onNodeClick,
   onPaneClick,
 }: WorkflowCanvasInnerProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
   const { fitView } = useReactFlow();
+
+  // Filter edges by hidden types
+  const visibleEdges = edges.filter(
+    (e) => !hiddenEdgeTypes.has(e.data?.edgeType as WorkflowEdgeType),
+  );
 
   const runLayout = useCallback(async () => {
     try {
@@ -232,7 +242,7 @@ function WorkflowCanvasInner({
   return (
     <ReactFlow
       nodes={nodes}
-      edges={edges}
+      edges={visibleEdges}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onNodeClick={onNodeClick}
@@ -270,6 +280,34 @@ export function WorkflowCanvas({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [detailWidth, setDetailWidth] = useState(360);
 
+  // Hidden edge types — persisted to localStorage
+  const [hiddenEdgeTypes, setHiddenEdgeTypes] = useState<Set<WorkflowEdgeType>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    const saved = localStorage.getItem('workflow-hidden-edges');
+    return saved ? new Set(JSON.parse(saved) as WorkflowEdgeType[]) : new Set();
+  });
+
+  const toggleEdgeType = useCallback((type: WorkflowEdgeType) => {
+    setHiddenEdgeTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      localStorage.setItem('workflow-hidden-edges', JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  const showAllEdgeTypes = useCallback(() => {
+    setHiddenEdgeTypes(new Set());
+    localStorage.removeItem('workflow-hidden-edges');
+  }, []);
+
+  const hideAllEdgeTypes = useCallback(() => {
+    const all = new Set(WORKFLOW_EDGE_TYPES as readonly WorkflowEdgeType[]);
+    setHiddenEdgeTypes(all);
+    localStorage.setItem('workflow-hidden-edges', JSON.stringify([...all]));
+  }, []);
+
   // Hydrate width from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("workflow-detail-width");
@@ -301,13 +339,22 @@ export function WorkflowCanvas({
   return (
     <ReactFlowProvider>
       <div className="flex flex-1 min-h-0" style={{ height: "100%" }}>
-        <div className="flex-1 min-w-0">
+        <div className="relative flex-1 min-w-0">
           <WorkflowCanvasInner
             initialNodes={initialNodes}
             initialEdges={initialEdges}
+            hiddenEdgeTypes={hiddenEdgeTypes}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
           />
+          <div className="absolute top-3 right-3 z-10">
+            <WorkflowLegend
+              hiddenTypes={hiddenEdgeTypes}
+              onToggleType={toggleEdgeType}
+              onShowAll={showAllEdgeTypes}
+              onHideAll={hideAllEdgeTypes}
+            />
+          </div>
         </div>
         {selectedNode && (
           <>
