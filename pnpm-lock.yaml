@@ -417,6 +417,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.18.2
         version: 1.27.1(zod@3.25.76)
+      '@sherpa/studio-core':
+        specifier: workspace:*
+        version: link:../studio-core
       zod:
         specifier: ^3.25.76
         version: 3.25.76

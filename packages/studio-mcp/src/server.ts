@@ -3,6 +3,7 @@
  *
  * Tool domains:
  *   Tasks: task_list, task_get, task_create, task_update, task_dispatch, task_logs
+ *   Knowledge: search_knowledge, get_summary
  *   Infrastructure: lm_status
  *
  * Factory function creates an McpServer instance per client session.
@@ -14,6 +15,12 @@ import { z } from "zod"
 import fs from "node:fs"
 import path from "node:path"
 import { execSync, spawn } from "node:child_process"
+import {
+  openDb,
+  resolveDbPaths,
+  applyKnowledgeSchema,
+  syncFromFilesystem,
+} from "@sherpa/studio-core/db"
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -631,6 +638,226 @@ ${deliverables}
             ),
           },
         ],
+      }
+    },
+  )
+
+  // =========================================================================
+  // Knowledge Engine tools
+  // =========================================================================
+
+  // Lazy-init: open and sync the knowledge DB on first tool call
+  let knowledgeReady = false
+  const dbPaths = resolveDbPaths(projectRoot)
+
+  function ensureKnowledgeDb() {
+    const db = openDb(dbPaths.knowledge)
+    if (!knowledgeReady) {
+      applyKnowledgeSchema(db)
+      syncFromFilesystem(db, projectRoot)
+      knowledgeReady = true
+    }
+    return db
+  }
+
+  // --- Tool: search_knowledge ---
+
+  server.tool(
+    "search_knowledge",
+    "Full-text search across all indexed markdown files (initiatives, tasks, research, agents, rules, skills). Returns ranked results with BM25 scoring. Use this to find relevant files without reading every document.",
+    {
+      query: z.string().describe("Search query — supports FTS5 syntax (AND, OR, NOT, phrase \"quotes\")"),
+      limit: z.number().min(1).max(50).default(10).describe("Maximum results to return"),
+      kind: z
+        .enum(["initiative", "task", "research", "activity", "plan", "agent", "rule", "skill"])
+        .optional()
+        .describe("Filter results by file kind"),
+      initiative: z.string().optional().describe("Filter results by parent initiative slug"),
+      mode: z
+        .enum(["text", "semantic", "hybrid"])
+        .default("text")
+        .describe("Search mode. 'text' uses FTS5 BM25 (functional). 'semantic' and 'hybrid' require a semantic backend (not yet configured)."),
+    },
+    async ({ query, limit, kind, initiative, mode }) => {
+      if (mode === "semantic") {
+        return {
+          content: [{
+            type: "text" as const,
+            text: "Semantic search requires a configured knowledge backend (ollama, api, or dispatch). Current backend: algorithmic (text-only). Configure in sherpa.config.ts under knowledge.backend.",
+          }],
+        }
+      }
+
+      const db = ensureKnowledgeDb()
+
+      // Build the query — join FTS results with files table for metadata
+      let sql = `
+        SELECT
+          f.path,
+          f.title,
+          f.kind,
+          f.initiative,
+          f.status,
+          bm25(files_fts) as score,
+          snippet(files_fts, 2, '>>>', '<<<', '...', 40) as snippet
+        FROM files_fts
+        JOIN files f ON f.path = files_fts.path
+        WHERE files_fts MATCH ?
+      `
+      const params: (string | number)[] = [query]
+
+      if (kind) {
+        sql += " AND f.kind = ?"
+        params.push(kind)
+      }
+      if (initiative) {
+        sql += " AND f.initiative = ?"
+        params.push(initiative)
+      }
+
+      sql += " ORDER BY bm25(files_fts) LIMIT ?"
+      params.push(limit)
+
+      try {
+        const results = db.prepare(sql).all(...params) as Array<{
+          path: string
+          title: string | null
+          kind: string | null
+          initiative: string | null
+          status: string | null
+          score: number
+          snippet: string
+        }>
+
+        if (results.length === 0) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: `No results found for "${query}".${kind ? ` (filtered to kind=${kind})` : ""}${initiative ? ` (filtered to initiative=${initiative})` : ""}`,
+            }],
+          }
+        }
+
+        const formatted = results.map((r) => ({
+          path: r.path,
+          title: r.title,
+          kind: r.kind,
+          initiative: r.initiative,
+          status: r.status,
+          score: Math.round(r.score * 10000) / 10000,
+          snippet: r.snippet,
+        }))
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              query,
+              mode: mode === "hybrid" ? "text (semantic backend not configured)" : mode,
+              backend: "algorithmic",
+              count: results.length,
+              results: formatted,
+            }, null, 2),
+          }],
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return {
+          content: [{
+            type: "text" as const,
+            text: `Search error: ${message}. Tip: FTS5 syntax requires valid query terms. Use "word1 word2" for phrase match, "word1 OR word2" for alternatives.`,
+          }],
+          isError: true,
+        }
+      }
+    },
+  )
+
+  // --- Tool: get_summary ---
+
+  server.tool(
+    "get_summary",
+    "Get structured metadata for a file or all files in an initiative. Returns frontmatter, classification, status, and relationship edges — without reading file content into context.",
+    {
+      path: z.string().optional().describe("File path (relative to project root) to get metadata for"),
+      initiative: z.string().optional().describe("Initiative slug — returns metadata for all files in this initiative"),
+    },
+    async ({ path: filePath, initiative: initSlug }) => {
+      if (!filePath && !initSlug) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: "Error: Provide either 'path' (file path) or 'initiative' (slug).",
+          }],
+          isError: true,
+        }
+      }
+
+      const db = ensureKnowledgeDb()
+
+      if (filePath) {
+        const row = db.prepare(`
+          SELECT path, title, kind, initiative, status, frontmatter, updated_at
+          FROM files WHERE path = ?
+        `).get(filePath) as {
+          path: string; title: string | null; kind: string | null
+          initiative: string | null; status: string | null
+          frontmatter: string | null; updated_at: number
+        } | undefined
+
+        if (!row) {
+          return {
+            content: [{ type: "text" as const, text: `File not found in knowledge index: ${filePath}. Run 'pnpm sync:db' to rebuild.` }],
+            isError: true,
+          }
+        }
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              ...row,
+              frontmatter: row.frontmatter ? JSON.parse(row.frontmatter) : null,
+            }, null, 2),
+          }],
+        }
+      }
+
+      // Initiative summary — all files + edges
+      const files = db.prepare(`
+        SELECT path, title, kind, status, updated_at
+        FROM files WHERE initiative = ?
+        ORDER BY kind, path
+      `).all(initSlug) as Array<{
+        path: string; title: string | null; kind: string | null
+        status: string | null; updated_at: number
+      }>
+
+      const edges = db.prepare(`
+        SELECT source, target, kind FROM edges
+        WHERE source = ? OR target = ?
+        ORDER BY kind
+      `).all(initSlug, initSlug) as Array<{
+        source: string; target: string; kind: string
+      }>
+
+      if (files.length === 0 && edges.length === 0) {
+        return {
+          content: [{ type: "text" as const, text: `Initiative not found in knowledge index: ${initSlug}. Run 'pnpm sync:db' to rebuild.` }],
+          isError: true,
+        }
+      }
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            initiative: initSlug,
+            fileCount: files.length,
+            files,
+            edges,
+          }, null, 2),
+        }],
       }
     },
   )
