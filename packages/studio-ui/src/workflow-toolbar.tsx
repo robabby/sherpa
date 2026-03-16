@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import { exportWorkflowAsMermaid } from "@sherpa/studio-core";
-import { ClipboardCopy } from "lucide-react";
+import { ClipboardCopy, RotateCcw } from "lucide-react";
 import { cn } from "./lib/utils";
 
 interface WorkflowToolbarProps {
   flowEnabled: boolean;
   onToggleFlow: () => void;
+  onResetLayout: () => void;
 }
 
 export function WorkflowToolbar({
   flowEnabled,
   onToggleFlow,
+  onResetLayout,
 }: WorkflowToolbarProps) {
   const [copied, setCopied] = useState(false);
 
@@ -48,6 +50,14 @@ export function WorkflowToolbar({
       >
         <ClipboardCopy className="size-3" />
         {copied ? "Copied!" : "Mermaid"}
+      </button>
+      <button
+        type="button"
+        onClick={onResetLayout}
+        className="flex items-center gap-1.5 text-xs px-2 py-1 rounded cursor-pointer text-muted-foreground"
+      >
+        <RotateCcw className="size-3" />
+        Reset Layout
       </button>
     </div>
   );

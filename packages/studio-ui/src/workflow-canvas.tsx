@@ -13,7 +13,7 @@ import {
   type Node,
   type Edge,
 } from "@xyflow/react";
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import {
   WORKFLOW_NODES,
   WORKFLOW_EDGES,
@@ -200,6 +200,8 @@ async function computeElkLayout(
 // Inner component (needs useReactFlow, must be inside ReactFlowProvider)
 // ---------------------------------------------------------------------------
 
+const LAYOUT_STORAGE_KEY = "workflow-layout";
+
 interface WorkflowCanvasInnerProps {
   initialNodes: Node[];
   initialEdges: Edge[];
@@ -207,6 +209,7 @@ interface WorkflowCanvasInnerProps {
   flowEnabled: boolean;
   onNodeClick?: (_: React.MouseEvent, node: Node) => void;
   onPaneClick?: () => void;
+  onResetLayoutRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 function WorkflowCanvasInner({
@@ -216,6 +219,7 @@ function WorkflowCanvasInner({
   flowEnabled,
   onNodeClick,
   onPaneClick,
+  onResetLayoutRef,
 }: WorkflowCanvasInnerProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
@@ -231,11 +235,20 @@ function WorkflowCanvasInner({
       data: { ...e.data, flowEnabled },
     }));
 
-  const runLayout = useCallback(async () => {
+  // Save node positions to localStorage on drag end
+  const onNodeDragStop = useCallback(() => {
+    const positions: Record<string, { x: number; y: number }> = {};
+    for (const node of nodes) {
+      positions[node.id] = { x: node.position.x, y: node.position.y };
+    }
+    localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(positions));
+  }, [nodes]);
+
+  // Run ELK layout (used on mount and reset)
+  const runElkLayout = useCallback(async () => {
     try {
       const positioned = await computeElkLayout(initialNodes, initialEdges);
       setNodes(positioned);
-      // Small delay to let React render the positioned nodes before fitting
       requestAnimationFrame(() => {
         fitView({ padding: 0.1 });
       });
@@ -244,9 +257,45 @@ function WorkflowCanvasInner({
     }
   }, [initialNodes, initialEdges, setNodes, fitView]);
 
+  // Reset layout: clear saved positions and re-run ELK
+  const resetLayout = useCallback(() => {
+    localStorage.removeItem(LAYOUT_STORAGE_KEY);
+    runElkLayout();
+  }, [runElkLayout]);
+
+  // Expose resetLayout to parent via ref
   useEffect(() => {
-    runLayout();
-  }, [runLayout]);
+    if (onResetLayoutRef) {
+      onResetLayoutRef.current = resetLayout;
+    }
+  }, [onResetLayoutRef, resetLayout]);
+
+  // On mount: restore saved positions or run ELK
+  useEffect(() => {
+    const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY);
+    if (savedLayout) {
+      try {
+        const positions = JSON.parse(savedLayout) as Record<string, { x: number; y: number }>;
+        const currentIds = new Set(initialNodes.map((n) => n.id));
+        const savedIds = new Set(Object.keys(positions));
+        const match = [...currentIds].every((id) => savedIds.has(id));
+
+        if (match) {
+          const positioned = initialNodes.map((n) => ({
+            ...n,
+            position: positions[n.id] ?? n.position,
+          }));
+          setNodes(positioned);
+          setTimeout(() => fitView({ padding: 0.1 }), 50);
+          return;
+        }
+      } catch {
+        // Invalid saved data, fall through to ELK
+      }
+    }
+    runElkLayout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <ReactFlow
@@ -255,6 +304,7 @@ function WorkflowCanvasInner({
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onNodeClick={onNodeClick}
+      onNodeDragStop={onNodeDragStop}
       onPaneClick={onPaneClick}
       nodeTypes={workflowNodeTypes}
       edgeTypes={workflowEdgeTypes}
@@ -303,6 +353,7 @@ export function WorkflowCanvas({
 }: WorkflowCanvasProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [detailWidth, setDetailWidth] = useState(360);
+  const resetLayoutRef = useRef<(() => void) | null>(null);
 
   // Flow animation toggle — persisted to localStorage
   const [flowEnabled, setFlowEnabled] = useState(() => {
@@ -385,6 +436,7 @@ export function WorkflowCanvas({
             flowEnabled={flowEnabled}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
+            onResetLayoutRef={resetLayoutRef}
           />
           <div className="absolute top-3 right-3 z-10">
             <WorkflowLegend
@@ -398,6 +450,7 @@ export function WorkflowCanvas({
             <WorkflowToolbar
               flowEnabled={flowEnabled}
               onToggleFlow={toggleFlow}
+              onResetLayout={() => resetLayoutRef.current?.()}
             />
           </div>
         </div>
