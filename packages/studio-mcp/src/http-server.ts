@@ -1,9 +1,13 @@
 import http from "node:http"
 import { randomUUID } from "node:crypto"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
+import { openDb, closeAll as closeAllDbs, resolveDbPaths } from "@sherpa/studio-core/db"
+import { applyCoordinationSchema } from "@sherpa/studio-core/db"
 import { createStudioMcpServer, type StudioMcpOptions } from "./server.js"
 import { SessionManager } from "./session-manager.js"
 import { resolvePort } from "./port.js"
+import { applyAuthoritySchema } from "./authority/schema.js"
+import { startReaper, stopReaper } from "./authority/reaper.js"
 
 export interface HttpServerOptions extends StudioMcpOptions {
   port?: number
@@ -22,11 +26,25 @@ export async function startHttpServer(opts?: HttpServerOptions): Promise<{
 }> {
   const port = resolvePort(opts)
 
+  // Resolve project root (same logic as server.ts resolveOptions)
+  const projectRoot = opts?.projectRoot
+    ?? process.env.SHERPA_PROJECT_ROOT
+    ?? process.cwd()
+
+  // Initialize coordination database
+  const dbPaths = resolveDbPaths(projectRoot)
+  const coordinationDb = openDb(dbPaths.coordination)
+  applyCoordinationSchema(coordinationDb)
+  applyAuthoritySchema(coordinationDb)
+
+  // Start TTL reaper
+  startReaper(coordinationDb)
+
   const sessions = new SessionManager(() => {
     // We need to wire up onsessioninitialized before connect(),
     // so we create server + transport here and defer registration
     // to the HTTP handler where we have access to the closure.
-    const server = createStudioMcpServer(opts)
+    const server = createStudioMcpServer({ ...opts, coordinationDb })
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
     })
@@ -105,7 +123,9 @@ export async function startHttpServer(opts?: HttpServerOptions): Promise<{
 
   const shutdown = async () => {
     console.error("\n[sherpa-mcp] Shutting down...")
+    stopReaper()
     await sessions.closeAll()
+    closeAllDbs()
     httpServer.close()
     process.exit(0)
   }

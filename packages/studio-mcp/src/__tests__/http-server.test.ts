@@ -1,5 +1,10 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest"
+import fs from "node:fs"
+import path from "node:path"
+import os from "node:os"
+import { closeAll } from "@sherpa/studio-core/db"
 import { startHttpServer } from "../http-server"
+import { stopReaper } from "../authority/reaper"
 import type http from "node:http"
 
 // The http-server module registers SIGINT/SIGTERM handlers that call
@@ -7,13 +12,20 @@ import type http from "node:http"
 const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {}) as never)
 
 let httpServer: http.Server | null = null
+let tmpDir: string | null = null
 
 afterEach(async () => {
+  stopReaper()
   if (httpServer) {
     await new Promise<void>((resolve, reject) => {
       httpServer!.close((err) => (err ? reject(err) : resolve()))
     })
     httpServer = null
+  }
+  closeAll()
+  if (tmpDir) {
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+    tmpDir = null
   }
   exitSpy.mockClear()
 })
@@ -24,8 +36,12 @@ function getPort(server: http.Server): number {
 }
 
 describe("HTTP MCP Server", () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sherpa-http-test-"))
+  })
+
   it("serves health check", async () => {
-    const result = await startHttpServer({ port: 0 })
+    const result = await startHttpServer({ port: 0, projectRoot: tmpDir! })
     httpServer = result.server
     const port = getPort(result.server)
 
@@ -38,7 +54,7 @@ describe("HTTP MCP Server", () => {
   })
 
   it("returns 404 for unknown paths", async () => {
-    const result = await startHttpServer({ port: 0 })
+    const result = await startHttpServer({ port: 0, projectRoot: tmpDir! })
     httpServer = result.server
     const port = getPort(result.server)
 
@@ -47,7 +63,7 @@ describe("HTTP MCP Server", () => {
   })
 
   it("returns 405 for unsupported methods", async () => {
-    const result = await startHttpServer({ port: 0 })
+    const result = await startHttpServer({ port: 0, projectRoot: tmpDir! })
     httpServer = result.server
     const port = getPort(result.server)
 
@@ -56,7 +72,7 @@ describe("HTTP MCP Server", () => {
   })
 
   it("initializes an MCP session via POST /mcp", async () => {
-    const result = await startHttpServer({ port: 0 })
+    const result = await startHttpServer({ port: 0, projectRoot: tmpDir! })
     httpServer = result.server
     const port = getPort(result.server)
 
@@ -90,7 +106,7 @@ describe("HTTP MCP Server", () => {
   })
 
   it("supports multiple concurrent client sessions", async () => {
-    const result = await startHttpServer({ port: 0 })
+    const result = await startHttpServer({ port: 0, projectRoot: tmpDir! })
     httpServer = result.server
     const port = getPort(result.server)
 
