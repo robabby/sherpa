@@ -1032,6 +1032,160 @@ ${deliverables}
     },
   )
 
+  // --- Tool: get_context ---
+
+  const ROLE_BUDGETS: Record<string, { scope: number; neighborhood: number; system: number }> = {
+    worker:     { scope: 800,  neighborhood: 300, system: 200 },
+    planner:    { scope: 300,  neighborhood: 500, system: 1500 },
+    judge:      { scope: 600,  neighborhood: 800, system: 300 },
+    researcher: { scope: 1000, neighborhood: 500, system: 1500 },
+  }
+
+  server.tool(
+    "get_context",
+    "Session bootstrap — get role-appropriate system state in a single call. Workers get deep scope, Planners get deep system overview, Judges get scope + neighborhood. Returns everything an agent needs to orient without reading individual files.",
+    {
+      role: z
+        .enum(["worker", "planner", "judge", "researcher"])
+        .describe("Agent role — determines what zoom level of context is returned"),
+      initiative: z.string().optional().describe("Initiative slug to scope context to"),
+      max_tokens: z.number().min(500).max(8000).optional().describe("Override token budget (default varies by role)"),
+    },
+    async ({ role, initiative: initSlug, max_tokens }) => {
+      const db = ensureKnowledgeDb()
+      const budgets = ROLE_BUDGETS[role] ?? ROLE_BUDGETS.worker!
+      const totalBudget = max_tokens ?? (budgets.scope + budgets.neighborhood + budgets.system)
+
+      // Scale budgets proportionally if max_tokens overrides
+      const scale = max_tokens ? max_tokens / (budgets.scope + budgets.neighborhood + budgets.system) : 1
+      const scopeBudget = Math.round(budgets.scope * scale)
+      const neighborhoodBudget = Math.round(budgets.neighborhood * scale)
+      const systemBudget = Math.round(budgets.system * scale)
+
+      // --- Scope: initiative detail ---
+      let scope: unknown = null
+      if (initSlug) {
+        const summary = db.prepare(
+          "SELECT summary, stale FROM summaries WHERE id = ? AND level = 'initiative'"
+        ).get(initSlug) as { summary: string; stale: number } | undefined
+
+        const fileList = db.prepare(
+          "SELECT path, title, kind, status FROM files WHERE initiative = ? ORDER BY kind"
+        ).all(initSlug) as Array<{ path: string; title: string | null; kind: string | null; status: string | null }>
+
+        // For workers: full file list. For planners: just titles.
+        const files = role === "planner"
+          ? fileList.map(f => ({ title: f.title, kind: f.kind }))
+          : fileList
+
+        scope = {
+          initiative: initSlug,
+          summary: summary?.summary ?? null,
+          stale: summary ? Boolean(summary.stale) : null,
+          files,
+        }
+      }
+
+      // --- Neighborhood: adjacent initiatives ---
+      let neighborhood: unknown = null
+      if (initSlug) {
+        const edges = db.prepare(`
+          SELECT source, target, kind FROM edges
+          WHERE source = ? OR target = ?
+        `).all(initSlug, initSlug) as Array<{ source: string; target: string; kind: string }>
+
+        // Get summaries for adjacent initiatives
+        const neighborSlugs = new Set<string>()
+        for (const e of edges) {
+          if (e.source !== initSlug) neighborSlugs.add(e.source)
+          if (e.target !== initSlug) neighborSlugs.add(e.target)
+        }
+
+        // Only include initiative summaries (not file path targets)
+        const neighborSummaries: Array<{ initiative: string; summary: string; status: string | null }> = []
+        for (const slug of neighborSlugs) {
+          const row = db.prepare(`
+            SELECT s.summary, f.status FROM summaries s
+            JOIN files f ON f.initiative = s.id AND f.kind = 'initiative'
+            WHERE s.id = ? AND s.level = 'initiative'
+          `).get(slug) as { summary: string; status: string | null } | undefined
+          if (row) {
+            neighborSummaries.push({ initiative: slug, summary: row.summary, status: row.status })
+          }
+        }
+
+        neighborhood = {
+          edges,
+          adjacentInitiatives: neighborSummaries,
+        }
+      }
+
+      // --- System: portfolio overview ---
+      const statusCounts = db.prepare(`
+        SELECT status, COUNT(*) as count FROM files
+        WHERE kind = 'initiative'
+        GROUP BY status ORDER BY count DESC
+      `).all() as Array<{ status: string; count: number }>
+
+      const inProgress = db.prepare(`
+        SELECT s.id, s.summary FROM summaries s
+        JOIN files f ON f.initiative = s.id AND f.kind = 'initiative'
+        WHERE s.level = 'initiative' AND f.status = 'in-progress'
+      `).all() as Array<{ id: string; summary: string }>
+
+      const recentlyLanded = db.prepare(`
+        SELECT s.id, s.summary FROM summaries s
+        JOIN files f ON f.initiative = s.id AND f.kind = 'initiative'
+        WHERE s.level = 'initiative' AND f.status = 'integrated'
+        ORDER BY s.updated_at DESC LIMIT 5
+      `).all() as Array<{ id: string; summary: string }>
+
+      // For workers: just status counts. For planners/researchers: full summaries.
+      const system = role === "worker"
+        ? { statusCounts, inProgressCount: inProgress.length }
+        : { statusCounts, inProgress, recentlyLanded }
+
+      // --- Alerts: recent changes to files in neighbor initiatives ---
+      let alerts: string[] = []
+      if (initSlug) {
+        const ONE_HOUR_MS = 60 * 60 * 1000
+        const recentThreshold = Date.now() - ONE_HOUR_MS
+        const neighborSlugs = new Set<string>()
+        const edges = db.prepare("SELECT source, target FROM edges WHERE source = ? OR target = ?").all(initSlug, initSlug) as Array<{ source: string; target: string }>
+        for (const e of edges) {
+          if (e.source !== initSlug) neighborSlugs.add(e.source)
+          if (e.target !== initSlug) neighborSlugs.add(e.target)
+        }
+
+        for (const slug of neighborSlugs) {
+          const recent = db.prepare(
+            "SELECT COUNT(*) as c FROM files WHERE initiative = ? AND updated_at > ?"
+          ).get(slug, recentThreshold) as { c: number }
+          if (recent.c > 0) {
+            alerts.push(`${slug} has ${recent.c} file(s) changed in the last hour`)
+          }
+        }
+      }
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            role,
+            initiative: initSlug ?? null,
+            tokenBudget: { total: totalBudget, scope: scopeBudget, neighborhood: neighborhoodBudget, system: systemBudget },
+            scope,
+            neighborhood,
+            system,
+            alerts: alerts.length > 0 ? alerts : undefined,
+            backend: "algorithmic",
+            capabilities: KNOWLEDGE_CAPABILITIES,
+          }, null, 2),
+        }],
+      }
+    },
+  )
+
   // --- Authority tools (only when coordination DB is provided) ---
   if (opts?.coordinationDb) {
     registerAuthorityTools(server, opts.coordinationDb, projectRoot)
