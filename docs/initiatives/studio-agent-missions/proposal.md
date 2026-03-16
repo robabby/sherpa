@@ -1,8 +1,8 @@
 ---
-status: approved
+status: integrated
 initiative: studio-agent-missions
 created: 2026-03-14
-updated: '2026-03-14'
+updated: '2026-03-16'
 type: new-plan
 risk: evolutionary
 targets:

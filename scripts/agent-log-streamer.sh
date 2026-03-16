@@ -123,7 +123,16 @@ while [[ ! -f "$LOG_FILE" ]]; do
 done
 
 # ── Phase 2: Poll loop ──────────────────────────────────────────────
+# Fast batch (500ms) for first 10 seconds to catch quick tasks,
+# then normal interval (2s) for steady-state streaming.
+LOOP_COUNT=0
 while true; do
   read_new_bytes
-  sleep "$POLL_INTERVAL"
+  if [[ $LOOP_COUNT -lt 20 ]]; then
+    # First 10 seconds: 500ms interval (20 iterations × 0.5s)
+    sleep 0.5
+  else
+    sleep "$POLL_INTERVAL"
+  fi
+  LOOP_COUNT=$((LOOP_COUNT + 1))
 done

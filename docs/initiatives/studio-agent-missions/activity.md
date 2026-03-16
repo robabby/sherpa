@@ -29,3 +29,14 @@ worktree: null
 - Session 3: SSE API route (fs.watch + debounce), useMissionEvents EventSource hook
 - Session 4: visual verification, old component cleanup, edge cases, overflow fix
 - Fixed horizontal overflow: added min-w-0, overflow-x-hidden, overflow-wrap:anywhere to detail pane containers
+
+## 2026-03-16
+- Marked integrated. All 4 sessions complete, SSE streaming operational.
+
+## Seeds
+
+1. **Agent narrative streaming** — The timeline shows dispatch-level events (status_changed, backend_delegating, dispatch_spawned) but NOT what the agent did during execution. The 38-second gap between `dispatch_spawned` and `status_changed → completed` is a black box. Backend scripts capture agent output to `.log` files, but this isn't streamed as events. The agent's internal narrative (file reads, decisions, edits, tool calls) should be forwarded into the NDJSON event stream in real time. Scoped out as beyond Session 3's SSE work. → initiative: agent-narrative-streaming
+
+2. **Backend-specific log parsing** — Each backend (Claude `--print`, Codex `exec`, Gemini CLI) produces different output formats. A parsing layer that normalizes agent output into structured events (tool_call, file_edit, reasoning, error) would make the timeline useful across all backends. Emerged during Codex dispatch testing. → initiative: agent-narrative-streaming
+
+3. **Live text streaming in detail pane** — Beyond structured events, show the raw agent output as a live terminal-style feed (like watching `tail -f` on the log). Complementary to the structured timeline — one tab for events, one for raw output. Rabbit hole #2 from dispatch-center shape.md.

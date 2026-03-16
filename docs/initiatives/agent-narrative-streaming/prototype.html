@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Narrative Streaming — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Fraunces', 'serif'],
+            heading: ['DM Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --color-obsidian: #0c0c0e;
+      --color-warm-charcoal: #1a1a1e;
+      --color-dark-bronze: #2a2520;
+      --color-copper: #c49a6c;
+      --color-bronze: #8b6914;
+      --color-gold: #d4a843;
+      --color-tarnished: #6b5d4e;
+      --color-dim: #575553;
+    }
+    body {
+      background: var(--color-obsidian);
+      color: #e4e4e7;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .font-display { font-family: 'Fraunces', serif; }
+    .font-heading { font-family: 'DM Sans', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(196,154,108,0.3); }
+      50% { opacity: 0.6; box-shadow: 0 0 12px rgba(196,154,108,0.15); }
+    }
+    @keyframes ping {
+      75%, 100% { transform: scale(2); opacity: 0; }
+    }
+    @keyframes timeline-trace {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 40px; }
+    }
+    @keyframes stream-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes cursor-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .animate-stream-in { animation: stream-in 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Log viewer scrollbar */
+    .log-scroll::-webkit-scrollbar { width: 6px; }
+    .log-scroll::-webkit-scrollbar-track { background: transparent; }
+    .log-scroll::-webkit-scrollbar-thumb { background: rgba(196,154,108,0.15); border-radius: 3px; }
+    .log-scroll::-webkit-scrollbar-thumb:hover { background: rgba(196,154,108,0.3); }
+
+    /* Tab styles */
+    .tab-btn { transition: all 0.15s ease; }
+    .tab-btn.active {
+      background: rgba(212,168,67,0.1);
+      color: var(--color-gold);
+    }
+    .tab-btn:not(.active) { color: #71717a; }
+    .tab-btn:not(.active):hover { color: #a1a1aa; }
+  </style>
+</head>
+<body class="min-h-screen p-0">
+
+  <!-- Main container simulating detail pane -->
+  <div class="mx-auto max-w-3xl px-6 pt-8 pb-16"
+    style="background: radial-gradient(ellipse at 20% 0%, rgba(196,154,108,0.03) 0%, transparent 50%),
+                       radial-gradient(ellipse at 80% 100%, rgba(99,102,241,0.02) 0%, transparent 50%);">
+
+    <!-- Metadata header -->
+    <div class="mb-6">
+      <div class="mb-3 flex items-center gap-2.5">
+        <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+        <span class="inline-flex items-center rounded-full border border-emerald-500/25 bg-emerald-500/8 px-2.5 py-0.5 text-xs font-medium text-emerald-400">completed</span>
+        <span class="inline-flex items-center rounded-full border border-zinc-600/25 bg-zinc-600/8 px-2.5 py-0.5 text-xs text-zinc-500">pending verdict</span>
+      </div>
+      <h1 class="font-display mb-4 text-xl font-semibold tracking-tight">Fix MCP server log levels</h1>
+
+      <!-- Metric chips -->
+      <div class="mb-3 flex flex-wrap items-stretch gap-2">
+        <div class="flex flex-col gap-0.5 rounded-md border border-[var(--color-dark-bronze)]/80 bg-[var(--color-dark-bronze)]/50 px-2.5 py-1.5">
+          <span class="font-mono text-[9px] uppercase tracking-[0.08em]" style="color:var(--color-dim)">Backend</span>
+          <div class="flex items-center gap-1.5">
+            <span class="rounded border border-zinc-700/80 bg-zinc-800/60 px-1 py-px font-mono text-[7px] font-semibold uppercase tracking-widest text-zinc-500">CLI</span>
+            <span class="font-mono text-[13px] font-medium text-zinc-300">codex</span>
+          </div>
+        </div>
+        <div class="flex flex-col gap-0.5 rounded-md border border-[var(--color-dark-bronze)]/80 bg-[var(--color-dark-bronze)]/50 px-2.5 py-1.5">
+          <span class="font-mono text-[9px] uppercase tracking-[0.08em]" style="color:var(--color-dim)">Model</span>
+          <span class="font-mono text-[13px] font-medium text-zinc-300">gpt-5.4</span>
+        </div>
+        <div class="flex flex-col gap-0.5 rounded-md border border-[var(--color-dark-bronze)]/80 bg-[var(--color-dark-bronze)]/50 px-2.5 py-1.5">
+          <span class="font-mono text-[9px] uppercase tracking-[0.08em]" style="color:var(--color-dim)">Duration</span>
+          <span class="font-mono text-[13px] font-medium text-zinc-300">1m 4s</span>
+        </div>
+        <div class="flex flex-col gap-0.5 rounded-md border border-[var(--color-dark-bronze)]/80 bg-[var(--color-dark-bronze)]/50 px-2.5 py-1.5">
+          <span class="font-mono text-[9px] uppercase tracking-[0.08em]" style="color:var(--color-dim)">Tokens</span>
+          <span class="font-mono text-[13px] font-medium text-zinc-300">13.7k</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-5 flex items-center gap-1">
+      <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn h-7 rounded-md px-3 text-xs uppercase tracking-[0.1em]">Overview</button>
+      <button onclick="switchTab('report')" id="tab-report" class="tab-btn h-7 rounded-md px-3 text-xs uppercase tracking-[0.1em]">Report</button>
+      <button onclick="switchTab('log')" id="tab-log" class="tab-btn active h-7 rounded-md px-3 text-xs uppercase tracking-[0.1em] relative">
+        Log
+        <span id="log-pulse" class="hidden absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-[var(--color-copper)]" style="animation: pulse-glow 2s ease-in-out infinite"></span>
+      </button>
+      <button onclick="switchTab('verdict')" id="tab-verdict" class="tab-btn h-7 rounded-md px-3 text-xs uppercase tracking-[0.1em]">Verdict</button>
+      <button onclick="switchTab('events')" id="tab-events" class="tab-btn h-7 rounded-md px-3 text-xs uppercase tracking-[0.1em]">Events</button>
+    </div>
+
+    <!-- Tab: Log (default visible) -->
+    <div id="content-log" class="tab-content">
+      <!-- Log viewer component -->
+      <div class="rounded-lg border border-[var(--color-dark-bronze)] bg-[var(--color-obsidian)] overflow-hidden">
+        <!-- Header bar -->
+        <div class="flex items-center gap-2 border-b border-[var(--color-dark-bronze)]/60 px-4 py-2">
+          <span id="log-header-dot" class="h-2 w-2 rounded-full bg-emerald-500"></span>
+          <span class="font-mono text-[10px] uppercase tracking-[0.08em]" style="color:var(--color-dim)">Agent Log</span>
+          <div class="flex-1"></div>
+          <span class="font-mono text-[10px] tabular-nums" style="color:var(--color-dim)">
+            <span id="line-count">142</span> lines
+          </span>
+        </div>
+
+        <!-- Log body -->
+        <div id="log-body" class="log-scroll overflow-y-auto overflow-x-auto" style="max-height: 520px;">
+          <pre id="log-text" class="px-4 py-3 font-mono text-xs leading-[1.7] text-zinc-400 whitespace-pre-wrap" style="tab-size: 2;"></pre>
+          <div id="streaming-tail" class="hidden px-4 pb-3 flex items-center gap-2">
+            <span class="relative flex h-2 w-2">
+              <span class="absolute inline-flex h-full w-full rounded-full bg-[var(--color-copper)]/40" style="animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-[var(--color-copper)]/60"></span>
+            </span>
+            <span class="font-mono text-[10px]" style="color:rgba(196,154,108,0.5)">Streaming...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Events -->
+    <div id="content-events" class="tab-content hidden">
+      <div class="space-y-5">
+        <!-- Events timeline with agent activity indicator -->
+        <div class="relative ml-4">
+          <div class="absolute left-[7px] top-2 bottom-2 w-px bg-[var(--color-dark-bronze)]"></div>
+
+          <!-- dispatch_requested -->
+          <div class="relative flex gap-4 pb-6">
+            <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+              <span class="h-3.5 w-3.5 rounded-full border-2 border-[var(--color-copper)] bg-[var(--color-copper)]/20" style="box-shadow:0 0 6px rgba(196,154,108,0.3)"></span>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium" style="color:var(--color-copper)">dispatch_requested</span>
+                <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">21:46:22</span>
+              </div>
+              <p class="mt-1 text-[11px] text-zinc-600">Dispatched to codex (supervised) via studio-ui</p>
+            </div>
+          </div>
+
+          <!-- worker_started -->
+          <div class="relative flex gap-4 pb-6">
+            <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+              <span class="h-3.5 w-3.5 rounded-full border-2 border-[var(--color-bronze)] bg-[var(--color-bronze)]/15"></span>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium" style="color:var(--color-bronze)">worker_started</span>
+                <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">21:46:23</span>
+              </div>
+              <p class="mt-1 text-[11px] text-zinc-600">gpt-5.4 · supervised · code-implementation · $1.00 budget</p>
+            </div>
+          </div>
+
+          <!-- dispatch_spawned -->
+          <div class="relative flex gap-4 pb-6">
+            <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+              <span class="h-3.5 w-3.5 rounded-full border-2 border-[var(--color-copper)] bg-[var(--color-copper)]/15"></span>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium" style="color:rgba(196,154,108,0.8)">dispatch_spawned</span>
+                <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">21:46:23</span>
+              </div>
+              <p class="mt-1 text-[11px] text-zinc-600">PID 51168 · codex · engineer · supervised</p>
+            </div>
+          </div>
+
+          <!-- NEW: Agent activity indicator (collapsed agent_output) -->
+          <div class="relative flex gap-4 pb-6">
+            <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+              <span class="h-2.5 w-2.5 rounded-full border border-zinc-600/40 bg-zinc-700/30"></span>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] text-zinc-600">agent output</span>
+                <!-- Activity bar -->
+                <div class="flex-1 mx-1 h-1.5 rounded-full overflow-hidden bg-zinc-800/50">
+                  <div class="h-full rounded-full" style="width:100%; background: repeating-linear-gradient(90deg, rgba(196,154,108,0.12) 0px, rgba(196,154,108,0.06) 4px, transparent 8px, transparent 12px);"></div>
+                </div>
+                <span class="font-mono text-[10px] tabular-nums text-zinc-600">21:46:23–21:47:27</span>
+              </div>
+              <p class="mt-1 text-[11px] text-zinc-700">142 lines · View in Log tab</p>
+            </div>
+          </div>
+
+          <!-- status_changed → completed -->
+          <div class="relative flex gap-4 pb-6">
+            <div class="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+              <span class="h-3.5 w-3.5 rounded-full border-2 border-emerald-500 bg-emerald-500/20" style="box-shadow:0 0 6px rgba(16,185,129,0.3)"></span>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-emerald-500">status_changed</span>
+                <span class="rounded border border-emerald-500/25 bg-emerald-500/8 px-1.5 py-px text-[10px] font-medium text-emerald-400">completed</span>
+                <span class="ml-auto font-mono text-[10px] tabular-nums text-zinc-600">21:47:27</span>
+              </div>
+              <p class="mt-1 text-[11px] text-zinc-600">dispatched → completed · Exit code 0 · 1m 4s duration</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Overview (placeholder) -->
+    <div id="content-overview" class="tab-content hidden">
+      <div class="space-y-8">
+        <div>
+          <h2 class="font-heading mb-3 text-[15px] font-semibold" style="color:var(--color-copper)">Objective</h2>
+          <p class="text-sm leading-relaxed text-zinc-300/90">The MCP HTTP server uses <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs">console.error()</code> for all logging, including informational startup and session messages. Fix the log levels so only actual errors use <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs">console.error()</code>.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Report (placeholder) -->
+    <div id="content-report" class="tab-content hidden">
+      <div class="rounded-lg border border-[var(--color-dark-bronze)] bg-[var(--color-warm-charcoal)]/30 p-5">
+        <div class="mb-3 flex items-center gap-2">
+          <span class="font-mono text-[9px] uppercase tracking-widest" style="color:var(--color-dim)">Worker Output</span>
+          <div class="h-px flex-1" style="background:var(--color-dark-bronze)"></div>
+        </div>
+        <p class="text-sm text-zinc-400">Work is blocked by the current environment. The filesystem is read-only in this session...</p>
+      </div>
+    </div>
+
+    <!-- Tab: Verdict (placeholder) -->
+    <div id="content-verdict" class="tab-content hidden">
+      <div class="rounded-lg border border-[var(--color-dark-bronze)]/50 bg-[var(--color-warm-charcoal)]/20 px-6 py-8 text-center">
+        <p class="text-sm text-zinc-500">No verdict yet</p>
+        <p class="mt-1 text-xs" style="color:var(--color-dim)">Awaiting judge review</p>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="mt-8 flex items-center gap-4 border-t border-[var(--color-dark-bronze)]/40 pt-6">
+      <button onclick="toggleStreaming()" id="stream-btn" class="rounded-md border border-[var(--color-copper)]/30 bg-[var(--color-copper)]/8 px-4 py-2 text-xs font-medium text-[var(--color-copper)] transition hover:bg-[var(--color-copper)]/15">
+        Simulate Streaming
+      </button>
+      <button onclick="resetLog()" class="rounded-md border border-zinc-700 px-4 py-2 text-xs text-zinc-500 transition hover:bg-zinc-800">
+        Reset
+      </button>
+      <span id="status-label" class="text-xs text-zinc-600">Completed — showing full log</span>
+    </div>
+  </div>
+
+  <script>
+    // ── Tab switching ──────────────────────────────────────────────────
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('content-' + tab).classList.remove('hidden');
+      document.getElementById('tab-' + tab).classList.add('active');
+    }
+
+    // ── Log data (from actual Codex output, ANSI-stripped) ─────────────
+    const FULL_LOG = `OpenAI Codex v0.114.0 (research preview)
+--------
+workdir: /Users/rob/Workbench/sherpa
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: none
+reasoning summaries: none
+session id: 019cf4f7-77b6-7303-a6f6-6d37e973be51
+--------
+
+user
+You are a Sherpa agent dispatched to complete a task autonomously.
+Read the task below carefully. Complete ALL acceptance criteria.
+
+TASK:
+# Fix MCP server log levels
+...
+
+mcp: MCP_DOCKER starting
+mcp: MCP_DOCKER ready
+mcp startup: ready: MCP_DOCKER
+
+codex
+I'm checking the target file and repo state first so I can make the requested log-level change and verify what would need to be committed.
+
+exec
+> pwd
+/Users/rob/Workbench/sherpa
+
+exec
+> rg -n "console\\.error|console\\.log" packages/studio-mcp/src/http-server.ts
+76: console.error(\`[sherpa-mcp] Session initialized: \${sid}\`)
+95: console.error(\`[sherpa-mcp] Session closed: \${sessionId}\`)
+107: console.error("\\n[sherpa-mcp] Shutting down...")
+117: console.error(\`[sherpa-mcp] Sherpa MCP server listening\`)
+118: console.error(\`[sherpa-mcp] Health check\`)
+
+codex
+I found the exact console.error() sites in http-server.ts. Next I'm reading the surrounding code to confirm which calls are informational versus actual error handling, and then I'll assess whether the environment allows the required edits and checks.
+
+exec
+> sed -n '1,180p' packages/studio-mcp/src/http-server.ts
+import http from "node:http"
+import { randomUUID } from "node:crypto"
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/..."
+import { createStudioMcpServer } from "./server.js"
+...
+
+exec
+> rg -n "catch|throw|console\\.error" packages/studio-mcp/src/http-server.ts
+76: console.error(\`[sherpa-mcp] Session initialized\`)
+95: console.error(\`[sherpa-mcp] Session closed\`)
+107: console.error("\\n[sherpa-mcp] Shutting down...")
+117: console.error(\`[sherpa-mcp] listening\`)
+118: console.error(\`[sherpa-mcp] Health check\`)
+
+codex
+I have the full change isolated: five informational log calls should switch to console.log(), and there are no existing error-path console.error() calls in this file beyond those informational ones. Attempting the edit now.
+
+codex
+The first patch attempt was rejected by the environment. Retrying with a project-relative path to confirm whether edits are blocked globally or only by path handling.
+
+exec
+> pnpm check
+Scope: 8 of 9 workspace projects
+packages/studio-cli check: Done
+packages/studio-mcp check: Done
+packages/studio-core check: Done
+apps/website check: Done
+packages/studio-ui check: Done
+apps/studio check: Done
+
+codex
+pnpm check is running clean. The blocking issue remains filesystem write access, which prevents both the code change and the required report/blocker files.
+
+codex
+Work is blocked by the current environment. I could not complete the file edit, create the required log/report files, or make the required commit.
+
+What I verified:
+- Target file: packages/studio-mcp/src/http-server.ts
+- 5 informational console.error() calls at lines 76, 95, 107, 117, 118
+- No actual error-path console.error() calls exist
+- pnpm check passes with exit code 0
+
+tokens used: 13,652`;
+
+    const LOG_LINES = FULL_LOG.split('\n');
+
+    // ── Render complete log ────────────────────────────────────────────
+    function renderFullLog() {
+      document.getElementById('log-text').textContent = FULL_LOG;
+      document.getElementById('line-count').textContent = LOG_LINES.length;
+    }
+
+    // ── Streaming simulation ───────────────────────────────────────────
+    let streamingInterval = null;
+    let streamingIndex = 0;
+    let isStreaming = false;
+
+    function toggleStreaming() {
+      if (isStreaming) {
+        stopStreaming();
+      } else {
+        startStreaming();
+      }
+    }
+
+    function startStreaming() {
+      isStreaming = true;
+      streamingIndex = 0;
+      document.getElementById('log-text').textContent = '';
+      document.getElementById('streaming-tail').classList.remove('hidden');
+      document.getElementById('log-pulse').classList.remove('hidden');
+      document.getElementById('log-header-dot').className = 'h-2 w-2 rounded-full bg-[var(--color-copper)]';
+      document.getElementById('log-header-dot').style.animation = 'pulse-glow 2s ease-in-out infinite';
+      document.getElementById('stream-btn').textContent = 'Stop Streaming';
+      document.getElementById('status-label').textContent = 'Streaming agent output...';
+      switchTab('log');
+
+      // Stream batches of ~8 lines every 400ms
+      streamingInterval = setInterval(() => {
+        if (streamingIndex >= LOG_LINES.length) {
+          stopStreaming();
+          return;
+        }
+
+        const batchSize = 4 + Math.floor(Math.random() * 8);
+        const batch = LOG_LINES.slice(streamingIndex, streamingIndex + batchSize);
+        streamingIndex += batchSize;
+
+        const logEl = document.getElementById('log-text');
+        const newText = batch.join('\n') + '\n';
+
+        // Append with animation
+        const span = document.createElement('span');
+        span.textContent = newText;
+        span.className = 'animate-stream-in inline';
+        logEl.appendChild(span);
+
+        document.getElementById('line-count').textContent = Math.min(streamingIndex, LOG_LINES.length);
+
+        // Auto-scroll
+        const scrollContainer = document.getElementById('log-body');
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }, 500);
+    }
+
+    function stopStreaming() {
+      isStreaming = false;
+      if (streamingInterval) {
+        clearInterval(streamingInterval);
+        streamingInterval = null;
+      }
+      document.getElementById('streaming-tail').classList.add('hidden');
+      document.getElementById('log-pulse').classList.add('hidden');
+      document.getElementById('log-header-dot').className = 'h-2 w-2 rounded-full bg-emerald-500';
+      document.getElementById('log-header-dot').style.animation = '';
+      document.getElementById('stream-btn').textContent = 'Simulate Streaming';
+      document.getElementById('status-label').textContent = 'Completed — showing full log';
+
+      // Show full log if streaming was stopped early
+      if (streamingIndex < LOG_LINES.length) {
+        renderFullLog();
+      }
+    }
+
+    function resetLog() {
+      stopStreaming();
+      renderFullLog();
+      switchTab('log');
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────
+    renderFullLog();
+  </script>
+</body>
+</html>
