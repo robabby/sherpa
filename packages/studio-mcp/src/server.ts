@@ -20,7 +20,10 @@ import {
   resolveDbPaths,
   applyKnowledgeSchema,
   syncFromFilesystem,
+  syncEmbeddings,
 } from "@sherpa/studio-core/db"
+import { AlgorithmicBackend } from "@sherpa/studio-core/knowledge"
+import { registerAuthorityTools } from "./authority/tools.js"
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -43,6 +46,8 @@ export interface StudioMcpOptions {
   taskLoggerPath?: string | null
   /** Port for MCP Streamable HTTP server. Defaults to 3100. */
   port?: number
+  /** SQLite database for coordination. When provided, authority tools are registered. */
+  coordinationDb?: import("better-sqlite3").Database
 }
 
 function findGitRoot(): string | null {
@@ -649,15 +654,24 @@ ${deliverables}
   // Lazy-init: open and sync the knowledge DB on first tool call
   let knowledgeReady = false
   const dbPaths = resolveDbPaths(projectRoot)
+  const knowledgeBackend = new AlgorithmicBackend()
 
   function ensureKnowledgeDb() {
     const db = openDb(dbPaths.knowledge)
     if (!knowledgeReady) {
       applyKnowledgeSchema(db)
       syncFromFilesystem(db, projectRoot)
+      syncEmbeddings(db, knowledgeBackend)
       knowledgeReady = true
     }
     return db
+  }
+
+  const KNOWLEDGE_CAPABILITIES = {
+    full_text_search: true,
+    semantic_similarity: true,
+    creative_discovery: true,
+    summary_quality: "extractive" as const,
   }
 
   // --- Tool: search_knowledge ---
@@ -676,58 +690,113 @@ ${deliverables}
       mode: z
         .enum(["text", "semantic", "hybrid"])
         .default("text")
-        .describe("Search mode. 'text' uses FTS5 BM25 (functional). 'semantic' and 'hybrid' require a semantic backend (not yet configured)."),
+        .describe("Search mode. 'text' = FTS5 BM25. 'semantic' = TF-IDF embedding similarity (initiative-level). 'hybrid' = reciprocal rank fusion of both."),
     },
     async ({ query, limit, kind, initiative, mode }) => {
-      if (mode === "semantic") {
-        return {
-          content: [{
-            type: "text" as const,
-            text: "Semantic search requires a configured knowledge backend (ollama, api, or dispatch). Current backend: algorithmic (text-only). Configure in sherpa.config.ts under knowledge.backend.",
-          }],
-        }
-      }
-
       const db = ensureKnowledgeDb()
 
-      // Build the query — join FTS results with files table for metadata
-      let sql = `
-        SELECT
-          f.path,
-          f.title,
-          f.kind,
-          f.initiative,
-          f.status,
-          bm25(files_fts) as score,
-          snippet(files_fts, 2, '>>>', '<<<', '...', 40) as snippet
-        FROM files_fts
-        JOIN files f ON f.path = files_fts.path
-        WHERE files_fts MATCH ?
-      `
-      const params: (string | number)[] = [query]
-
-      if (kind) {
-        sql += " AND f.kind = ?"
-        params.push(kind)
-      }
-      if (initiative) {
-        sql += " AND f.initiative = ?"
-        params.push(initiative)
+      type SearchResult = {
+        path: string
+        title: string | null
+        kind: string | null
+        initiative: string | null
+        status: string | null
+        score: number
+        snippet: string | null
       }
 
-      sql += " ORDER BY bm25(files_fts) LIMIT ?"
-      params.push(limit)
+      // --- FTS5 text search ---
+      function textSearch(): SearchResult[] {
+        let sql = `
+          SELECT
+            f.path, f.title, f.kind, f.initiative, f.status,
+            bm25(files_fts) as score,
+            snippet(files_fts, 2, '>>>', '<<<', '...', 40) as snippet
+          FROM files_fts
+          JOIN files f ON f.path = files_fts.path
+          WHERE files_fts MATCH ?
+        `
+        const params: (string | number)[] = [query]
+        if (kind) { sql += " AND f.kind = ?"; params.push(kind) }
+        if (initiative) { sql += " AND f.initiative = ?"; params.push(initiative) }
+        sql += " ORDER BY bm25(files_fts) LIMIT ?"
+        params.push(limit * 2) // fetch extra for RRF merging
+        return db.prepare(sql).all(...params) as SearchResult[]
+      }
+
+      // --- Semantic search (initiative-level embeddings) ---
+      function semanticSearch(): SearchResult[] {
+        const queryVec = knowledgeBackend.embedQuery(query)
+        const rows = db.prepare(`
+          SELECT s.id, s.summary, s.embedding, f.path, f.title, f.kind, f.initiative, f.status
+          FROM summaries s
+          JOIN files f ON f.initiative = s.id AND f.kind = 'initiative'
+          WHERE s.level = 'initiative' AND s.embedding IS NOT NULL
+        `).all() as Array<{
+          id: string; summary: string; embedding: string
+          path: string; title: string | null; kind: string | null
+          initiative: string | null; status: string | null
+        }>
+
+        const scored = rows.map(r => {
+          const embedding = JSON.parse(r.embedding) as number[]
+          return {
+            path: r.path,
+            title: r.title,
+            kind: r.kind,
+            initiative: r.initiative,
+            status: r.status,
+            score: knowledgeBackend.cosineSimilarity(queryVec, embedding),
+            snippet: r.summary,
+          }
+        })
+
+        // Filter by kind/initiative if specified
+        let filtered = scored
+        if (kind) filtered = filtered.filter(r => r.kind === kind)
+        if (initiative) filtered = filtered.filter(r => r.initiative === initiative)
+
+        return filtered.sort((a, b) => b.score - a.score).slice(0, limit)
+      }
+
+      // --- Hybrid: Reciprocal Rank Fusion ---
+      function hybridSearch(): SearchResult[] {
+        const K = 60 // standard RRF constant
+        const textResults = textSearch()
+        const semResults = semanticSearch()
+
+        const rrfScores = new Map<string, { result: SearchResult; score: number }>()
+
+        textResults.forEach((r, rank) => {
+          const rrf = 1 / (K + rank)
+          const existing = rrfScores.get(r.path)
+          if (existing) {
+            existing.score += rrf
+          } else {
+            rrfScores.set(r.path, { result: r, score: rrf })
+          }
+        })
+
+        semResults.forEach((r, rank) => {
+          const rrf = 1 / (K + rank)
+          const existing = rrfScores.get(r.path)
+          if (existing) {
+            existing.score += rrf
+          } else {
+            rrfScores.set(r.path, { result: { ...r, snippet: r.snippet }, score: rrf })
+          }
+        })
+
+        return Array.from(rrfScores.values())
+          .sort((a, b) => b.score - a.score)
+          .slice(0, limit)
+          .map(({ result, score }) => ({ ...result, score }))
+      }
 
       try {
-        const results = db.prepare(sql).all(...params) as Array<{
-          path: string
-          title: string | null
-          kind: string | null
-          initiative: string | null
-          status: string | null
-          score: number
-          snippet: string
-        }>
+        const results = mode === "semantic" ? semanticSearch()
+          : mode === "hybrid" ? hybridSearch()
+          : textSearch()
 
         if (results.length === 0) {
           return {
@@ -753,8 +822,9 @@ ${deliverables}
             type: "text" as const,
             text: JSON.stringify({
               query,
-              mode: mode === "hybrid" ? "text (semantic backend not configured)" : mode,
+              mode,
               backend: "algorithmic",
+              capabilities: KNOWLEDGE_CAPABILITIES,
               count: results.length,
               results: formatted,
             }, null, 2),
@@ -823,7 +893,11 @@ ${deliverables}
         }
       }
 
-      // Initiative summary — all files + edges
+      // Initiative summary — all files + edges + generated summary
+      const summaryRow = db.prepare(
+        "SELECT summary, stale, updated_at FROM summaries WHERE id = ? AND level = 'initiative'"
+      ).get(initSlug) as { summary: string; stale: number; updated_at: number } | undefined
+
       const files = db.prepare(`
         SELECT path, title, kind, status, updated_at
         FROM files WHERE initiative = ?
@@ -853,14 +927,23 @@ ${deliverables}
           type: "text" as const,
           text: JSON.stringify({
             initiative: initSlug,
+            summary: summaryRow?.summary ?? null,
+            stale: summaryRow ? Boolean(summaryRow.stale) : null,
             fileCount: files.length,
             files,
             edges,
+            backend: "algorithmic",
+            capabilities: KNOWLEDGE_CAPABILITIES,
           }, null, 2),
         }],
       }
     },
   )
+
+  // --- Authority tools (only when coordination DB is provided) ---
+  if (opts?.coordinationDb) {
+    registerAuthorityTools(server, opts.coordinationDb, projectRoot)
+  }
 
   return server
 }
