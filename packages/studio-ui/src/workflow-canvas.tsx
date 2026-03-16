@@ -12,9 +12,15 @@ import {
   type Node,
   type Edge,
 } from "@xyflow/react";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
+import {
+  WORKFLOW_NODES,
+  WORKFLOW_EDGES,
+} from "@sherpa/studio-core";
 import { workflowNodeTypes } from "./workflow-nodes";
 import { workflowEdgeTypes } from "./workflow-edge";
+import { ResizeHandle } from "./resize-handle";
+import { WorkflowDetailPane } from "./workflow-detail-pane";
 
 // ---------------------------------------------------------------------------
 // ELK layout helper
@@ -192,11 +198,15 @@ async function computeElkLayout(
 interface WorkflowCanvasInnerProps {
   initialNodes: Node[];
   initialEdges: Edge[];
+  onNodeClick?: (_: React.MouseEvent, node: Node) => void;
+  onPaneClick?: () => void;
 }
 
 function WorkflowCanvasInner({
   initialNodes,
   initialEdges,
+  onNodeClick,
+  onPaneClick,
 }: WorkflowCanvasInnerProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
@@ -225,6 +235,8 @@ function WorkflowCanvasInner({
       edges={edges}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
+      onNodeClick={onNodeClick}
+      onPaneClick={onPaneClick}
       nodeTypes={workflowNodeTypes}
       edgeTypes={workflowEdgeTypes}
       fitView
@@ -255,13 +267,73 @@ export function WorkflowCanvas({
   initialNodes,
   initialEdges,
 }: WorkflowCanvasProps) {
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [detailWidth, setDetailWidth] = useState(360);
+
+  // Hydrate width from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("workflow-detail-width");
+    if (saved) setDetailWidth(Number(saved));
+  }, []);
+
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    setSelectedNodeId(node.id);
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNodeId(null);
+  }, []);
+
+  // Escape key to deselect
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedNodeId(null);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Look up the selected WorkflowNode from canonical data
+  const selectedNode = selectedNodeId
+    ? WORKFLOW_NODES.find((n) => n.id === selectedNodeId) ?? null
+    : null;
+
   return (
     <ReactFlowProvider>
-      <div className="flex-1 min-h-0" style={{ height: "100%" }}>
-        <WorkflowCanvasInner
-          initialNodes={initialNodes}
-          initialEdges={initialEdges}
-        />
+      <div className="flex flex-1 min-h-0" style={{ height: "100%" }}>
+        <div className="flex-1 min-w-0">
+          <WorkflowCanvasInner
+            initialNodes={initialNodes}
+            initialEdges={initialEdges}
+            onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
+          />
+        </div>
+        {selectedNode && (
+          <>
+            <ResizeHandle
+              onResize={(delta) =>
+                setDetailWidth((w) => Math.max(200, Math.min(500, w - delta)))
+              }
+              onResizeEnd={() =>
+                localStorage.setItem(
+                  "workflow-detail-width",
+                  String(detailWidth),
+                )
+              }
+            />
+            <div
+              className="shrink-0 overflow-y-auto border-l border-[var(--color-dark-bronze)]"
+              style={{ width: detailWidth }}
+            >
+              <WorkflowDetailPane
+                node={selectedNode}
+                edges={WORKFLOW_EDGES}
+                allNodes={WORKFLOW_NODES}
+              />
+            </div>
+          </>
+        )}
       </div>
     </ReactFlowProvider>
   );
