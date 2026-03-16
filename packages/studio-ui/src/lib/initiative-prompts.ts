@@ -303,7 +303,7 @@ export function getSuggestedPrompt(
       "spike":       () => ({ prompt: buildSpikePrompt(ctx), label: "Run /spike", variant: "spike" }),
       "shape":       () => ({ prompt: buildShapePrompt(ctx), label: "Run /shape", variant: "shape" }),
       "design":      () => ({ prompt: buildDesignPrompt(ctx), label: "Run /design", variant: "design" }),
-      "plan-tasks":  () => ({ prompt: buildPlanTasksPrompt(ctx), label: "Plan Tasks", variant: "plan-tasks" }),
+      "plan-tasks":  () => ({ prompt: buildPlanTasksPrompt(ctx), label: "Dispatch Tasks", variant: "plan-tasks" }),
     };
     const builder = PLAY_PROMPT_MAP[playbook.nextPlay];
     if (builder) return builder();
@@ -312,7 +312,7 @@ export function getSuggestedPrompt(
   // Fallback for post-approval without playbook
   switch (stage) {
     case "needs-plan":
-      return { prompt: buildPlanningPrompt(ctx), label: "Create Plan", variant: "planning" };
+      return { prompt: buildPlanningPrompt(ctx), label: "Plan Together", variant: "planning" };
     case "ready-to-start":
       return { prompt: buildStartPrompt(ctx), label: "Start Implementation", variant: "rr" };
     default:

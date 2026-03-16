@@ -16,6 +16,7 @@ import {
   getSuggestedPrompt,
   buildRrContinuePrompt,
   buildPlanningPrompt,
+  buildPlanTasksPrompt,
   buildSynthesizePrompt,
   buildSubInitiativePrompt,
   buildRrLaunchPrompt,
@@ -218,17 +219,21 @@ export function ActionBar({ node, agentRoles }: { node: ProcessNode; agentRoles?
             variant="rr"
             label="Copy /rr"
           />
+          <PromptCopyButton
+            prompt={buildPlanningPrompt(ctx)}
+            variant="planning"
+          />
           {hasResearch && (
-            <>
-              <PromptCopyButton
-                prompt={buildPlanningPrompt(ctx)}
-                variant="planning"
-              />
-              <PromptCopyButton
-                prompt={buildSynthesizePrompt(ctx)}
-                variant="synthesize"
-              />
-            </>
+            <PromptCopyButton
+              prompt={buildSynthesizePrompt(ctx)}
+              variant="synthesize"
+            />
+          )}
+          {(node.status === "approved" || node.status === "in-progress") && (
+            <PromptCopyButton
+              prompt={buildPlanTasksPrompt(ctx)}
+              variant="plan-tasks"
+            />
           )}
           <PromptCopyButton
             prompt={buildSubInitiativePrompt(ctx)}

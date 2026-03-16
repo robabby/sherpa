@@ -1,64 +1,126 @@
 # Sherpa Roadmap
 
-Last updated: 2026-03-12
+Last updated: 2026-03-16
 
-## Current Phase: Framework Extraction + First Workforces
+## Current Phase: Framework Extraction + Governance Foundation
 
-The `@sherpa/studio-*` packages have been extracted from WavePoint into this monorepo. Studio runs against Sherpa's own governance data. The next phase is building the framework capabilities needed to support real agentic workforces, then building those workforces.
+The `@sherpa/studio-*` packages have been extracted from WavePoint into this monorepo. Studio runs against Sherpa's own governance data. The current phase builds the governance foundation: behavioral agent schema, coordination layer, and the first research-backed consulting positioning.
 
-## In-Flight Initiatives
+## Recently Integrated
+
+| Initiative | What |
+|-----------|------|
+| `dispatch-center` | 8-backend dispatch center UI with CLI/API badges, provider routing |
+| `voice-and-tone` | Sherpa voice guidelines, content principles, product positioning docs |
+| `parallel-workflow-governance` | Parallel initiative governance conventions |
+| `studio-ux-patterns` | Edge-to-edge layouts, split-pane patterns, action bar conventions |
+
+## In-Progress
 
 | Initiative | Status | What |
 |-----------|--------|------|
-| `behavioral-agents` | approved (Phase 2 complete) | Schema spec, 26-agent base catalog, validation tooling |
-| `agentic-workforce` | in-progress | Planner/Worker/Judge pipeline, role definitions |
-| `studio-collaboration-platform` | in-progress | Morning review UX, exception-first dashboard |
-| `studio-state-machine` | in-progress | Velocity/staleness derivation, lifecycle intelligence |
-| `sherpa-framework-extraction` | in-progress | Package extraction, config-as-code, convention sync |
-| `distributed-agent-consistency` | in-progress | Event sourcing, consistency models |
+| `agentic-workforce` | in-progress | Planner/Worker/Judge pipeline, 13 role definitions complete |
+| `sherpa-framework-extraction` | in-progress | Package extraction, config-as-code, convention sync (4 research iterations) |
+| `agent-infrastructure` | in-progress | Model routing, local models, inter-agent coordination |
+| `agent-framework-patterns` | in-progress | Behavioral engineering research evidence base |
+| `ux-product-personas` | in-progress | Product persona definitions for Studio users |
 
-## Pending Approval
+## Approved — Ready to Start
 
-| Initiative | What | Blocks |
-|-----------|------|--------|
-| `mcp-coordination-layer` | 4-tool MCP server, SQLite state, hook enforcement | Overnight dispatch, content workforces |
-| `section-level-prose-sync` | Heading-granularity three-way merge for convention sync | Convention Sync CLI |
-| `doi-model-for-agents` | Context scoping via unified DOI formula, LOD tiers | Agent context management |
-| `game-authority-as-mcp-protocol` | Six-state authority machine, fencing tokens | Coordination layer implementation |
-| `agent-infrastructure` | Model routing, local models, inter-agent coordination | Multi-backend dispatch |
-
-## Upcoming: New Initiatives
-
-### Framework Capabilities
+### Framework & Governance
 
 | Initiative | What | Depends On |
 |-----------|------|-----------|
-| `overnight-dispatch` | Recurring unattended execution — scheduling, session lifecycle, failure recovery, morning handoff protocol | `mcp-coordination-layer`, `agentic-workforce` |
-| `content-governance` | Editorial workflows, quality gates for prose content, publishing lifecycle — extends governance engine to non-code artifacts | `studio-collaboration-platform`, `behavioral-agents` |
-| `external-service-integrations` | MCP tools for external APIs (CMS, YouTube, voice synthesis) — auth, rate limiting, content upload patterns | `mcp-coordination-layer` |
+| `behavioral-agents` | Portable schema spec, 120-agent catalog migration, validation tooling | `agent-framework-patterns` |
+| `mcp-coordination-layer` | 4-tool MCP server, SQLite state authority, hook enforcement | `sqlite-agentic-state` |
+| `ai-sdk-dispatch` | Vercel AI SDK provider abstraction for API backends | `dispatch-center` |
+| `agent-cards` | Governance artifact spec — "model cards" for behavioral agents, compliance bridging | `behavioral-agents` |
+
+### Studio UI
+
+| Initiative | What | Depends On |
+|-----------|------|-----------|
+| `studio-agent-missions` | Tasks page as full-viewport AI agent mission control | — |
+| `studio-collaboration-platform` | Morning review UX, exception-first dashboard | `agentic-workforce` |
+| `studio-state-machine` | Velocity/staleness derivation, lifecycle intelligence | — |
+| `studio-process-playbook-ui` | Process skill pipeline visualization | `post-research-skill-suite` |
+| `studio-dashboard-sidenav` | Dashboard layout and navigation redesign | — |
+| `design-system` | Formalized design tokens, component patterns | — |
+
+### Strategic Research (Evergreen)
+
+| Initiative | What | Informs |
+|-----------|------|---------|
+| `consulting-disruption-signals` | Big Six transformation tracking, structural gap analysis | 5 downstream initiatives |
+| `agentic-consulting-landscape` | Solo+agents market mapping, service design, pricing | `sherpa-website` |
+| `agentic-workspace` | Future of workspace tools, PM category disruption, Agent OS positioning | Multiple framework initiatives |
 
 ### Sherpa Consulting (Business)
 
 | Initiative | What | Depends On |
 |-----------|------|-----------|
-| `sherpa-website` | sherpa.solar public site — landing page, consulting offerings, blog section | `sherpa-framework-extraction` |
-| `blog-content-engine` | First agentic workforce — blog research, writing, editorial review, overnight cycle | `sherpa-website`, `overnight-dispatch`, `content-governance` |
-| `headless-youtube-pipeline` | Second workforce — automated video production (script → voice → visuals → edit → upload) | `blog-content-engine`, `external-service-integrations` |
-| `ai-literacy-program` | Consulting curriculum for organizations behind on AI adoption — workshops, presentations, engagement design | `blog-content-engine` (top of funnel) |
+| `sherpa-website` | sherpa.solar public site — consulting, framework showcase, content hub | `sherpa-framework-extraction` |
 
-## Housekeeping
+## Pending — Needs Review
 
-- [ ] Create `docs/architecture/platform-strategy.md` — strategic context document referenced by /rr orient step
-- [ ] Rename `wavepoint/*` schema discriminators to `sherpa/*` across codebase (23 files)
-- [ ] Keep this roadmap in sync with initiative system — currently manual, needs automation or a governance pattern
+### Framework Infrastructure
+
+| Initiative | What | Depends On |
+|-----------|------|-----------|
+| `agentic-organization-model` | Agent instance layer — persistent identity, stats, teams, lifecycle | `behavioral-agents`, `mcp-coordination-layer` |
+| `sqlite-agentic-state` | SQLite storage for agentic state (sessions, dispatch, coordination) | `mcp-coordination-layer` |
+| `distributed-agent-consistency` | Event sourcing, consistency models for multi-agent coordination | `sqlite-agentic-state` |
+| `section-level-prose-sync` | Heading-granularity three-way merge for convention sync | — |
+| `scheduled-dispatch` | Time-based recurring dispatch (overnight execution) | `dispatch-center` |
+| `ai-gateway-dispatch` | Unified model gateway across providers | `ai-sdk-dispatch` |
+| `ledger-governance-rbac` | Role-based access control for governance operations | `mcp-coordination-layer` |
+| `github-initiative-linking` | Link GitHub PRs/issues to initiatives bidirectionally | — |
+
+### Research & Experimental
+
+| Initiative | What |
+|-----------|------|
+| `mmo-patterns-for-agents` | Game server patterns (authority, replication, LOD) applied to agent coordination |
+| `harmonic-research-system` | Harmonic/resonance patterns for agent collaboration models |
+
+## Upcoming — Not Yet Proposed
+
+### Framework Capabilities
+
+| Concept | What | Depends On |
+|---------|------|-----------|
+| Overnight dispatch | Recurring unattended execution, morning handoff | `mcp-coordination-layer`, `scheduled-dispatch` |
+| Content governance | Editorial workflows, quality gates for prose | `studio-collaboration-platform`, `behavioral-agents` |
+| External service integrations | MCP tools for CMS, YouTube, voice synthesis | `mcp-coordination-layer` |
+| Compliance export | EU AI Act / ISO 42001 documentation from convention artifacts | `agent-cards`, `sherpa-framework-extraction` |
+
+### Sherpa Consulting (Business)
+
+| Concept | What | Depends On |
+|---------|------|-----------|
+| Blog content engine | First agentic workforce — research, writing, editorial review | `sherpa-website`, overnight dispatch, content governance |
+| YouTube pipeline | Automated video production (script → voice → visuals → upload) | Blog content engine, external service integrations |
+| AI literacy program | Workshop curriculum for organizations behind on AI adoption | Blog content engine (top of funnel) |
+
+## Archived
+
+| Initiative | Why |
+|-----------|-----|
+| `mcp-agent-delegation` | Superseded by `mcp-coordination-layer` approach |
 
 ## Sequencing
 
 ```
-Phase 1 (now)     Framework extraction, behavioral agents, Studio UI
-Phase 2 (next)    Coordination layer, overnight dispatch, content governance
-Phase 3           sherpa.solar website, blog content workforce
-Phase 4           YouTube pipeline, AI literacy consulting program
+Phase 1 (now)     Framework extraction, behavioral agents, Studio UI, strategic research
+Phase 2 (next)    Coordination layer, agent instances, overnight dispatch, agent cards
+Phase 3           sherpa.solar website, compliance export, consulting launch
+Phase 4           Content workforces, YouTube pipeline, AI literacy program
 ```
 
-Each phase validates the framework for the next. Content workforces are the first real consumers of overnight dispatch, morning review, and editorial governance. Lessons from Phase 3 inform the more complex Phase 4 workforces.
+Each phase validates the framework for the next. Strategic research (consulting-disruption-signals, agentic-workspace) runs continuously across all phases, feeding intelligence into tactical decisions. The insurance urgency timeline (governance becoming a hard requirement by 2026-2027) compresses the Phase 2→3 transition.
+
+## Housekeeping
+
+- [ ] Rename `wavepoint/*` schema discriminators to `sherpa/*` across codebase
+- [ ] Create `post-research-skill-suite/proposal.md` (activity.md exists, proposal missing)
+- [ ] Automate roadmap sync with initiative system (currently manual)

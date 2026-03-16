@@ -36,9 +36,13 @@ if ! command -v codex &>/dev/null; then
   exit 2
 fi
 
+# Resolve model — strip backend name "codex" to let CLI pick its default
+_model="${SHERPA_MODEL:-}"
+[[ "$_model" == "codex" ]] && _model=""
+
 ARGS=(exec)
-if [[ -n "${SHERPA_MODEL:-}" ]]; then
-  ARGS+=(--model "$SHERPA_MODEL")
+if [[ -n "$_model" ]]; then
+  ARGS+=(--model "$_model")
 fi
 
 echo "[codex] Dispatching: model=${SHERPA_MODEL:-default}" >&2

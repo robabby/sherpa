@@ -34,9 +34,13 @@ if ! command -v claude &>/dev/null; then
   exit 2
 fi
 
+# Resolve model — map backend name "claude" to a real model ID
+_model="${SHERPA_MODEL:-claude-sonnet-4-6}"
+[[ "$_model" == "claude" ]] && _model="claude-sonnet-4-6"
+
 ARGS=(
   --print
-  --model "${SHERPA_MODEL:-claude-sonnet-4-6}"
+  --model "$_model"
   --permission-mode acceptEdits
 )
 
@@ -52,6 +56,6 @@ if [[ -n "${SHERPA_SYSTEM_PROMPT:-}" ]]; then
   ARGS+=(--append-system-prompt "$SHERPA_SYSTEM_PROMPT")
 fi
 
-echo "[claude] Dispatching: model=${SHERPA_MODEL:-claude-sonnet-4-6}" >&2
+echo "[claude] Dispatching: model=$_model" >&2
 
 claude "${ARGS[@]}" "$SHERPA_TASK_PROMPT" > "${SHERPA_LOG_FILE:-/dev/stdout}" 2>&1

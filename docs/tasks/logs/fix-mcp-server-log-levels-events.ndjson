@@ -1,0 +1,7 @@
+{"timestamp":"2026-03-16T04:46:22.891Z","event":"dispatch_requested","taskId":"fix-mcp-server-log-levels","mode":"supervised","agent":"engineer","backend":"codex","source":"studio-ui"}
+{"timestamp":"2026-03-16T04:46:23.029Z","event":"task_updated","taskId":"fix-mcp-server-log-levels","updates":{"status":"dispatched","dispatched-at":"2026-03-16T04:46:22","mode":"supervised","backend":"codex"}}
+{"timestamp":"2026-03-16T04:46:23Z","event":"worker_started","source":"worker.sh","taskSlug":"fix-mcp-server-log-levels","backend":"codex","model":"","mode":"supervised","taskType":"code-implementation","budgetUsd":"1.00"}
+{"timestamp":"2026-03-16T04:46:23Z","event":"status_changed","source":"worker.sh","from":"pending","to":"dispatched"}
+{"timestamp":"2026-03-16T04:46:23Z","event":"backend_delegating","source":"worker.sh","script":"/Users/rob/Workbench/sherpa/scripts/backends/codex.sh","backend":"codex","model":""}
+{"timestamp":"2026-03-16T04:46:23.530Z","event":"dispatch_spawned","taskId":"fix-mcp-server-log-levels","pid":51168,"backend":"codex","agent":"engineer","mode":"supervised"}
+{"timestamp":"2026-03-16T04:47:27Z","event":"status_changed","source":"worker.sh","from":"dispatched","to":"completed","exitCode":0,"durationSeconds":-25136}

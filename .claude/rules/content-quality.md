@@ -18,7 +18,7 @@ Before publishing or marking content as complete, evaluate against these criteri
 5. **Structure** — Clear H2/H3 hierarchy, answer-first pattern in each section
 6. **Evidence separated** — "What we know" vs. "our analysis" are clearly distinguishable
 7. **Readability** — Meets target for content type (see `docs/ux/voice-and-tone.md#readability-targets`)
-8. **Persona-aligned** — Content speaks to a specific persona's JTBD, not to everyone generically
+8. **Persona-aligned** — Content speaks to a specific persona's JTBD, not to everyone generically. For external content, check against business personas (`docs/ux/personas.md`). For product/feature work, check against product personas (`docs/ux/product-personas.md`)
 
 ## Scoring
 

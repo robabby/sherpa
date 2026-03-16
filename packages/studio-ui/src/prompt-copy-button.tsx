@@ -12,13 +12,13 @@ import { cn } from "./lib/utils";
 
 const VARIANT_CONFIG = {
   rr: { icon: Terminal, label: "Copy /rr", className: "text-[var(--color-copper)]/70 hover:text-[var(--color-copper)]" },
-  planning: { icon: FileText, label: "Copy plan", className: "text-[var(--color-gold-muted)]/70 hover:text-[var(--color-gold-muted)]" },
+  planning: { icon: FileText, label: "Plan together", className: "text-[var(--color-gold-muted)]/70 hover:text-[var(--color-gold-muted)]" },
   synthesize: { icon: FlaskConical, label: "Synthesize", className: "text-[var(--color-gold-bright)]/70 hover:text-[var(--color-gold-bright)]" },
   curate: { icon: ListChecks, label: "Curate", className: "text-[var(--color-bronze)]/70 hover:text-[var(--color-bronze)]" },
   workforce: { icon: Users, label: "Role prompt", className: "text-[var(--color-eclipse)]/70 hover:text-[var(--color-eclipse)]" },
   pipeline: { icon: Workflow, label: "Copy command", className: "text-[var(--color-transit)]/70 hover:text-[var(--color-transit)]" },
   morning: { icon: Sunrise, label: "/morning", className: "text-[var(--color-gold)]/70 hover:text-[var(--color-gold)]" },
-  "plan-tasks": { icon: ListTodo, label: "/plan-tasks", className: "text-[var(--color-copper)]/70 hover:text-[var(--color-copper)]" },
+  "plan-tasks": { icon: ListTodo, label: "Dispatch tasks", className: "text-[var(--color-copper)]/70 hover:text-[var(--color-copper)]" },
   "integration-review": { icon: ClipboardCheck, label: "Review", className: "text-[var(--color-gold-muted)]/70 hover:text-[var(--color-gold-muted)]" },
   shape: { icon: Scissors, label: "/shape", className: "text-[var(--color-copper)]/70 hover:text-[var(--color-copper)]" },
   stake: { icon: Target, label: "/stake", className: "text-[var(--color-gold)]/70 hover:text-[var(--color-gold)]" },

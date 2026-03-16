@@ -1,0 +1,1 @@
+Done. The fix was a single-character addition: `overflow-hidden` on the `EventLog` card's `motion.div` (line 335 of `mcp-content.tsx`). This clips the `ScrollArea` content to the card boundary, preventing it from bleeding over the Tool Inventory section below.

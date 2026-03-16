@@ -53,17 +53,15 @@ export function InitiativeActionBar({
         variant="rr"
         label="Copy /rr"
       />
+      <PromptCopyButton
+        prompt={buildPlanningPrompt(ctx)}
+        variant="planning"
+      />
       {hasResearch && (
-        <>
-          <PromptCopyButton
-            prompt={buildPlanningPrompt(ctx)}
-            variant="planning"
-          />
-          <PromptCopyButton
-            prompt={buildSynthesizePrompt(ctx)}
-            variant="synthesize"
-          />
-        </>
+        <PromptCopyButton
+          prompt={buildSynthesizePrompt(ctx)}
+          variant="synthesize"
+        />
       )}
       {canPlanTasks && (
         <PromptCopyButton

@@ -34,6 +34,8 @@ dependencies:
   - <initiative slugs this depends on, or omit if none>
 informs:
   - <initiative slugs this feeds intelligence or decisions into, or omit if none>
+personas:
+  - <product personas this serves: engineer | product-manager | designer, or omit if persona-agnostic>
 spawned-from: <parent slug or null>
 ---
 ```
@@ -46,9 +48,12 @@ Three frontmatter fields capture different relationship semantics:
 |-------|-----------|---------|
 | `dependencies:` | **Hard gate** — this initiative cannot proceed until the listed ones land | Schema must exist before instances can be built |
 | `informs:` | **Ongoing intelligence flow** — this initiative feeds decisions, research, or design into the listed ones, but doesn't block them | Research initiative feeding positioning into website and pricing into consulting |
+| `personas:` | **Audience** — which product personas this initiative serves | UI feature targeting PMs and Engineers |
 | `spawned-from:` | **Genealogy** — this initiative was born from a completed or in-progress parent | Follow-on work picked up from a seeds section |
 
 Use `dependencies:` sparingly — only for true blocking relationships. Use `informs:` for non-blocking coordination, especially for research and strategy initiatives that produce intelligence consumed by multiple downstream initiatives. Body text in the Dependencies section should explain the nature of each relationship.
+
+`personas:` is optional. Use it for any initiative that touches user-facing surfaces or creates role-specific artifacts. Omit for infrastructure, refactoring, or internal tooling that is genuinely persona-agnostic. Values: `engineer`, `product-manager`, `designer`. See `docs/ux/product-personas.md` for definitions.
 
 ## Proposal Body Sections
 

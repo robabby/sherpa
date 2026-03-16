@@ -1,19 +1,19 @@
 ---
 id: fix-mcp-activity-log-overlap
-status: dispatched
+status: completed
 role: engineer
 priority: medium
 initiative: null
-backend: codex
-model: codex
+backend: claude
+model: claude-sonnet-4-6
 task-type: code-implementation
 mode: supervised
 budget-usd: 1.00
 worktree: null
 branch: null
 created: 2026-03-16T03:30:00
-dispatched-at: 2026-03-16T03:21:14
-completed-at: null
+dispatched-at: 2026-03-16T04:35:00
+completed-at: 2026-03-16T04:35:39
 session-id: null
 judge-verdict: pending
 max-retries: 3
