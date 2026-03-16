@@ -23,6 +23,8 @@ import {
   EmptyStateDescription,
   EmptyStateCommand,
 } from "./empty-state";
+import { usePageStatus } from "./hooks/use-page-status";
+import type { PageStatus } from "./hooks/use-page-status";
 import type { TaskBoardEntry } from "@/lib/studio/tasks";
 import type { AgentRole } from "@/lib/studio";
 import type { BackendHealth } from "@sherpa/studio-core";
@@ -1093,6 +1095,14 @@ export function DispatchContent({ tasks, roles, health, initialMode = "supervise
   const activeCount = activeTasks.length;
   const failedCount = failedTasks.length;
   const completedTodayCount = completedToday.length;
+
+  // Page status — updates tab title and favicon based on dispatch state
+  const pageStatus: PageStatus = dispatching || activeCount > 0
+    ? "building"
+    : failedCount > 0
+      ? "error"
+      : "idle";
+  usePageStatus("Dispatch", pageStatus);
 
   // ---------------------------------------------------------------------------
   // Empty state — no tasks at all

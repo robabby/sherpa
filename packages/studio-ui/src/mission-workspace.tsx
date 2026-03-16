@@ -17,6 +17,7 @@ import {
 } from "./empty-state";
 
 import { useMissionEvents } from "./hooks/use-mission-events";
+import { usePageStatus, taskStatusToPageStatus } from "./hooks/use-page-status";
 import { MissionDetailPane } from "./mission-detail-pane";
 import type { MissionDetailTask } from "./mission-detail-pane";
 import { MissionFilterBar } from "./mission-filter-bar";
@@ -295,6 +296,10 @@ export function MissionWorkspace({
     selectedTaskStatus,
     initialEvents,
   );
+
+  // Page status — updates tab title and favicon based on selected task
+  const pageStatus = taskStatusToPageStatus(selectedTaskStatus);
+  usePageStatus("Tasks", pageStatus);
 
   // ---------------------------------------------------------------------------
   // Empty state — no tasks at all
