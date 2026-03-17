@@ -24,6 +24,12 @@ import {
 } from "@sherpa/studio-core/db"
 import { AlgorithmicBackend } from "@sherpa/studio-core/knowledge"
 import { registerAuthorityTools } from "./authority/tools.js"
+import {
+  resolveRoute,
+  DEFAULT_DISPATCH,
+  BACKEND_META,
+} from "@sherpa/studio-core"
+import type { Backend, TaskType } from "@sherpa/studio-core"
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -322,7 +328,7 @@ export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
 
   server.tool(
     "task_create",
-    "Create a new task on the task board.",
+    "Create a new task on the task board. Routes to the appropriate backend via dispatch config, or accepts an explicit backend override.",
     {
       id: z
         .string()
@@ -334,7 +340,21 @@ export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
         .describe("Agent role to execute this task"),
       priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
       initiative: z.string().optional().describe("Parent initiative slug"),
-      model: z.string().default("qwen-3.5-9b").describe("Model name for LM Studio"),
+      backend: z
+        .enum([
+          "claude", "opencode", "codex", "gemini", "lm-studio",
+          "groq", "google-ai", "lm-studio-api",
+        ] as const)
+        .optional()
+        .describe("Target backend. When omitted, resolved from task_type via dispatch config"),
+      task_type: z
+        .enum([
+          "code-implementation", "code-review", "architect", "research",
+          "content-generation", "audit", "embeddings", "general",
+        ] as const)
+        .default("general")
+        .describe("Task type — used for backend routing when backend is omitted"),
+      model: z.string().optional().describe("Model override. When omitted, uses the backend's configured default"),
       objective: z.string().describe("What the worker must accomplish"),
       context: z.string().optional().describe("Files to read, initiative context"),
       acceptance_criteria: z.array(z.string()).describe("List of acceptance criteria"),
@@ -343,6 +363,7 @@ export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
     },
     async ({
       id, title, role, priority, initiative, model,
+      backend, task_type,
       objective, context, acceptance_criteria, constraints, deliverables,
     }) => {
       const filePath = path.join(tasksDir, `${id}.md`)
@@ -354,14 +375,25 @@ export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
         }
       }
 
+      // Resolve backend route
+      const route = resolveRoute(
+        DEFAULT_DISPATCH,
+        task_type,
+        "interactive" as const,
+        backend ? { backend: backend as Backend } : undefined,
+      )
+      const resolvedBackend = route.backend
+      const resolvedModel = model ?? route.model ?? undefined
+
       const meta: TaskMeta = {
         id,
         status: "pending",
         role,
         priority,
         initiative: initiative ?? null,
-        backend: "lm-studio",
-        model,
+        backend: resolvedBackend,
+        model: resolvedModel ?? null,
+        "task-type": task_type,
         "budget-usd": "0.00",
         worktree: null,
         branch: null,
@@ -396,7 +428,8 @@ ${deliverables}
       fs.writeFileSync(filePath, serializeFrontmatter(meta, body))
 
       await logEvent(projectRoot, logsDir, taskLoggerPath, id, "task_created", {
-        role, backend: "lm-studio", model, priority, initiative: initiative ?? null,
+        role, backend: resolvedBackend, model: resolvedModel ?? null,
+        taskType: task_type, priority, initiative: initiative ?? null,
       })
 
       return {
@@ -924,17 +957,40 @@ ${deliverables}
           updated_at: number; status: string | null
         }>
 
-        // Temporal weighting: full detail for active, compressed for old integrated, exclude archived
+        // Temporal weighting: full for active, moderate for recent integrated, mention for old integrated
         const initiatives = allSummaries
           .filter(s => s.status !== "archived" && s.status !== "declined")
           .map(s => {
-            const isOldIntegrated = s.status === "integrated" && s.updated_at < twoWeeksAgo
+            const isIntegrated = s.status === "integrated"
+            const isOldIntegrated = isIntegrated && s.updated_at < twoWeeksAgo
+            // Three tiers: full (active/approved/pending), moderate (integrated <2wk), mention (integrated >2wk)
+            if (isOldIntegrated) {
+              return {
+                initiative: s.id,
+                status: s.status,
+                summary: s.summary.split(" — ")[0] ?? s.summary,
+                stale: Boolean(s.stale),
+                detail: "mention" as const,
+              }
+            }
+            if (isIntegrated) {
+              // Moderate: first two segments (title + summary sentence)
+              const segments = s.summary.split(" — ")
+              const moderate = segments.slice(0, 3).join(" — ")
+              return {
+                initiative: s.id,
+                status: s.status,
+                summary: moderate,
+                stale: Boolean(s.stale),
+                detail: "moderate" as const,
+              }
+            }
             return {
               initiative: s.id,
               status: s.status,
-              summary: isOldIntegrated ? s.summary.split(" — ")[0] ?? s.summary : s.summary,
+              summary: s.summary,
               stale: Boolean(s.stale),
-              detail: isOldIntegrated ? "mention" as const : "full" as const,
+              detail: "full" as const,
             }
           })
 
