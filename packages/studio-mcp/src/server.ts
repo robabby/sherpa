@@ -484,7 +484,7 @@ ${deliverables}
 
   server.tool(
     "task_dispatch",
-    "Dispatch a pending task to LM Studio for execution. The worker runs as a detached background process.",
+    "Dispatch a pending task to its configured backend for execution. The worker runs as a detached background process. Supports all backends: claude, opencode, codex, gemini, lm-studio, groq, google-ai, lm-studio-api.",
     {
       id: z.string().describe("Task slug/ID to dispatch"),
     },
@@ -511,36 +511,32 @@ ${deliverables}
         }
       }
 
-      if (task.backend !== "lm-studio") {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Error: Task '${id}' uses backend '${task.backend}' — only lm-studio tasks can be dispatched.`,
-            },
-          ],
-          isError: true,
+      // Health check: only for lm-studio (local service may not be running).
+      // Other backends fail naturally via worker.sh if unavailable.
+      const taskBackend = (task.backend ?? "lm-studio") as string
+      if (taskBackend === "lm-studio" || taskBackend === "lm-studio-api") {
+        const lmStatus = await checkLmStudio(lmStudioUrl)
+        if (!lmStatus.available) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Error: LM Studio not available at ${lmStudioUrl}. ${lmStatus.error ?? "Start LM Studio before dispatching."}`,
+              },
+            ],
+            isError: true,
+          }
         }
       }
 
-      const lmStatus = await checkLmStudio(lmStudioUrl)
-      if (!lmStatus.available) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Error: LM Studio not available at ${lmStudioUrl}. ${lmStatus.error ?? "Start LM Studio before dispatching."}`,
-            },
-          ],
-          isError: true,
-        }
-      }
-
+      // Status updates handled by worker.sh — but set dispatched here for
+      // immediate feedback (worker.sh will also set it, which is idempotent).
       findAndUpdateTask(tasksDir, id, "status", "dispatched")
       findAndUpdateTask(tasksDir, id, "dispatched-at", new Date().toISOString())
 
-      const workerPath = path.join(projectRoot, workerScript)
-      const child = spawn("node", [workerPath, id], {
+      // Delegate to worker.sh which handles all backend types
+      const workerShPath = path.join(projectRoot, "scripts/worker.sh")
+      const child = spawn("bash", [workerShPath, id], {
         cwd: projectRoot,
         detached: true,
         stdio: "ignore",
@@ -575,10 +571,9 @@ ${deliverables}
             text: JSON.stringify({
               dispatched: true,
               id,
-              backend: "lm-studio",
+              backend: taskBackend,
               model: task.model ?? "default",
               pid: child.pid,
-              lmModels: lmStatus.models,
               message: `Worker running as PID ${child.pid}. Use task_get or task_logs to check progress.`,
             }),
           },
