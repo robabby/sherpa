@@ -46,7 +46,7 @@ ARGS=(
   --permission-mode acceptEdits
 )
 
-if [[ -n "${SHERPA_BUDGET_USD:-}" ]]; then
+if [[ -n "${SHERPA_BUDGET_USD:-}" ]] && (( $(echo "$SHERPA_BUDGET_USD > 0" | bc -l) )); then
   ARGS+=(--max-budget-usd "$SHERPA_BUDGET_USD")
 fi
 
