@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest"
+import fs from "node:fs"
+import path from "node:path"
 import { BACKEND_META } from "@sherpa/studio-core"
 
 describe("task_dispatch multi-backend", () => {
@@ -9,8 +11,6 @@ describe("task_dispatch multi-backend", () => {
   })
 
   it("worker.sh exists at expected path", () => {
-    const fs = require("node:fs")
-    const path = require("node:path")
     const repoRoot = path.resolve(__dirname, "../../../../")
     const workerPath = path.join(repoRoot, "scripts/worker.sh")
     expect(fs.existsSync(workerPath)).toBe(true)

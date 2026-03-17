@@ -46,8 +46,6 @@ export interface StudioMcpOptions {
   lmStudioUrl?: string
   /** Server name shown in MCP handshake. */
   serverName?: string
-  /** Path to the LM worker script (relative to projectRoot). */
-  workerScript?: string
   /** Path to the task-logger module (relative to projectRoot). Null disables event logging. */
   taskLoggerPath?: string | null
   /** Port for MCP Streamable HTTP server. Defaults to 3100. */
@@ -74,10 +72,9 @@ function resolveOptions(opts?: StudioMcpOptions) {
   const logsDir = path.join(projectRoot, opts?.logsDir ?? path.join(opts?.tasksDir ?? "docs/tasks", "logs"))
   const lmStudioUrl = opts?.lmStudioUrl ?? process.env.LM_STUDIO_URL ?? "http://localhost:1234"
   const serverName = opts?.serverName ?? "sherpa-studio"
-  const workerScript = opts?.workerScript ?? "scripts/lm-worker.mjs"
   const taskLoggerPath = opts?.taskLoggerPath !== undefined ? opts.taskLoggerPath : "scripts/task-logger.mjs"
 
-  return { projectRoot, tasksDir, logsDir, lmStudioUrl, serverName, workerScript, taskLoggerPath }
+  return { projectRoot, tasksDir, logsDir, lmStudioUrl, serverName, taskLoggerPath }
 }
 
 // ---------------------------------------------------------------------------
@@ -230,7 +227,7 @@ async function logEvent(
 // ---------------------------------------------------------------------------
 
 export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
-  const { projectRoot, tasksDir, logsDir, lmStudioUrl, serverName, workerScript, taskLoggerPath } =
+  const { projectRoot, tasksDir, logsDir, lmStudioUrl, serverName, taskLoggerPath } =
     resolveOptions(opts)
 
   const server = new McpServer({
