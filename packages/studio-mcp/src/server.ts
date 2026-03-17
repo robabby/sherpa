@@ -24,6 +24,7 @@ import {
 } from "@sherpa/studio-core/db"
 import { AlgorithmicBackend } from "@sherpa/studio-core/knowledge"
 import { registerAuthorityTools } from "./authority/tools.js"
+import { registerInitiativeTools } from "./initiative/tools.js"
 import {
   resolveRoute,
   DEFAULT_DISPATCH,
@@ -1402,6 +1403,12 @@ ${deliverables}
   if (opts?.coordinationDb) {
     registerAuthorityTools(server, opts.coordinationDb, projectRoot)
   }
+
+  // --- Initiative tools ---
+  registerInitiativeTools(server, {
+    projectRoot,
+    coordinationDb: opts?.coordinationDb,
+  })
 
   return server
 }
