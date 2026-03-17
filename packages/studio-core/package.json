@@ -31,7 +31,8 @@
     "./doc-tree": "./src/doc-tree.ts",
     "./db": "./src/db/index.ts",
     "./knowledge": "./src/knowledge/index.ts",
-    "./workflow": "./src/workflow.ts"
+    "./workflow": "./src/workflow.ts",
+    "./initiative-ops": "./src/initiative-ops.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

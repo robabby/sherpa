@@ -43,3 +43,6 @@ export * from "./doc-tree-types"
 export * from "./file-tree"
 export * from "./process-nodes"
 export * from "./domain"
+
+// Initiative operations (MCP-facing CRUD)
+export * from "./initiative-ops"
