@@ -70,10 +70,10 @@ export interface GovernancePolicy {
 export const VALID_TRANSITIONS: Record<string, string[]> = {
   pending: ["approved", "declined"],
   approved: ["in-progress", "declined"],
-  "in-progress": ["integrated", "approved"],
+  "in-progress": ["integrated", "declined"],
   integrated: ["archived"],
   declined: ["pending"],
-  archived: [],
+  archived: ["pending"],
 }
 
 // ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ export function listInitiatives(
 
     entries.push({
       slug,
-      status: data.status,
+      status: data.status ?? "pending",
       title,
       summary,
       type: data.type ?? null,
@@ -207,34 +207,31 @@ export function getInitiative(
   const summary = extractSummarySection(content) ?? null
 
   const hasPlan = fileExists(path.join(initDir, "plan.md"))
-  const hasActivity = fileExists(path.join(initDir, "activity.md"))
+  const activityContent = readFileOr(path.join(initDir, "activity.md"))
+  const hasActivity = activityContent !== null
   const researchDir = path.join(initDir, "research")
   const hasResearch = dirExists(researchDir)
   const iterationCount = countIterationFiles(researchDir)
 
   // Determine linked workstream status from activity.md worktree field
   let linkedWorkstreamStatus: string | null = null
-  if (hasActivity) {
-    const activitySource = readFileOr(path.join(initDir, "activity.md"))
-    if (activitySource) {
-      const { data: actData } = parseFrontmatter(activitySource)
-      if (actData && actData.worktree) {
-        linkedWorkstreamStatus = "active"
-      }
+  if (activityContent) {
+    const { data: actData } = parseFrontmatter(activityContent)
+    if (actData && actData.worktree) {
+      linkedWorkstreamStatus = "active"
     }
   }
 
   const lifecycle = detectLifecycle({
-    status: data.status,
+    status: data.status ?? "pending",
     hasResearch,
     iterationCount,
     hasPlan,
     linkedWorkstreamStatus,
   })
 
-  // Read content for plan and activity
+  // Read content for plan
   const planContent = readFileOr(path.join(initDir, "plan.md"))
-  const activityContent = readFileOr(path.join(initDir, "activity.md"))
 
   // Extract seeds
   const seeds = getSeeds(root, slug)
@@ -244,7 +241,7 @@ export function getInitiative(
 
   return {
     slug,
-    status: data.status,
+    status: data.status ?? "pending",
     title,
     summary,
     type: data.type ?? null,
