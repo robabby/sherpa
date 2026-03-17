@@ -31,18 +31,19 @@ import { WorkflowToolbar } from "./workflow-toolbar";
 // ELK layout helper
 // ---------------------------------------------------------------------------
 
+interface ElkEdge {
+  id: string;
+  sources: string[];
+  targets: string[];
+}
+
 interface ElkNode {
   id: string;
   width: number;
   height: number;
   children?: ElkNode[];
+  edges?: ElkEdge[];
   layoutOptions?: Record<string, string>;
-}
-
-interface ElkEdge {
-  id: string;
-  sources: string[];
-  targets: string[];
 }
 
 interface ElkGraph {
@@ -106,31 +107,49 @@ async function computeElkLayout(
     }
   }
 
-  // Build group elk nodes with their children
+  // Build a node-to-group lookup
+  const nodeToGroup = new Map<string, string>();
+  for (const node of childNodes) {
+    if (node.parentId) nodeToGroup.set(node.id, node.parentId);
+  }
+
+  // Separate edges: intra-group (both endpoints in same group) vs cross-group
+  const groupEdgeMap = new Map<string, ElkEdge[]>();
+  const crossGroupEdges: ElkEdge[] = [];
+
+  for (const e of edges) {
+    const srcGroup = nodeToGroup.get(e.source);
+    const tgtGroup = nodeToGroup.get(e.target);
+
+    if (srcGroup && tgtGroup && srcGroup === tgtGroup) {
+      // Intra-group edge — place inside the group
+      if (!groupEdgeMap.has(srcGroup)) groupEdgeMap.set(srcGroup, []);
+      groupEdgeMap.get(srcGroup)!.push({ id: e.id, sources: [e.source], targets: [e.target] });
+    } else {
+      // Cross-group edge — place at root level
+      crossGroupEdges.push({ id: e.id, sources: [e.source], targets: [e.target] });
+    }
+  }
+
+  // Build group elk nodes with their children and intra-group edges
   for (const g of groupNodes) {
     const children = groupChildMap.get(g.id) || [];
+    const groupEdges = groupEdgeMap.get(g.id) || [];
     topLevelChildren.push({
       id: g.id,
       width: 0, // ELK computes from children
       height: 0,
       children,
+      edges: groupEdges,
       layoutOptions: {
         "elk.algorithm": "layered",
         "elk.direction": "DOWN",
         "elk.padding": `[top=${GROUP_PADDING + 10},left=${GROUP_PADDING},bottom=${GROUP_PADDING},right=${GROUP_PADDING}]`,
         "elk.spacing.nodeNode": "40",
         "elk.layered.spacing.nodeNodeBetweenLayers": "50",
-        "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
       },
     });
   }
-
-  // Build elk edges — only include edges between top-level nodes or within the same group
-  const elkEdges: ElkEdge[] = edges.map((e) => ({
-    id: e.id,
-    sources: [e.source],
-    targets: [e.target],
-  }));
 
   const graph: ElkGraph = {
     id: "root",
@@ -139,12 +158,12 @@ async function computeElkLayout(
       "elk.direction": "DOWN",
       "elk.spacing.nodeNode": "80",
       "elk.layered.spacing.nodeNodeBetweenLayers": "80",
-      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
       "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
       "elk.separateConnectedComponents": "false",
     },
     children: topLevelChildren,
-    edges: elkEdges,
+    edges: crossGroupEdges,
   };
 
   const result = (await elk.layout(graph)) as ElkResult;
