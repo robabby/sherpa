@@ -2,6 +2,7 @@ import type {
   AdminConfig,
   AgentsConfig,
   EntitiesConfig,
+  GovernanceConfig,
   KnowledgeConfig,
   McpConfig,
   PathsConfig,
@@ -86,6 +87,13 @@ export const DEFAULT_KNOWLEDGE: Required<KnowledgeConfig> = {
   dbPath: "",
 }
 
+export const DEFAULT_GOVERNANCE: GovernanceConfig = {
+  approval: {
+    agents: "never",
+    requireAuthority: true,
+  },
+}
+
 /**
  * Merge user config with defaults to produce a fully resolved SherpaConfig.
  */
@@ -113,6 +121,12 @@ export function buildDefaults(userConfig: SherpaUserConfig): SherpaConfig {
       ollama: userConfig.knowledge?.ollama ?? DEFAULT_KNOWLEDGE.ollama,
       api: userConfig.knowledge?.api ?? DEFAULT_KNOWLEDGE.api,
       dbPath: userConfig.knowledge?.dbPath ?? DEFAULT_KNOWLEDGE.dbPath,
+    },
+    governance: {
+      approval: {
+        agents: userConfig.governance?.approval?.agents ?? DEFAULT_GOVERNANCE.approval.agents,
+        requireAuthority: userConfig.governance?.approval?.requireAuthority ?? DEFAULT_GOVERNANCE.approval.requireAuthority,
+      },
     },
     dispatch: { ...DEFAULT_DISPATCH, ...userConfig.dispatch },
     plugins: userConfig.plugins ?? [],

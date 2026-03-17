@@ -76,6 +76,12 @@ export const userConfigSchema = z.object({
     }).optional(),
     dbPath: z.string().optional(),
   }).optional(),
+  governance: z.object({
+    approval: z.object({
+      agents: z.enum(["never", "additive-only", "always"]).optional(),
+      requireAuthority: z.boolean().optional(),
+    }).optional(),
+  }).optional(),
   // plugins validated at runtime, not by Zod (function types don't serialize)
   plugins: z.array(z.any()).optional(),
 }).strict()

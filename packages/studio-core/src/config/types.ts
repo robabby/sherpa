@@ -111,6 +111,16 @@ export interface KnowledgeConfig {
   dbPath?: string
 }
 
+export interface GovernanceConfig {
+  /** Who can approve initiatives via MCP. Defaults to 'never'. */
+  approval: {
+    /** Agent approval policy: 'never' | 'additive-only' | 'always' */
+    agents: "never" | "additive-only" | "always"
+    /** Whether authority lease is required for mutations. Defaults to true. */
+    requireAuthority: boolean
+  }
+}
+
 // ---------------------------------------------------------------------------
 // User config — what consumers write in sherpa.config.ts
 // ---------------------------------------------------------------------------
@@ -134,6 +144,8 @@ export interface SherpaUserConfig {
   mcp?: McpConfig
   /** Knowledge engine configuration. */
   knowledge?: KnowledgeConfig
+  /** Governance configuration. */
+  governance?: GovernanceConfig
   /** Dispatch routing configuration. */
   dispatch?: Partial<DispatchConfig>
   /** Plugins applied in order after defaults are merged. */
@@ -154,6 +166,7 @@ export interface SherpaConfig {
   agents: Required<AgentsConfig>
   mcp: Required<McpConfig>
   knowledge: Required<KnowledgeConfig>
+  governance: GovernanceConfig
   dispatch: DispatchConfig
   plugins: SherpaPlugin[]
 }

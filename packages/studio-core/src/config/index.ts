@@ -54,6 +54,7 @@ export type {
   AgentsConfig,
   McpConfig,
   KnowledgeConfig,
+  GovernanceConfig,
   LifecycleStageDefinition,
 } from "./types"
-export { DEFAULT_PATHS, DEFAULT_VOCABULARY } from "./defaults"
+export { DEFAULT_PATHS, DEFAULT_VOCABULARY, DEFAULT_GOVERNANCE } from "./defaults"
