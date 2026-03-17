@@ -311,10 +311,10 @@ describe("createInitiative", () => {
     expect(fs.existsSync(filePath)).toBe(true)
 
     const content = fs.readFileSync(filePath, "utf-8")
-    expect(content).toContain("status: pending")
-    expect(content).toContain("initiative: new-feature")
-    expect(content).toContain("type: new-plan")
-    expect(content).toContain("risk: additive")
+    expect(content).toContain('status: "pending"')
+    expect(content).toContain('initiative: "new-feature"')
+    expect(content).toContain('type: "new-plan"')
+    expect(content).toContain('risk: "additive"')
     expect(content).toContain("# New Feature")
   })
 

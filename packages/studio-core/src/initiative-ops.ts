@@ -322,10 +322,13 @@ export function createInitiative(
     return { ok: false, error: `Invalid slug format: "${input.slug}" — slug must match ${SLUG_RE}` }
   }
 
-  // Check for duplicate
+  // Check for duplicate — use proposal.md existence, not directory existence.
+  // If mkdirSync succeeds but writeFileSync fails, an empty directory should
+  // not permanently block re-creation.
   const initDir = path.join(initiativesDir(root), input.slug)
-  if (dirExists(initDir)) {
-    return { ok: false, error: `Initiative "${input.slug}" already exists at ${initDir}` }
+  const proposalPath = path.join(initDir, "proposal.md")
+  if (fileExists(proposalPath)) {
+    return { ok: false, error: `Initiative "${input.slug}" already exists` }
   }
 
   // Build frontmatter with defaults
@@ -358,7 +361,8 @@ export function createInitiative(
         for (const item of value) yamlLines.push(`  - ${item}`)
       }
     } else {
-      yamlLines.push(`${key}: ${value ?? "null"}`)
+      // Quote string values to prevent YAML injection from special characters
+      yamlLines.push(`${key}: ${typeof value === 'string' ? `"${value.replace(/"/g, '\\"')}"` : value ?? "null"}`)
     }
   }
 
@@ -379,7 +383,6 @@ export function createInitiative(
 
   // Create directory and write proposal.md
   fs.mkdirSync(initDir, { recursive: true })
-  const proposalPath = path.join(initDir, "proposal.md")
   fs.writeFileSync(proposalPath, proposalContent, "utf-8")
 
   const relativePath = `docs/initiatives/${input.slug}/proposal.md`
