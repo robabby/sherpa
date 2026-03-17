@@ -53,6 +53,10 @@ export interface StudioMcpOptions {
   port?: number
   /** SQLite database for coordination. When provided, authority tools are registered. */
   coordinationDb?: import("better-sqlite3").Database
+  /** Governance approval policy for agent callers. Defaults to 'never'. */
+  approvalPolicy?: "never" | "additive-only" | "always"
+  /** Whether authority is required for initiative mutations. Defaults to true. */
+  requireAuthority?: boolean
 }
 
 function findGitRoot(): string | null {
@@ -1407,6 +1411,8 @@ ${deliverables}
   // --- Initiative tools ---
   registerInitiativeTools(server, {
     projectRoot,
+    approvalPolicy: opts?.approvalPolicy ?? "never",
+    requireAuthority: opts?.requireAuthority ?? true,
     coordinationDb: opts?.coordinationDb,
   })
 
