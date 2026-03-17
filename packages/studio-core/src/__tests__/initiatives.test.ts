@@ -534,3 +534,94 @@ describe("appendActivity", () => {
     expect(content).toContain("Second entry added")
   })
 })
+
+describe("edge cases", () => {
+  it("handles concurrent slug conflict (first write wins)", () => {
+    const root = makeTmp()
+    fs.mkdirSync(path.join(root, "docs/initiatives"), { recursive: true })
+
+    const first = createInitiative(root, {
+      slug: "conflict-test",
+      title: "First Writer",
+      summary: "First initiative created.",
+      body: "This is the first write.",
+      type: "new-plan",
+      risk: "additive",
+    })
+
+    expect(first.ok).toBe(true)
+
+    const second = createInitiative(root, {
+      slug: "conflict-test",
+      title: "Second Writer",
+      summary: "Should fail.",
+      body: "This is the second write.",
+      type: "new-plan",
+      risk: "additive",
+    })
+
+    expect(second.ok).toBe(false)
+    if (!second.ok) {
+      expect(second.error).toContain("already exists")
+    }
+
+    // Verify first write's content is preserved
+    const content = fs.readFileSync(
+      path.join(root, "docs/initiatives/conflict-test/proposal.md"),
+      "utf-8",
+    )
+    expect(content).toContain("# First Writer")
+  })
+
+  it("approve of non-pending initiative fails with transition error", () => {
+    const root = makeTmp()
+    writeProposal(root, "already-approved", {
+      status: "approved",
+      initiative: "already-approved",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+      risk: "additive",
+    }, "# Already Approved")
+
+    const result = approveInitiative(root, "already-approved", "human", "always")
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toContain("Invalid transition")
+    }
+  })
+
+  it("full lifecycle: create → approve → activity → status update", () => {
+    const root = makeTmp()
+    fs.mkdirSync(path.join(root, "docs/initiatives"), { recursive: true })
+
+    // 1. Create initiative
+    const createResult = createInitiative(root, {
+      slug: "lifecycle-test",
+      title: "Lifecycle Test",
+      summary: "Testing the full initiative lifecycle.",
+      body: "This initiative exercises create, approve, activity, and status update.",
+      type: "new-plan",
+      risk: "additive",
+    })
+    expect(createResult.ok).toBe(true)
+
+    // 2. Approve (human, always)
+    const approveResult = approveInitiative(root, "lifecycle-test", "human", "always")
+    expect(approveResult.ok).toBe(true)
+
+    // 3. Append activity
+    const activityResult = appendActivity(root, "lifecycle-test", "Implementation started")
+    expect(activityResult.ok).toBe(true)
+
+    // 4. Transition to in-progress
+    const statusResult = updateInitiativeStatus(root, "lifecycle-test", "in-progress")
+    expect(statusResult.ok).toBe(true)
+
+    // 5. Verify final state
+    const detail = getInitiative(root, "lifecycle-test")
+    expect(detail).not.toBeNull()
+    expect(detail!.status).toBe("in-progress")
+    expect(detail!.activity).toContain("Implementation started")
+    expect(detail!.activity).toContain("approved by human")
+  })
+})
