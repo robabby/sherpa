@@ -55,3 +55,4 @@ test-results/
 !.claude/skills/stress-test/
 !.claude/skills/retro/
 !.claude/skills/ui-review/
+!.claude/skills/new-agent/
