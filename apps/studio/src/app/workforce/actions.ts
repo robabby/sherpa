@@ -5,7 +5,7 @@ import path from "path";
 import matter from "gray-matter";
 import { revalidatePath } from "next/cache";
 
-import { agentRoleFrontmatterSchema } from "@/lib/studio/schemas";
+import { behavioralAgentFrontmatterSchema } from "@/lib/studio/schemas";
 
 const WEB_ROOT = process.cwd();
 const MONOREPO_ROOT = path.resolve(WEB_ROOT, "../..");
@@ -46,7 +46,7 @@ export async function updateAgentRole(
     }
 
     // Validate merged frontmatter
-    const result = agentRoleFrontmatterSchema.safeParse(parsed.data);
+    const result = behavioralAgentFrontmatterSchema.safeParse(parsed.data);
     if (!result.success) {
       return {
         success: false,

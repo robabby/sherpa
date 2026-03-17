@@ -21,7 +21,6 @@ import {
   parseValidatedFrontmatter,
 } from "./markdown"
 import {
-  agentRoleFrontmatterSchema,
   behavioralAgentFrontmatterSchema,
   branchSeedFrontmatterSchema,
   initiativeFrontmatterSchema,
@@ -446,22 +445,22 @@ export function getAgentRoles(): AgentRole[] {
     })
   }
 
-  // Org-specific roles (docs/agents/roles/) — uses legacy schema
+  // Org-specific roles (docs/agents/roles/) — uses behavioral agent schema
   const orgFiles = listMarkdownFiles("docs/agents/roles")
   for (const filePath of orgFiles) {
     const source = readProjectFile(filePath)
     if (!source) continue
 
-    const { data, content } = parseValidatedFrontmatter(
-      source,
-      agentRoleFrontmatterSchema
-    )
-    if (!data) continue
+    const { data: rawData, content } = parseFrontmatter(source)
+    if (!rawData) continue
+    const parsed = behavioralAgentFrontmatterSchema.safeParse(rawData)
+    if (!parsed.success) continue
+    const data = parsed.data
 
     const body = content.replace(/^#[^\n]*\n/, "").trim()
 
     // If base catalog already has this agent, merge dispatch fields from org role
-    const existing = roles.find((r) => r.slug === data.role)
+    const existing = roles.find((r) => r.slug === data.name)
     if (existing) {
       if (data["task-type"]) existing.taskType = data["task-type"]
       if (data["eligible-task-types"]?.length) existing.eligibleTaskTypes = data["eligible-task-types"]
@@ -469,10 +468,10 @@ export function getAgentRoles(): AgentRole[] {
     }
 
     roles.push({
-      slug: data.role,
+      slug: data.name,
       displayName: data["display-name"],
       category: data.category,
-      modelTier: data["model-tier"],
+      modelTier: data["model-tier"] ?? "medium",
       patterns: data.patterns ?? [],
       structure: data.structure ?? null,
       contextPackages: data["context-packages"] ?? [],
@@ -481,6 +480,14 @@ export function getAgentRoles(): AgentRole[] {
       toolPermissions: data["tool-permissions"] ?? [],
       escalation: data.escalation ?? [],
       description: body,
+      disposition: data.disposition,
+      domainScope: data["domain-scope"] ?? [],
+      behavioralConstraints: data["behavioral-constraints"] ?? [],
+      qualityBar: data["quality-bar"] ?? [],
+      failTriggers: data["fail-triggers"] ?? [],
+      outputStyle: data["output-style"],
+      vibe: data.vibe,
+      tags: data.tags ?? [],
       taskType: data["task-type"] ?? undefined,
       eligibleTaskTypes: data["eligible-task-types"] ?? [],
       source: "org",

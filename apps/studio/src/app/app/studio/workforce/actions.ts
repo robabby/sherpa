@@ -5,7 +5,7 @@ import path from "path"
 import matter from "gray-matter"
 import { revalidatePath } from "next/cache"
 
-import { agentRoleFrontmatterSchema } from "@/lib/studio/schemas"
+import { behavioralAgentFrontmatterSchema } from "@/lib/studio/schemas"
 
 // Resolve project root from sherpa.config.ts location
 const APP_ROOT = process.cwd()
@@ -44,7 +44,7 @@ export async function updateAgentRole(
       Object.assign(parsed.data, updates.frontmatter)
     }
 
-    const result = agentRoleFrontmatterSchema.safeParse(parsed.data)
+    const result = behavioralAgentFrontmatterSchema.safeParse(parsed.data)
     if (!result.success) {
       return {
         success: false,
