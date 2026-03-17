@@ -2,7 +2,12 @@ import { describe, it, expect, afterEach } from "vitest"
 import * as fs from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
-import { listInitiatives, getInitiative, getSeeds } from "../initiative-ops"
+import {
+  listInitiatives,
+  getInitiative,
+  getSeeds,
+  createInitiative,
+} from "../initiative-ops"
 
 function writeProposal(
   root: string,
@@ -276,5 +281,79 @@ describe("getSeeds", () => {
 
     const seeds = getSeeds(root, "no-activity")
     expect(seeds).toEqual([])
+  })
+})
+
+describe("createInitiative", () => {
+  it("creates directory and proposal.md with valid frontmatter", () => {
+    const root = makeTmp()
+    fs.mkdirSync(path.join(root, "docs/initiatives"), { recursive: true })
+
+    const result = createInitiative(root, {
+      slug: "new-feature",
+      title: "New Feature",
+      summary: "A brand new feature for the system.",
+      body: "This proposal introduces a new feature.",
+      type: "new-plan",
+      risk: "additive",
+      targets: ["packages/core"],
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data).toBe("docs/initiatives/new-feature/proposal.md")
+    }
+
+    const filePath = path.join(
+      root,
+      "docs/initiatives/new-feature/proposal.md",
+    )
+    expect(fs.existsSync(filePath)).toBe(true)
+
+    const content = fs.readFileSync(filePath, "utf-8")
+    expect(content).toContain("status: pending")
+    expect(content).toContain("initiative: new-feature")
+    expect(content).toContain("type: new-plan")
+    expect(content).toContain("risk: additive")
+    expect(content).toContain("# New Feature")
+  })
+
+  it("rejects invalid slug format", () => {
+    const root = makeTmp()
+    fs.mkdirSync(path.join(root, "docs/initiatives"), { recursive: true })
+
+    const result = createInitiative(root, {
+      slug: "Invalid Slug!",
+      title: "Bad Slug",
+      summary: "This should fail.",
+      body: "Body text.",
+    })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toContain("slug")
+    }
+  })
+
+  it("rejects duplicate slug", () => {
+    const root = makeTmp()
+    writeProposal(root, "existing-init", {
+      status: "pending",
+      initiative: "existing-init",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+    }, "# Existing Initiative")
+
+    const result = createInitiative(root, {
+      slug: "existing-init",
+      title: "Duplicate",
+      summary: "This should fail.",
+      body: "Body text.",
+    })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toContain("already exists")
+    }
   })
 })

@@ -52,16 +52,29 @@ export interface InitiativeDetail extends InitiativeListEntry {
   subdirectories: string[]
 }
 
-export interface OpResult<T = void> {
-  ok: boolean
-  data?: T
-  error?: string
+export type OpResult<T = string> =
+  | { ok: true; data: T }
+  | { ok: false; error: string }
+
+export interface CreateInitiativeInput {
+  slug: string
+  title: string
+  summary: string
+  body: string
+  status?: string
+  type?: string
+  risk?: string
+  targets?: string[]
+  dependencies?: string[]
+  spawnedFrom?: string | null
 }
 
 export interface GovernancePolicy {
   requirePlanBeforeStart: boolean
   allowedTransitions: Record<string, string[]>
 }
+
+export const SLUG_RE = /^[a-z0-9-]+$/
 
 // ---------------------------------------------------------------------------
 // Valid status transitions
@@ -290,4 +303,85 @@ export function getSeeds(root: string, slug: string): string[] {
   }
 
   return items
+}
+
+// ---------------------------------------------------------------------------
+// Write operations
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a new initiative directory with proposal.md.
+ * Validates slug format and checks for duplicates.
+ */
+export function createInitiative(
+  root: string,
+  input: CreateInitiativeInput,
+): OpResult {
+  // Validate slug format
+  if (!SLUG_RE.test(input.slug)) {
+    return { ok: false, error: `Invalid slug format: "${input.slug}" — slug must match ${SLUG_RE}` }
+  }
+
+  // Check for duplicate
+  const initDir = path.join(initiativesDir(root), input.slug)
+  if (dirExists(initDir)) {
+    return { ok: false, error: `Initiative "${input.slug}" already exists at ${initDir}` }
+  }
+
+  // Build frontmatter with defaults
+  const today = new Date().toISOString().slice(0, 10)
+  const frontmatter: Record<string, unknown> = {
+    status: input.status ?? "pending",
+    initiative: input.slug,
+    created: today,
+    updated: today,
+    type: input.type ?? null,
+    risk: input.risk ?? null,
+    targets: input.targets ?? [],
+    dependencies: input.dependencies ?? [],
+    "spawned-from": input.spawnedFrom ?? null,
+  }
+
+  // Validate against schema
+  const parsed = initiativeFrontmatterSchema.safeParse(frontmatter)
+  if (!parsed.success) {
+    return { ok: false, error: `Invalid frontmatter: ${parsed.error.message}` }
+  }
+
+  // Serialize frontmatter as YAML
+  const yamlLines: string[] = []
+  for (const [key, value] of Object.entries(frontmatter)) {
+    if (Array.isArray(value)) {
+      if (value.length === 0) yamlLines.push(`${key}: []`)
+      else {
+        yamlLines.push(`${key}:`)
+        for (const item of value) yamlLines.push(`  - ${item}`)
+      }
+    } else {
+      yamlLines.push(`${key}: ${value ?? "null"}`)
+    }
+  }
+
+  const proposalContent = [
+    "---",
+    ...yamlLines,
+    "---",
+    "",
+    `# ${input.title}`,
+    "",
+    "## Summary",
+    "",
+    input.summary,
+    "",
+    input.body,
+    "",
+  ].join("\n")
+
+  // Create directory and write proposal.md
+  fs.mkdirSync(initDir, { recursive: true })
+  const proposalPath = path.join(initDir, "proposal.md")
+  fs.writeFileSync(proposalPath, proposalContent, "utf-8")
+
+  const relativePath = `docs/initiatives/${input.slug}/proposal.md`
+  return { ok: true, data: relativePath }
 }
