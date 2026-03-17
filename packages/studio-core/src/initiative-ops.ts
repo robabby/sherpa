@@ -69,10 +69,7 @@ export interface CreateInitiativeInput {
   spawnedFrom?: string | null
 }
 
-export interface GovernancePolicy {
-  requirePlanBeforeStart: boolean
-  allowedTransitions: Record<string, string[]>
-}
+export type GovernancePolicy = "never" | "additive-only" | "always"
 
 export const SLUG_RE = /^[a-z0-9-]+$/
 
@@ -386,5 +383,155 @@ export function createInitiative(
   fs.writeFileSync(proposalPath, proposalContent, "utf-8")
 
   const relativePath = `docs/initiatives/${input.slug}/proposal.md`
+  return { ok: true, data: relativePath }
+}
+
+// ---------------------------------------------------------------------------
+// Status transitions
+// ---------------------------------------------------------------------------
+
+/**
+ * Update initiative status with transition validation.
+ * Returns error if the transition is not allowed by VALID_TRANSITIONS.
+ */
+export function updateInitiativeStatus(
+  root: string,
+  slug: string,
+  newStatus: string,
+): OpResult {
+  const proposalPath = path.join(initiativesDir(root), slug, "proposal.md")
+  const source = readFileOr(proposalPath)
+  if (!source) {
+    return { ok: false, error: `Initiative "${slug}" not found` }
+  }
+
+  const { data } = parseValidatedFrontmatter(source, initiativeFrontmatterSchema)
+  if (!data) {
+    return { ok: false, error: `Initiative "${slug}" has invalid frontmatter` }
+  }
+
+  const currentStatus = data.status ?? "pending"
+  const allowed = VALID_TRANSITIONS[currentStatus] ?? []
+  if (!allowed.includes(newStatus)) {
+    return {
+      ok: false,
+      error: `Invalid transition: "${currentStatus}" → "${newStatus}". Allowed: ${allowed.join(", ")}`,
+    }
+  }
+
+  const now = new Date().toISOString().slice(0, 10)
+
+  // Update status and updated date in raw source via regex
+  let updated = source.replace(/^status:\s*.+$/m, `status: "${newStatus}"`)
+  updated = updated.replace(/^updated:\s*.+$/m, `updated: "${now}"`)
+
+  fs.writeFileSync(proposalPath, updated, "utf-8")
+
+  const relativePath = `docs/initiatives/${slug}/proposal.md`
+  return { ok: true, data: relativePath }
+}
+
+// ---------------------------------------------------------------------------
+// Approval with governance
+// ---------------------------------------------------------------------------
+
+/**
+ * Approve an initiative, optionally enforcing governance policy for agent actors.
+ * Creates activity.md if it doesn't already exist.
+ */
+export function approveInitiative(
+  root: string,
+  slug: string,
+  actor: "human" | "agent",
+  policy: GovernancePolicy,
+): OpResult {
+  // Enforce governance policy for agent actors
+  if (actor === "agent") {
+    if (policy === "never") {
+      return { ok: false, error: "Governance policy blocks agent approval" }
+    }
+    if (policy === "additive-only") {
+      const proposalPath = path.join(initiativesDir(root), slug, "proposal.md")
+      const source = readFileOr(proposalPath)
+      if (!source) {
+        return { ok: false, error: `Initiative "${slug}" not found` }
+      }
+      const { data } = parseValidatedFrontmatter(source, initiativeFrontmatterSchema)
+      if (!data) {
+        return { ok: false, error: `Initiative "${slug}" has invalid frontmatter` }
+      }
+      const risk = data.risk ?? null
+      if (risk !== "additive") {
+        return {
+          ok: false,
+          error: `Governance policy "additive-only" blocks agent approval of "${risk}" risk initiative`,
+        }
+      }
+    }
+    // policy === "always" — no restrictions
+  }
+
+  // Perform the status transition
+  const result = updateInitiativeStatus(root, slug, "approved")
+  if (!result.ok) return result
+
+  // Create activity.md if it doesn't exist
+  const activityPath = path.join(initiativesDir(root), slug, "activity.md")
+  if (!fileExists(activityPath)) {
+    const now = new Date().toISOString().slice(0, 10)
+    const activityContent = [
+      "---",
+      `started: "${now}"`,
+      "worktree: null",
+      "---",
+      "",
+      `- **${now}** — Initiative approved by ${actor}`,
+      "",
+    ].join("\n")
+    fs.writeFileSync(activityPath, activityContent, "utf-8")
+  }
+
+  return result
+}
+
+// ---------------------------------------------------------------------------
+// Activity log
+// ---------------------------------------------------------------------------
+
+/**
+ * Append a timestamped entry to an initiative's activity.md.
+ * Creates activity.md with frontmatter if it doesn't exist.
+ */
+export function appendActivity(
+  root: string,
+  slug: string,
+  entry: string,
+): OpResult {
+  const initDir = path.join(initiativesDir(root), slug)
+  if (!dirExists(initDir)) {
+    return { ok: false, error: `Initiative "${slug}" not found` }
+  }
+
+  const now = new Date().toISOString().slice(0, 10)
+  const activityPath = path.join(initDir, "activity.md")
+  const formattedEntry = `- **${now}** — ${entry}\n`
+
+  if (fileExists(activityPath)) {
+    // Append to existing file
+    fs.appendFileSync(activityPath, formattedEntry, "utf-8")
+  } else {
+    // Create with frontmatter
+    const content = [
+      "---",
+      `started: "${now}"`,
+      "worktree: null",
+      "---",
+      "",
+      formattedEntry,
+    ].join("\n")
+    fs.writeFileSync(activityPath, content, "utf-8")
+  }
+
+  const relativePath = `docs/initiatives/${slug}/activity.md`
   return { ok: true, data: relativePath }
 }

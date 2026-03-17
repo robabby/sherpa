@@ -7,6 +7,9 @@ import {
   getInitiative,
   getSeeds,
   createInitiative,
+  updateInitiativeStatus,
+  approveInitiative,
+  appendActivity,
 } from "../initiative-ops"
 
 function writeProposal(
@@ -355,5 +358,179 @@ describe("createInitiative", () => {
     if (!result.ok) {
       expect(result.error).toContain("already exists")
     }
+  })
+})
+
+describe("updateInitiativeStatus", () => {
+  it("allows valid transition: pending → approved", () => {
+    const root = makeTmp()
+    writeProposal(root, "trans-test", {
+      status: "pending",
+      initiative: "trans-test",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+    }, "# Transition Test")
+
+    const result = updateInitiativeStatus(root, "trans-test", "approved")
+    expect(result.ok).toBe(true)
+
+    // Verify the file was updated
+    const content = fs.readFileSync(
+      path.join(root, "docs/initiatives/trans-test/proposal.md"),
+      "utf-8",
+    )
+    expect(content).toContain('status: "approved"')
+  })
+
+  it("rejects invalid transition: pending → integrated", () => {
+    const root = makeTmp()
+    writeProposal(root, "bad-trans", {
+      status: "pending",
+      initiative: "bad-trans",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+    }, "# Bad Transition")
+
+    const result = updateInitiativeStatus(root, "bad-trans", "integrated")
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toContain("Invalid transition")
+      expect(result.error).toContain("pending")
+      expect(result.error).toContain("integrated")
+    }
+  })
+
+  it("returns error for nonexistent initiative", () => {
+    const root = makeTmp()
+    fs.mkdirSync(path.join(root, "docs/initiatives"), { recursive: true })
+
+    const result = updateInitiativeStatus(root, "ghost", "approved")
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toContain("not found")
+    }
+  })
+})
+
+describe("approveInitiative", () => {
+  it("changes status to approved and creates activity.md", () => {
+    const root = makeTmp()
+    writeProposal(root, "approve-me", {
+      status: "pending",
+      initiative: "approve-me",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+      risk: "additive",
+    }, "# Approve Me")
+
+    const result = approveInitiative(root, "approve-me", "human", "never")
+    expect(result.ok).toBe(true)
+
+    // Verify status changed
+    const proposal = fs.readFileSync(
+      path.join(root, "docs/initiatives/approve-me/proposal.md"),
+      "utf-8",
+    )
+    expect(proposal).toContain('status: "approved"')
+
+    // Verify activity.md was created
+    const activityPath = path.join(root, "docs/initiatives/approve-me/activity.md")
+    expect(fs.existsSync(activityPath)).toBe(true)
+    const activity = fs.readFileSync(activityPath, "utf-8")
+    expect(activity).toContain("approved by human")
+  })
+
+  it("blocks agent approval when policy is 'never'", () => {
+    const root = makeTmp()
+    writeProposal(root, "agent-block", {
+      status: "pending",
+      initiative: "agent-block",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+      risk: "additive",
+    }, "# Agent Block")
+
+    const result = approveInitiative(root, "agent-block", "agent", "never")
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toContain("policy")
+    }
+  })
+
+  it("allows agent approval of additive risk when policy is 'additive-only'", () => {
+    const root = makeTmp()
+    writeProposal(root, "additive-ok", {
+      status: "pending",
+      initiative: "additive-ok",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+      risk: "additive",
+    }, "# Additive OK")
+
+    const result = approveInitiative(root, "additive-ok", "agent", "additive-only")
+    expect(result.ok).toBe(true)
+  })
+
+  it("blocks agent approval of structural risk when policy is 'additive-only'", () => {
+    const root = makeTmp()
+    writeProposal(root, "structural-block", {
+      status: "pending",
+      initiative: "structural-block",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+      risk: "structural",
+    }, "# Structural Block")
+
+    const result = approveInitiative(root, "structural-block", "agent", "additive-only")
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toContain("additive-only")
+      expect(result.error).toContain("structural")
+    }
+  })
+})
+
+describe("appendActivity", () => {
+  it("creates activity.md if missing", () => {
+    const root = makeTmp()
+    writeProposal(root, "no-activity", {
+      status: "in-progress",
+      initiative: "no-activity",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+    }, "# No Activity")
+
+    const result = appendActivity(root, "no-activity", "Started work on feature")
+    expect(result.ok).toBe(true)
+
+    const activityPath = path.join(root, "docs/initiatives/no-activity/activity.md")
+    expect(fs.existsSync(activityPath)).toBe(true)
+    const content = fs.readFileSync(activityPath, "utf-8")
+    expect(content).toContain("started:")
+    expect(content).toContain("worktree: null")
+    expect(content).toContain("Started work on feature")
+  })
+
+  it("appends to existing activity.md", () => {
+    const root = makeTmp()
+    writeProposal(root, "has-activity", {
+      status: "in-progress",
+      initiative: "has-activity",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+    }, "# Has Activity")
+
+    const activityPath = path.join(root, "docs/initiatives/has-activity/activity.md")
+    fs.writeFileSync(
+      activityPath,
+      "---\nstarted: 2026-01-01\nworktree: null\n---\n\n- **2026-01-01** — Initial entry\n",
+    )
+
+    const result = appendActivity(root, "has-activity", "Second entry added")
+    expect(result.ok).toBe(true)
+
+    const content = fs.readFileSync(activityPath, "utf-8")
+    expect(content).toContain("Initial entry")
+    expect(content).toContain("Second entry added")
   })
 })
