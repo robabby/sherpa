@@ -29,7 +29,7 @@ import {
   DEFAULT_DISPATCH,
   BACKEND_META,
 } from "@sherpa/studio-core"
-import type { Backend, TaskType } from "@sherpa/studio-core"
+import type { Backend } from "@sherpa/studio-core"
 
 // ---------------------------------------------------------------------------
 // Configuration

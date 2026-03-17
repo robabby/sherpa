@@ -25,9 +25,9 @@ describe("task_create routing via resolveRoute", () => {
     expect(route.backend).toBe(DEFAULT_DISPATCH.fallback.backend)
   })
 
-  it("falls back for 'general' task type (no explicit route)", () => {
-    const route = resolveRoute(DEFAULT_DISPATCH, "general", "interactive")
-    // 'general' has no explicit route, so falls back
-    expect(route.backend).toBe("opencode")
+  it("falls back for completely unknown task type", () => {
+    const route = resolveRoute(DEFAULT_DISPATCH, "unknown-type", "interactive")
+    // unknown types have no route, so fall back to config fallback
+    expect(route.backend).toBe(DEFAULT_DISPATCH.fallback.backend)
   })
 })
