@@ -35,6 +35,8 @@ export interface InitiativeListEntry {
 
 export interface InitiativeFilter {
   status?: InitiativeStatus
+  type?: string
+  risk?: string
 }
 
 export interface InitiativeDetail extends InitiativeListEntry {
@@ -43,6 +45,11 @@ export interface InitiativeDetail extends InitiativeListEntry {
   hasResearch: boolean
   iterationCount: number
   lifecycle: LifecycleInfo
+  proposal: string
+  plan: string | null
+  activity: string | null
+  seeds: string[]
+  subdirectories: string[]
 }
 
 export interface OpResult<T = void> {
@@ -151,6 +158,8 @@ export function listInitiatives(
     if (!data) continue
 
     if (filter?.status && data.status !== filter.status) continue
+    if (filter?.type && (data.type ?? null) !== filter.type) continue
+    if (filter?.risk && (data.risk ?? null) !== filter.risk) continue
 
     const title = extractTitle(content) ?? slug
     const summary = extractSummarySection(content) ?? null
@@ -223,6 +232,16 @@ export function getInitiative(
     linkedWorkstreamStatus,
   })
 
+  // Read content for plan and activity
+  const planContent = readFileOr(path.join(initDir, "plan.md"))
+  const activityContent = readFileOr(path.join(initDir, "activity.md"))
+
+  // Extract seeds
+  const seeds = getSeeds(root, slug)
+
+  // List subdirectories
+  const subdirectories = listDirs(initDir)
+
   return {
     slug,
     status: data.status,
@@ -240,6 +259,11 @@ export function getInitiative(
     hasResearch,
     iterationCount,
     lifecycle,
+    proposal: content,
+    plan: planContent,
+    activity: activityContent,
+    seeds,
+    subdirectories,
   }
 }
 

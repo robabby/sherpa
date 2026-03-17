@@ -186,6 +186,11 @@ describe("getInitiative", () => {
     expect(result!.lifecycle.stage).toBe("in-flight") // worktree is set → active
     expect(result!.type).toBe("new-skill")
     expect(result!.risk).toBe("evolutionary")
+    expect(result!.plan).toContain("Step 1")
+    expect(result!.activity).toContain("Started implementation")
+    expect(result!.proposal).toContain("Full Initiative")
+    expect(result!.seeds).toBeInstanceOf(Array)
+    expect(result!.subdirectories.length).toBeGreaterThan(0)
   })
 
   it("computes lifecycle as needs-plan when approved without plan", () => {
@@ -201,6 +206,7 @@ describe("getInitiative", () => {
     expect(result).not.toBeNull()
     expect(result!.hasPlan).toBe(false)
     expect(result!.lifecycle.stage).toBe("needs-plan")
+    expect(typeof result!.proposal).toBe("string")
   })
 })
 
