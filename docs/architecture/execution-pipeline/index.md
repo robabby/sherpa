@@ -3,18 +3,20 @@ doc-type: architecture
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-16
-last-verified: 2026-03-16
+last-updated: 2026-03-17
+last-verified: 2026-03-17
 source-initiatives:
   - dispatch-center
   - agent-narrative-streaming
   - studio-agent-missions
   - sqlite-agentic-state
   - mcp-coordination-layer
+  - semantic-knowledge-engine
+  - mcp-multi-backend-dispatch
 ---
 
-> **AI-generated** 2026-03-16 · Awaiting human review
-> Sources: dispatch-center, agent-narrative-streaming, studio-agent-missions, sqlite-agentic-state, mcp-coordination-layer
+> **AI-updated** 2026-03-17 · Awaiting human review
+> Sources: dispatch-center, agent-narrative-streaming, studio-agent-missions, sqlite-agentic-state, mcp-coordination-layer, semantic-knowledge-engine, mcp-multi-backend-dispatch
 
 # Execution Pipeline
 
@@ -151,7 +153,51 @@ Status lifecycle: `pending` → `dispatched` → `completed`/`failed` → `revie
 
 **MCP Coordination Server:** Single-process MCP server at `packages/studio-mcp/` serving Streamable HTTP on port 3100 (`/mcp` endpoint). Multi-client session management — each connecting Claude Code client gets its own `McpServer` + `StreamableHTTPServerTransport` pair, routed by `mcp-session-id` header. Health check at `/health`. Authority lease system backed by SQLite `coordination.db` with three tools (`authority_acquire`, `authority_release`, `authority_renew`), one resource (`authority://{scope}`), and a `get_dashboard` bootstrap tool. Fencing tokens are globally monotonic via a `fence_token_seq` counter. TTL reaper cleans expired leases every 60 seconds. Authority enforcement (hooks) is deferred — applies only to autonomous agents, not collaborative sessions. See [0008 — Authority enforcement scoped to autonomous agents](../../decisions/0008-authority-enforcement-autonomous-only.md).
 
+**MCP Task Dispatch:** The `task_create` and `task_dispatch` MCP tools route to all configured backends, not just lm-studio. `task_create` accepts optional `backend` (explicit override) and `task_type` (for route resolution via `resolveRoute()` from `@sherpa/studio-core`). When backend is omitted, `task_type` determines the backend via `DEFAULT_DISPATCH` config. `task_dispatch` delegates to `scripts/worker.sh` which handles env var setup, backend script selection, NDJSON event logging, and log streamer sidecars for all backend types. Health checks remain scoped to lm-studio only — other backends fail naturally via worker.sh.
+
 **Seeds (from completed initiatives):** Scheduled dispatch, cost tracking dashboard, parallel dispatch, live terminal feed, backend-specific log parsers, hook enforcement for autonomous agents, bootstrap protocol with resource subscriptions, implicit authority via task dispatch.
+
+## Knowledge Engine
+
+SQLite-backed knowledge index at `.sherpa/knowledge.db` providing agents with queryable, context-efficient access to system state. Markdown files remain canonical; the database is a derived index that can be rebuilt from the filesystem (`pnpm sync:db`, 235ms incremental).
+
+### Architecture
+
+- **Database:** SQLite in WAL mode via `better-sqlite3`, sharing the connection factory from `@sherpa/studio-core/db`
+- **Schema (v3):** 6 tables — `files`, `edges`, `files_fts` (standalone FTS5), `summaries`, `inferred_edges`, `clusters`
+- **Sync pipeline:** `syncFromFilesystem()` with content-hash skip, standalone FTS5 with DELETE+INSERT (never REPLACE — see stress test A6), staleness propagation to parent summaries
+- **Pluggable backend:** `KnowledgeBackend` interface (`embed`, `summarize`, `cosineSimilarity`, `buildCorpusIndex`). `AlgorithmicBackend` ships as zero-dependency default (TF-IDF vectors + extractive summaries). See [0009 — Pluggable knowledge backend](../../decisions/0009-pluggable-knowledge-backend-algorithmic-default.md).
+- **Clustering:** Agglomerative single-linkage with auto-generated labels from highest-IDF shared terms
+
+### MCP Tools
+
+Four tools registered in `packages/studio-mcp/src/server.ts`:
+
+| Tool | Purpose | Modes/Levels |
+|------|---------|-------------|
+| `search_knowledge` | Full-text and semantic search | text (FTS5 BM25), semantic (TF-IDF), hybrid (reciprocal rank fusion, k=60) |
+| `get_summary` | Structured metadata at any zoom | file (frontmatter), initiative (summary + files + edges + stale flag), portfolio (all initiatives with temporal weighting) |
+| `get_context` | Role-scaled session bootstrap | worker (deep scope, shallow system), planner (shallow scope, deep system), judge (scope + neighborhood), researcher (deep everything) |
+| `query_related` | Relationship explorer | explicit (edge traversal + second-hop), emergent (high similarity, no explicit edge), creative (high similarity + high graph distance) |
+
+Every response includes `backend` and `capabilities` fields so agents know the quality of intelligence available.
+
+### Key Files
+
+- `packages/studio-core/src/db/knowledge-schema.ts` — schema DDL, version management
+- `packages/studio-core/src/db/knowledge-sync.ts` — filesystem → SQLite sync
+- `packages/studio-core/src/db/knowledge-embeddings.ts` — embedding sync, inferred edges
+- `packages/studio-core/src/db/classify.ts` — file classifier, edge extractor
+- `packages/studio-core/src/knowledge/` — `KnowledgeBackend` interface, `AlgorithmicBackend`, clustering
+- `packages/studio-core/src/config/types.ts` — `KnowledgeConfig` section
+- `scripts/sync-knowledge-db.mjs` — `pnpm sync:db` CLI
+
+### Design Decisions
+
+- **Standalone FTS5:** External content mode (`content='files'`) corrupts the index on upsert (stress test A6). Standalone table with explicit DELETE+INSERT is the safe pattern.
+- **Rank-based retrieval:** TF-IDF scores on governance corpora range 0.05-0.20. Any absolute threshold returns nothing or everything. Top-K ranking works correctly.
+- **Lazy sync:** Git hooks and file watchers deferred. `ensureKnowledgeDb()` syncs on first MCP tool call. Re-sync takes 235ms, effectively free.
+- **Agglomerative over HDBSCAN:** No production TypeScript HDBSCAN library exists. Agglomerative works at current scale (47 initiatives). Upgrade path documented for 500+.
 
 ## Related
 
@@ -166,3 +212,4 @@ Status lifecycle: `pending` → `dispatched` → `completed`/`failed` → `revie
 - [0006 — SSE streaming for agent events](../../decisions/0006-sse-streaming-for-agent-events.md)
 - [0007 — SQLite embedded state, Fossil pattern](../../decisions/0007-sqlite-embedded-state-fossil-pattern.md)
 - [0008 — Authority enforcement scoped to autonomous agents](../../decisions/0008-authority-enforcement-autonomous-only.md)
+- [0009 — Pluggable knowledge backend, algorithmic default](../../decisions/0009-pluggable-knowledge-backend-algorithmic-default.md)

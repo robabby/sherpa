@@ -3,8 +3,8 @@ doc-type: changelog
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-16
-last-verified: 2026-03-16
+last-updated: 2026-03-17
+last-verified: 2026-03-17
 source-initiatives:
   - parallel-workflow-governance
   - dispatch-center
@@ -14,13 +14,46 @@ source-initiatives:
   - agent-narrative-streaming
   - sqlite-agentic-state
   - mcp-coordination-layer
+  - semantic-knowledge-engine
+  - mcp-multi-backend-dispatch
 ---
 
-> **AI-generated** 2026-03-16 · Awaiting human review
+> **AI-updated** 2026-03-17 · Awaiting human review
 
 # Changelog
 
 Reverse-chronological record of integrated initiatives and their system impact.
+
+## 2026-03-17 — MCP Multi-Backend Dispatch
+
+Wired the MCP `task_create` and `task_dispatch` tools into the existing multi-backend dispatch infrastructure. Tasks created via MCP can now route to any configured backend (claude, gemini, codex, groq, etc.) instead of being hardcoded to lm-studio. `task_dispatch` delegates to `worker.sh` rather than reimplementing per-backend spawn logic.
+
+**Initiative:** [mcp-multi-backend-dispatch](initiatives/mcp-multi-backend-dispatch/proposal.md)
+**Pillar:** Execution Pipeline
+**Key changes:**
+- `packages/studio-mcp/src/server.ts` — `task_create` gains `backend` and `task_type` params, calls `resolveRoute()` for automatic routing; `task_dispatch` drops lm-studio-only gate, delegates to `worker.sh`
+- `scripts/backends/claude.sh` — Skip `--max-budget-usd` when budget is zero (Claude CLI rejects 0.00)
+- 5 route resolution tests, 3 backend infrastructure tests
+- End-to-end verified: claude, gemini, codex, groq backends all dispatch and complete successfully
+- 7 commits, 1 session (estimated 2)
+
+## 2026-03-16 — Semantic Knowledge Engine
+
+Built a queryable knowledge index that gives agents truthful, context-efficient access to system state through 4 MCP tools. Replaces O(n) filesystem scans with indexed queries — 537 files, 335 edges, 49 summaries, 245 inferred edges, 2 clusters, synced in 235ms. Pluggable backend architecture with zero-dependency algorithmic default (TF-IDF + extractive summaries).
+
+**Initiative:** [semantic-knowledge-engine](initiatives/semantic-knowledge-engine/proposal.md)
+**Pillar:** Execution Pipeline
+**Key changes:**
+- `packages/studio-core/src/db/knowledge-schema.ts` — 6-table schema (files, edges, FTS5, summaries, inferred_edges, clusters)
+- `packages/studio-core/src/db/knowledge-sync.ts` — hash-based incremental sync from filesystem
+- `packages/studio-core/src/db/knowledge-embeddings.ts` — embedding sync, inferred edges, clustering
+- `packages/studio-core/src/db/classify.ts` — file classifier, edge extractor from frontmatter
+- `packages/studio-core/src/knowledge/` — `KnowledgeBackend` interface, `AlgorithmicBackend` (TF-IDF), agglomerative clustering
+- `packages/studio-core/src/config/types.ts` — `KnowledgeConfig` section in `sherpa.config.ts`
+- `packages/studio-mcp/src/server.ts` — 4 MCP tools: `search_knowledge` (3 modes), `get_summary` (3 levels), `get_context` (4 roles), `query_related` (3 modes)
+- `scripts/sync-knowledge-db.mjs` — `pnpm sync:db` CLI
+- Session 6 waypoint: git hooks, file watcher, and Studio Settings page explicitly deferred — lazy sync sufficient
+- 8 commits, 193 tests, 24/24 validation acceptance criteria pass
 
 ## 2026-03-16 — MCP Coordination Layer
 
