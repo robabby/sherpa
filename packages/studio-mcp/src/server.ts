@@ -346,6 +346,7 @@ export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
         .enum([
           "claude", "opencode", "codex", "gemini", "lm-studio",
           "groq", "google-ai", "lm-studio-api",
+          "openclaw",
         ] as const)
         .optional()
         .describe("Target backend. When omitted, resolved from task_type via dispatch config"),

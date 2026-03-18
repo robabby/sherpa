@@ -75,7 +75,7 @@ Cross-cutting conventions auto-load from `.claude/rules/` based on file globs:
 ./scripts/task-board.sh add <slug> "description" --task-type research
 ```
 
-5 backends: `claude`, `opencode`, `codex`, `gemini`, `lm-studio`. Routing configured in `sherpa.config.ts` dispatch section. Task-type determines backend.
+9 backends: 5 CLI (`claude`, `opencode`, `codex`, `gemini`, `lm-studio`), 3 API (`groq`, `google-ai`, `lm-studio-api`), 1 gateway (`openclaw` — remote OpenClaw agent via WebSocket protocol v3). Routing configured in `sherpa.config.ts` dispatch section. Task-type determines backend; `openclaw` is explicit-only (set `backend: openclaw` on the task).
 
 ## Skills
 
@@ -89,3 +89,4 @@ Cross-cutting conventions auto-load from `.claude/rules/` based on file globs:
 |------|---------|
 | `docs/initiatives/` | Initiative directories — research, proposals, plans |
 | `docs/agents/roles/` | Behavioral agent role definitions |
+| `docs/templates/server-provision.md` | Hetzner VPS provisioning runbook — standard stack, volume layout, security baseline |

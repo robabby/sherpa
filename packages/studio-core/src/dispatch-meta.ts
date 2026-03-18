@@ -8,6 +8,8 @@ export type Backend =
   | 'claude' | 'opencode' | 'codex' | 'gemini' | 'lm-studio'
   // API backends
   | 'groq' | 'google-ai' | 'lm-studio-api'
+  // Gateway backends
+  | 'openclaw'
 
 export type BackendType = 'cli' | 'api'
 
@@ -31,4 +33,6 @@ export const BACKEND_META: Record<Backend, BackendMeta> = {
   'groq':           { type: 'api', displayName: 'Groq',            provider: 'groq',     envKey: 'GROQ_API_KEY' },
   'google-ai':      { type: 'api', displayName: 'Google AI',       provider: 'google',   envKey: 'GOOGLE_GENERATIVE_AI_API_KEY' },
   'lm-studio-api':  { type: 'api', displayName: 'LM Studio (API)', provider: 'lmstudio', envKey: null },
+  // Gateway
+  'openclaw':       { type: 'api', displayName: 'OpenClaw',        provider: 'openclaw', envKey: 'OPENCLAW_GATEWAY_TOKEN' },
 }

@@ -3,8 +3,8 @@ doc-type: architecture
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-17
-last-verified: 2026-03-17
+last-updated: 2026-03-18
+last-verified: 2026-03-18
 source-initiatives:
   - dispatch-center
   - agent-narrative-streaming
@@ -14,14 +14,15 @@ source-initiatives:
   - semantic-knowledge-engine
   - mcp-multi-backend-dispatch
   - mcp-initiative-governance
+  - agentic-runtime-platforms
 ---
 
-> **AI-updated** 2026-03-17 · Awaiting human review
-> Sources: dispatch-center, agent-narrative-streaming, studio-agent-missions, sqlite-agentic-state, mcp-coordination-layer, semantic-knowledge-engine, mcp-multi-backend-dispatch, mcp-initiative-governance
+> **AI-updated** 2026-03-18 · Awaiting human review
+> Sources: dispatch-center, agent-narrative-streaming, studio-agent-missions, sqlite-agentic-state, mcp-coordination-layer, semantic-knowledge-engine, mcp-multi-backend-dispatch, mcp-initiative-governance, agentic-runtime-platforms
 
 # Execution Pipeline
 
-The Planner/Worker/Judge trifecta that decomposes initiatives into tasks, dispatches them across five backends, and reviews the output. Three dispatch modes (interactive, supervised, overnight) with task-type routing configured in `sherpa.config.ts`.
+The Planner/Worker/Judge trifecta that decomposes initiatives into tasks, dispatches them across nine backends (CLI, API, and gateway), and reviews the output. Three dispatch modes (interactive, supervised, overnight) with task-type routing configured in `sherpa.config.ts`.
 
 ## Overview
 
@@ -56,7 +57,7 @@ Route resolution order: Claude-only constraint (governance files force claude) �
 
 ## Backend Architecture
 
-Five CLI backends + three API backends (`packages/studio-core/src/dispatch-meta.ts`):
+Five CLI backends + three API backends + one gateway backend (`packages/studio-core/src/dispatch-meta.ts`):
 
 **CLI backends** (shell scripts in `scripts/backends/`):
 - `claude.sh` — Claude Code CLI. Interactive: passthrough. Headless: `--print --output-format stream-json --permission-mode acceptEdits`
@@ -67,6 +68,9 @@ Five CLI backends + three API backends (`packages/studio-core/src/dispatch-meta.
 
 **API backends** (Node modules):
 - `groq.mjs`, `google-ai.mjs`, `lm-studio-api.mjs` — AI SDK providers via fetch
+
+**Gateway backends** (Node modules, WebSocket):
+- `openclaw.mjs` — Remote OpenClaw agent via WebSocket protocol v3 over Tailscale. Implements full device identity auth (Ed25519 key pair at `.openclaw-dispatch/device.json`). Dispatches via `chat.send`, collects streamed deltas, detects turn completion via `lifecycle.end` event. One-time device pairing required; device token persisted for subsequent connections. Currently explicit-only routing (`backend: openclaw`).
 
 Each backend responds to `--health` with JSON `{ available, models?, error? }`. Health check timeout: 3s API, 5s CLI.
 
@@ -148,7 +152,7 @@ Status lifecycle: `pending` → `dispatched` → `completed`/`failed` → `revie
 
 ## Current State
 
-**Implemented:** Five CLI backends, three API backends, interactive/supervised/overnight modes, task-type routing, judge workflow, NDJSON event system, SSE streaming, velocity tracking, budget allocation.
+**Implemented:** Five CLI backends, three API backends, one gateway backend (OpenClaw), interactive/supervised/overnight modes, task-type routing, judge workflow, NDJSON event system, SSE streaming, velocity tracking, budget allocation.
 
 **SQLite State Layer:** Task coordination and agent session state backed by SQLite in WAL mode (`@sherpa/studio-core/db`). Connection factory at `packages/studio-core/src/db/connection.ts` with pooled connections and standard pragmas. Coordination database (`.sherpa/coordination.db`) stores agent_sessions and task_claims with CAS via version columns. Events database (`.sherpa/events.db`) provides append-only audit trail with ULID-keyed entries. See [0007 — SQLite embedded state, Fossil pattern](../../decisions/0007-sqlite-embedded-state-fossil-pattern.md).
 
