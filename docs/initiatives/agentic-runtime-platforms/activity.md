@@ -29,3 +29,4 @@ worktree: null
 - Test task dispatched and completed successfully — 30.6s round-trip over WSS
 - Updated execution pipeline architecture doc, ADR 0004, CLAUDE.md
 - **First successful dispatch from Sherpa Studio to a remote autonomous agent**
+- Status returned to `approved` — OpenShell/NemoClaw phases blocked on VPS upgrade to 8GB+. OpenClaw backend integration complete; remaining phases resume when resource upgrade is justified by client engagement.

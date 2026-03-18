@@ -39,16 +39,16 @@ export interface DispatchConfig {
 
 export const DEFAULT_DISPATCH: DispatchConfig = {
   routes: {
-    'code-implementation': { backend: 'claude', model: 'claude-opus-4-6' },
-    'code-review': { backend: 'codex' },
-    'architect': { backend: 'claude', model: 'claude-opus-4-6' },
-    'research': { backend: 'groq', model: 'llama-3.3-70b-versatile' },
-    'content-generation': { backend: 'google-ai', model: 'gemini-2.5-flash' },
-    'audit': { backend: 'groq', model: 'llama-3.3-70b-versatile' },
-    'embeddings': { backend: 'opencode', model: 'minimax-m2.5-free' },
+    'code-implementation': { backend: 'openclaw' },
+    'code-review': { backend: 'openclaw' },
+    'architect': { backend: 'openclaw' },
+    'research': { backend: 'openclaw' },
+    'content-generation': { backend: 'openclaw' },
+    'audit': { backend: 'openclaw' },
+    'embeddings': { backend: 'openclaw' },
   },
-  fallback: { backend: 'opencode', model: 'minimax-m2.5-free' },
-  offlineFallback: { backend: 'lm-studio' },
+  fallback: { backend: 'openclaw' },
+  offlineFallback: { backend: 'claude', model: 'claude-sonnet-4-6' },
   overnight: {
     blocked: ['code-implementation', 'architect'],
   },

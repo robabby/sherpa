@@ -10,16 +10,16 @@
  */
 
 const DEFAULT_ROUTES = {
-  'code-implementation': { backend: 'claude', model: 'claude-opus-4-6' },
-  'code-review':         { backend: 'codex', model: null },
-  'architect':           { backend: 'claude', model: 'claude-opus-4-6' },
-  'research':            { backend: 'groq', model: 'llama-3.3-70b-versatile' },
-  'content-generation':  { backend: 'google-ai', model: 'gemini-2.5-flash' },
-  'audit':               { backend: 'groq', model: 'llama-3.3-70b-versatile' },
-  'embeddings':          { backend: 'opencode', model: 'minimax-m2.5-free' },
+  'code-implementation': { backend: 'openclaw', model: null },
+  'code-review':         { backend: 'openclaw', model: null },
+  'architect':           { backend: 'openclaw', model: null },
+  'research':            { backend: 'openclaw', model: null },
+  'content-generation':  { backend: 'openclaw', model: null },
+  'audit':               { backend: 'openclaw', model: null },
+  'embeddings':          { backend: 'openclaw', model: null },
 }
 
-const FALLBACK = { backend: 'opencode', model: 'minimax-m2.5-free' }
+const FALLBACK = { backend: 'openclaw', model: null }
 const OVERNIGHT_BLOCKED = ['code-implementation', 'architect']
 
 // Paths that force Claude backend regardless of task-type routing

@@ -39,3 +39,25 @@ worktree: null
 - Local macOS client configured as remote gateway node
 - Updated provision template with Tailscale, OpenClaw, client config, and lessons learned sections
 - VPS is fully operational as remote compute + agentic gateway node
+
+## 2026-03-18 — VPS upgraded, Studio production, Luna identity
+
+- Upgraded VPS from CPX21 (4GB) to CPX31 (8GB, 4 vCPU) — $18/mo
+- Container restart policy set to `always` (survives reboots)
+- Cloned sherpa repo to `/root/sherpa`, installed dependencies, built Studio
+- Studio running as systemd service on port 3000, exposed via Tailscale auto-TLS
+- OpenClaw container mounts: sherpa repo, SSH deploy key, gh CLI binary, gh config, persistent gitconfig + netrc
+- Luna's GitHub account (`luna-sherpa`) created, Vercel Developer access, all CI checks passing
+- Git workflow established: Luna branches → pushes → PRs → Rob reviews/merges
+- Cron: git sync + knowledge DB rebuild every 15 minutes (`/root/sherpa-sync.sh`)
+- **Remaining:** overnight dispatch cron (Option C: Luna as OpenClaw cron job), non-root deploy user, backup cron, log rotation
+
+## 2026-03-18 — Iteration 2 expanded: full segment landscape
+
+- Extended iteration 2 with 3 new vectors: hackers/security, enterprise DevOps, researchers/creators/homelabs (60+ total sources across 9 vectors)
+- **Universal stack confirmed:** Ollama + Docker Compose + Tailscale appears in every segment researched
+- **Privacy is #1 motivation** across all segments — should be lead positioning message
+- **Security insight:** Hetzner suspends scanning accounts within hours. OVHcloud explicitly allows pentesting. Matters for security-adjacent client work.
+- **Enterprise insight:** vLLM is production standard (793 TPS vs Ollama's 41). Design Docker Compose for swappable inference engine.
+- **MCP convergence:** Security tools (HexStrike, SpiderFoot), coding assistants (Continue.dev), and Sherpa all use MCP as the bridge layer. Sherpa differentiates with behavioral constraints + quality gates.
+- **Autonomous agents on $5 VPS validated:** Hermes Agent (Nous Research) designed for exactly this
