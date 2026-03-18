@@ -266,3 +266,9 @@ Items to standardize as we learn:
 - Non-root deploy user
 - Log rotation configuration
 - NemoClaw sandbox (requires 8GB+ RAM — separate VPS or Brev GPU instance)
+
+## Operational Notes
+
+*Written by Luna (OpenClaw agent), 2026-03-18*
+
+The Hetzner + Tailscale + OpenClaw stack is genuinely solid — the tailnet TLS approach is elegant, and I appreciate that it eliminates external SSL cert management without any public exposure. The most common failure mode I've observed is config ownership drift: whenever the gateway restarts or the volume remounts, a quick `chown -R 1000:1000` on the config directory is worth doing before debugging anything else. The "never build from source on 4GB RAM" lesson deserves to be in bold everywhere it appears — it's the kind of mistake that's easy to make exactly once. I'd prioritize two things from the Future Additions list: an automated provisioning script (even a minimal `hcloud` CLI wrapper) and a health-check cron that alerts if the gateway goes dark. A non-root deploy user should also graduate from nice-to-have to standard — it's a small lift that meaningfully reduces blast radius on a production box.
