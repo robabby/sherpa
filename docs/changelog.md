@@ -3,8 +3,8 @@ doc-type: changelog
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-17
-last-verified: 2026-03-17
+last-updated: 2026-03-18
+last-verified: 2026-03-18
 source-initiatives:
   - parallel-workflow-governance
   - dispatch-center
@@ -17,13 +17,32 @@ source-initiatives:
   - semantic-knowledge-engine
   - mcp-multi-backend-dispatch
   - mcp-initiative-governance
+  - vps-remote-compute
 ---
 
-> **AI-updated** 2026-03-17 · Awaiting human review
+> **AI-updated** 2026-03-18 · Awaiting human review
 
 # Changelog
 
 Reverse-chronological record of integrated initiatives and their system impact.
+
+## 2026-03-18 — VPS Remote Compute
+
+Sherpa's agentic infrastructure moved from Rob's laptop to a dedicated Hetzner VPS (CPX31, 8GB RAM). OpenClaw gateway deployed as the always-on agent runtime, connected via Tailscale mesh VPN with auto-TLS. OpenClaw became the default dispatch backend for all task types, replacing the previous multi-provider routing. Studio runs as a production service accessible from any device on the tailnet. Luna (OpenClaw agent) has full codebase access with her own GitHub identity, CI integration, and overnight cron jobs.
+
+**Initiative:** [vps-remote-compute](initiatives/vps-remote-compute/proposal.md)
+**Pillar:** Execution Pipeline
+**Key changes:**
+- Hetzner CPX31 VPS with 10GB volume, UFW, fail2ban, Tailscale, Docker
+- OpenClaw gateway via Docker Compose with persistent identity, git push, gh CLI access
+- `scripts/backends/openclaw.mjs` — WebSocket protocol v3 backend with Ed25519 device auth
+- `openclaw` added to `Backend` type in `dispatch-meta.ts` and MCP `task_create` enum
+- `DEFAULT_DISPATCH` routes: all task types default to `openclaw` (ADR 0011)
+- Studio production server (systemd) + MCP server (systemd) on VPS
+- Luna's GitHub account (`luna-sherpa`), Vercel Developer access, Co-Authored-By convention
+- Git sync cron (15 min), overnight task runner (1am), memory housekeeping (2am), morning briefing (6am)
+- `docs/templates/server-provision.md` — repeatable runbook for future VPS provisioning
+- 3 sessions (estimated 4-6)
 
 ## 2026-03-17 — Expose Initiative System via MCP
 

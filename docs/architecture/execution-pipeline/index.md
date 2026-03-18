@@ -15,6 +15,7 @@ source-initiatives:
   - mcp-multi-backend-dispatch
   - mcp-initiative-governance
   - agentic-runtime-platforms
+  - vps-remote-compute
 ---
 
 > **AI-updated** 2026-03-18 · Awaiting human review
