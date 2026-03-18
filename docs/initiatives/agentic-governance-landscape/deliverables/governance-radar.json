@@ -1,0 +1,19 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "governance-radar",
+  "title": "Agentic Governance Radar",
+  "description": "Technology radar classifying 28 governance tools, frameworks, standards, and approaches into Adopt/Trial/Assess/Hold for Sherpa positioning",
+  "created": "2026-03-18",
+  "sourceIteration": 1,
+  "chartType": "bar",
+  "data": [
+    { "name": "Adopt", "count": 5 },
+    { "name": "Trial", "count": 7 },
+    { "name": "Assess", "count": 9 },
+    { "name": "Hold", "count": 7 }
+  ],
+  "series": [
+    { "key": "count", "label": "Items", "color": "var(--chart-1)" }
+  ],
+  "xAxis": { "dataKey": "name" }
+}

@@ -1,8 +1,8 @@
 ---
-status: in-progress
+status: integrated
 initiative: vps-remote-compute
 created: 2026-03-16
-updated: '2026-03-16'
+updated: '2026-03-18'
 type: new-plan
 risk: structural
 targets:

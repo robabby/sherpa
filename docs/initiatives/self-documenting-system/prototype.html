@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docs Workspace — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gold: '#c9a227',
+            'dark-bronze': '#1a1612',
+            background: '#0c0a09',
+            foreground: '#e7e5e4',
+            muted: '#292524',
+            'muted-foreground': '#a8a29e',
+            border: '#292524',
+            card: '#1c1917',
+          },
+          fontFamily: {
+            heading: ['Georgia', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            sans: ['system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #0c0a09; color: #e7e5e4; }
+    .led { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .led-emerald { background: #34d399; box-shadow: 0 0 4px #34d39960; }
+    .led-gold { background: #c9a227; box-shadow: 0 0 4px #c9a22760; }
+    .led-rose { background: #fb7185; box-shadow: 0 0 4px #fb718560; }
+    .led-muted { background: #57534e; }
+    .tree-node { cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.1s; }
+    .tree-node:hover { background: #292524; }
+    .tree-node.active { background: #1a161280; border-left: 2px solid #c9a227; }
+    .section-header { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #a8a29e; padding: 12px 8px 4px; }
+    .provenance-bar { border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; }
+    .source-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-family: 'JetBrains Mono', monospace; background: #29252480; border: 1px solid #29252480; cursor: pointer; transition: border-color 0.15s; }
+    .source-badge:hover { border-color: #c9a22740; }
+    .review-toggle { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+    .review-toggle:hover { background: #292524; }
+    .review-toggle.active { background: #c9a22710; border-color: #c9a22730; color: #c9a227; }
+    .review-count { font-size: 10px; font-family: 'JetBrains Mono', monospace; background: #c9a22720; color: #c9a227; padding: 1px 6px; border-radius: 9999px; }
+    .resize-handle { width: 1px; background: #292524; cursor: col-resize; position: relative; }
+    .resize-handle:hover { background: #c9a22740; }
+    .resize-handle::after { content: ''; position: absolute; inset: -4px; }
+    .markdown h1 { font-family: Georgia, serif; font-size: 1.5rem; font-weight: 600; margin-bottom: 16px; color: #e7e5e4; }
+    .markdown h2 { font-family: Georgia, serif; font-size: 1.15rem; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: #e7e5e4e0; }
+    .markdown h3 { font-family: Georgia, serif; font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 8px; color: #e7e5e4c0; }
+    .markdown p { line-height: 1.7; margin-bottom: 12px; color: #a8a29e; font-size: 14px; }
+    .markdown ul { list-style: disc; padding-left: 20px; margin-bottom: 12px; }
+    .markdown li { color: #a8a29e; font-size: 14px; line-height: 1.7; margin-bottom: 4px; }
+    .markdown code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #29252480; padding: 2px 6px; border-radius: 4px; }
+    .markdown a { color: #c9a227; text-decoration: underline; text-underline-offset: 3px; }
+    .markdown table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+    .markdown th { text-align: left; padding: 8px; border-bottom: 1px solid #292524; color: #e7e5e4; font-weight: 500; }
+    .markdown td { padding: 8px; border-bottom: 1px solid #29252480; color: #a8a29e; }
+    .btn-review { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+    .btn-review-pending { background: #c9a22710; border: 1px solid #c9a22730; color: #c9a227; }
+    .btn-review-pending:hover { background: #c9a22720; border-color: #c9a22750; }
+    .btn-verified { background: #34d39910; border: 1px solid #34d39930; color: #34d399; cursor: default; }
+    .search-input { background: #1c1917; border: 1px solid #292524; border-radius: 6px; padding: 6px 10px 6px 32px; font-size: 13px; color: #e7e5e4; width: 100%; outline: none; transition: border-color 0.15s; }
+    .search-input:focus { border-color: #c9a22740; }
+    .search-input::placeholder { color: #57534e; }
+    .kbd { font-size: 10px; font-family: 'JetBrains Mono', monospace; background: #29252480; border: 1px solid #292524; padding: 1px 5px; border-radius: 4px; color: #57534e; }
+  </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+  <!-- Sidebar (stub) -->
+  <aside class="w-14 border-r border-border flex flex-col items-center pt-4 gap-3 flex-shrink-0">
+    <div class="w-7 h-7 rounded bg-muted flex items-center justify-center text-[10px] text-muted-foreground">S</div>
+    <div class="w-7 h-7 rounded flex items-center justify-center text-[10px] text-muted-foreground opacity-40">P</div>
+    <div class="w-7 h-7 rounded flex items-center justify-center text-[10px] text-muted-foreground opacity-40">T</div>
+    <div class="w-7 h-7 rounded flex items-center justify-center text-[10px] text-muted-foreground opacity-40">D</div>
+    <div class="w-7 h-7 rounded bg-dark-bronze border border-gold/20 flex items-center justify-center text-[10px] text-gold">D</div>
+    <div class="w-7 h-7 rounded flex items-center justify-center text-[10px] text-muted-foreground opacity-40">C</div>
+    <div class="w-7 h-7 rounded flex items-center justify-center text-[10px] text-muted-foreground opacity-40">W</div>
+  </aside>
+
+  <!-- Tree Pane -->
+  <div id="tree-pane" class="flex flex-col border-r border-border" style="width: 280px; min-width: 200px;">
+    <!-- Search -->
+    <div class="p-3 border-b border-border">
+      <div class="relative">
+        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" class="search-input" placeholder="Search docs...">
+        <span class="kbd absolute right-2.5 top-1/2 -translate-y-1/2">/</span>
+      </div>
+    </div>
+
+    <!-- Review Queue Toggle -->
+    <div class="px-3 pt-2 pb-1">
+      <div id="review-toggle" class="review-toggle" onclick="toggleReviewQueue()">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <span>Awaiting review</span>
+        <span class="review-count">5</span>
+      </div>
+    </div>
+
+    <!-- Tree -->
+    <div class="flex-1 overflow-y-auto px-2 pb-4">
+      <!-- Architecture -->
+      <div class="section-header">Architecture</div>
+
+      <div class="tree-node active flex items-center gap-2" onclick="selectDoc('governance')">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/90">Governance Engine</span>
+      </div>
+      <div class="tree-node flex items-center gap-2" onclick="selectDoc('execution')">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/90">Execution Pipeline</span>
+      </div>
+      <div class="tree-node flex items-center gap-2" onclick="selectDoc('behavioral')">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/90">Behavioral Agent System</span>
+      </div>
+      <div class="tree-node flex items-center gap-2" onclick="selectDoc('studio')">
+        <span class="led led-emerald"></span>
+        <span class="text-sm text-foreground/90">Studio Application</span>
+      </div>
+      <div class="tree-node flex items-center gap-2" onclick="selectDoc('conventions')">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/90">Executable Conventions</span>
+      </div>
+      <div class="tree-node flex items-center gap-2" onclick="selectDoc('config')">
+        <span class="led led-rose"></span>
+        <span class="text-sm text-foreground/90">Config-as-Code</span>
+      </div>
+      <div class="tree-node flex items-center gap-2" onclick="selectDoc('sync')">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/90">Convention Sync</span>
+      </div>
+
+      <!-- Decisions -->
+      <div class="section-header">Decisions</div>
+
+      <div class="tree-node flex items-center gap-2" onclick="selectDoc('d0001')">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/80 font-mono text-[11px]">0001</span>
+        <span class="text-sm text-foreground/70 truncate">Three-layer coordination</span>
+      </div>
+      <div class="tree-node flex items-center gap-2" onclick="selectDoc('d0002')">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/80 font-mono text-[11px]">0002</span>
+        <span class="text-sm text-foreground/70 truncate">Behavioral constraints</span>
+      </div>
+      <div class="tree-node flex items-center gap-2" onclick="selectDoc('d0003')">
+        <span class="led led-emerald"></span>
+        <span class="text-sm text-foreground/80 font-mono text-[11px]">0003</span>
+        <span class="text-sm text-foreground/70 truncate">Never edit shared artifacts</span>
+      </div>
+      <div class="tree-node flex items-center gap-2" onclick="selectDoc('d0004')">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/80 font-mono text-[11px]">0004</span>
+        <span class="text-sm text-foreground/70 truncate">Five-backend dispatch</span>
+      </div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/80 font-mono text-[11px]">0005</span>
+        <span class="text-sm text-foreground/70 truncate">Mission control</span>
+      </div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/80 font-mono text-[11px]">0006</span>
+        <span class="text-sm text-foreground/70 truncate">SSE streaming</span>
+      </div>
+
+      <!-- Changelog -->
+      <div class="section-header">Changelog</div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-gold"></span>
+        <span class="text-sm text-foreground/90">Changelog</span>
+        <span class="text-[10px] font-mono text-muted-foreground/40">7 entries</span>
+      </div>
+
+      <!-- Framework (human-owned) -->
+      <div class="section-header">Framework</div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-muted"></span>
+        <span class="text-sm text-foreground/60">framework</span>
+      </div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-muted"></span>
+        <span class="text-sm text-foreground/60">roadmap</span>
+      </div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-muted"></span>
+        <span class="text-sm text-foreground/60">foundation-stone</span>
+      </div>
+
+      <!-- UX -->
+      <div class="section-header">UX</div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-muted"></span>
+        <span class="text-sm text-foreground/60">voice-and-tone</span>
+      </div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-muted"></span>
+        <span class="text-sm text-foreground/60">personas</span>
+      </div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-muted"></span>
+        <span class="text-sm text-foreground/60">product-personas</span>
+      </div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-muted"></span>
+        <span class="text-sm text-foreground/60">design-principles</span>
+      </div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-muted"></span>
+        <span class="text-sm text-foreground/60 truncate">messaging-framework</span>
+      </div>
+      <div class="tree-node flex items-center gap-2">
+        <span class="led led-muted"></span>
+        <span class="text-sm text-foreground/60 truncate">+ 8 more</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resize Handle -->
+  <div class="resize-handle"></div>
+
+  <!-- Detail Pane -->
+  <div id="detail-pane" class="flex-1 overflow-y-auto">
+    <div class="max-w-3xl mx-auto px-8 py-6">
+
+      <!-- Provenance Header: AI-generated, awaiting review -->
+      <div id="provenance-awaiting" class="provenance-bar border" style="background: #c9a22708; border-color: #c9a22720;">
+        <div class="flex items-center justify-between mb-1.5">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-gold/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <span class="text-sm text-gold/80 font-medium">AI-generated</span>
+            <span class="text-[11px] font-mono text-muted-foreground/50">2026-03-16</span>
+          </div>
+          <button class="btn-review btn-review-pending" onclick="markReviewed()">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Mark as Reviewed
+          </button>
+        </div>
+        <div class="text-[11px] text-muted-foreground/50 mb-2">Awaiting human review</div>
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] text-muted-foreground/40 uppercase tracking-wider">Sources</span>
+          <span class="source-badge" onclick="alert('Navigate to /process/parallel-workflow-governance')">parallel-workflow-governance</span>
+        </div>
+      </div>
+
+      <!-- Provenance Header: Verified (hidden by default) -->
+      <div id="provenance-verified" class="provenance-bar border" style="background: #34d39908; border-color: #34d39920; display: none;">
+        <div class="flex items-center justify-between mb-1.5">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-400/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            <span class="text-sm text-emerald-400/80 font-medium">AI-generated</span>
+            <span class="text-[11px] font-mono text-muted-foreground/50">2026-03-16</span>
+          </div>
+          <div class="btn-verified">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Human-verified 2026-03-16
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] text-muted-foreground/40 uppercase tracking-wider">Sources</span>
+          <span class="source-badge">parallel-workflow-governance</span>
+        </div>
+      </div>
+
+      <!-- Doc Content -->
+      <div class="markdown">
+        <h1>Governance Engine</h1>
+
+        <p>The system that ensures multiple agents and humans can work on the same codebase without corrupting shared artifacts. Built on a three-layer coordination model inspired by MMO conflict resolution: prevention before detection before compensation.</p>
+
+        <h2>Overview</h2>
+        <p>Sherpa's governance problem: N agents working concurrently on initiatives that touch shared artifacts (roadmap, guidelines, conventions). Without coordination, agents overwrite each other's work or violate conventions they aren't aware of. The governance engine solves this through three layers, each with increasing enforcement strength.</p>
+
+        <h2>Three-Layer Coordination</h2>
+
+        <h3>Layer 1: CLAUDE.md + Rules (Guidance)</h3>
+        <p>Convention files in <code>.claude/rules/</code> auto-load via glob frontmatter when agents work in matching directories. Soft guidance &mdash; agents follow conventions but can't be mechanically prevented from violating them.</p>
+        <ul>
+          <li><code>initiative-convention.md</code> &mdash; directoturtle structure, proposal format, seeds</li>
+          <li><code>worktree-conventions.md</code> &mdash; isolation model, naming, lifecycle</li>
+          <li><code>behavioral-engineering.md</code> &mdash; constraints over identity for agent roles</li>
+          <li><code>content-quality.md</code> &mdash; 8-criterion scorecard for content evaluation</li>
+        </ul>
+
+        <h3>Layer 2: Claude Code Hooks (Enforcement)</h3>
+        <p>PreToolUse shell checks that prevent convention violations before they happen. Hard enforcement at the tool-call level. Designed but not yet fully implemented.</p>
+
+        <h3>Layer 3: MCP Server (State Authority)</h3>
+        <p>SQLite WAL database, single-process, 3-7&mu;s indexed reads on M1. The source of truth for initiative state, task assignments, and coordination data. Exposed via 8 MCP tools.</p>
+
+        <h2>Initiative Lifecycle</h2>
+        <p>The lifecycle is <strong>computed, not stored</strong> &mdash; a pure function (<code>detectLifecycle</code> in <code>packages/studio-core/src/lifecycle.ts</code>) derives the current stage from filesystem evidence.</p>
+
+        <table>
+          <thead>
+            <tr><th>Status</th><th>Condition</th><th>Stage</th><th>Actor</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>integrated</code></td><td>&mdash;</td><td>integrated</td><td>&mdash;</td></tr>
+            <tr><td><code>approved</code></td><td>workstream completed</td><td>ready-to-integrate</td><td>human</td></tr>
+            <tr><td><code>approved</code></td><td>has plan, no workstream</td><td>ready-to-start</td><td>agent</td></tr>
+            <tr><td><code>pending</code></td><td>iterations &gt; 0</td><td>needs-review</td><td>human</td></tr>
+            <tr><td><code>pending</code></td><td>no research</td><td>needs-research</td><td>agent</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Decisions</h2>
+        <ul>
+          <li><a href="#">0001 &mdash; Three-layer coordination model</a></li>
+          <li><a href="#">0003 &mdash; Never edit shared artifacts directly</a></li>
+        </ul>
+
+        <h2>Related</h2>
+        <ul>
+          <li><a href="#">Execution Pipeline</a> &mdash; dispatches tasks that the governance engine creates</li>
+          <li><a href="#">Executable Conventions</a> &mdash; the rules and skills that governance loads</li>
+          <li><a href="#">Config-as-Code</a> &mdash; project paths that tell governance where to find things</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Interactive behaviors
+    function selectDoc(id) {
+      document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+    }
+
+    function toggleReviewQueue() {
+      const toggle = document.getElementById('review-toggle');
+      toggle.classList.toggle('active');
+      // In real impl: filter tree to only show reviewed-by: null nodes
+    }
+
+    function markReviewed() {
+      // Simulate review action
+      document.getElementById('provenance-awaiting').style.display = 'none';
+      document.getElementById('provenance-verified').style.display = 'block';
+      // Update tree LED
+      const activeNode = document.querySelector('.tree-node.active .led');
+      if (activeNode) {
+        activeNode.className = 'led led-emerald';
+      }
+    }
+
+    // Keyboard nav
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && !e.target.matches('input')) {
+        e.preventDefault();
+        document.querySelector('.search-input').focus();
+      }
+      if (e.key === 'r' && !e.target.matches('input')) {
+        toggleReviewQueue();
+      }
+      if (e.key === 'm' && !e.target.matches('input')) {
+        const btn = document.querySelector('.btn-review-pending');
+        if (btn) markReviewed();
+      }
+      if (e.key === 'Escape') {
+        document.querySelector('.search-input').blur();
+      }
+    });
+  </script>
+</body>
+</html>

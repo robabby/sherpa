@@ -140,7 +140,7 @@ export function syncFromFilesystem(db: Database.Database, projectRoot: string): 
     }
 
     const title = extractTitle(content)
-    const { kind, initiative } = classifyFile(relativePath)
+    const { kind, initiative } = classifyFile(relativePath, frontmatterData)
     const status = (frontmatterData?.status as string) ?? null
 
     syncFile(

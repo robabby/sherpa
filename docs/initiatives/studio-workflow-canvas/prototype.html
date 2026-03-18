@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Workflow Canvas — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#08080a',
+            'warm-charcoal': '#18181b',
+            'dark-bronze': '#27272a',
+            gold: '#d4a574',
+            'gold-bright': '#e8c49a',
+            'gold-muted': '#b08a5e',
+            copper: '#c49a6c',
+            bronze: '#8b7355',
+            tarnished: '#6b5a42',
+            cream: '#f5f0e8',
+          },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+            heading: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #08080a;
+      color: #e5e5e5;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --glass-bg-hover: rgba(255, 255, 255, 0.05);
+      --color-gold: #d4a574;
+      --color-copper: #c49a6c;
+      --color-bronze: #8b7355;
+      --color-dark-bronze: #27272a;
+    }
+
+    /* Canvas surface — dot grid is fixed to viewport */
+    .canvas-surface {
+      cursor: grab;
+    }
+    .canvas-surface.panning {
+      cursor: grabbing;
+    }
+    .canvas-dot-grid {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Node base */
+    .wf-node {
+      background: #18181b;
+      border: 1px solid rgba(212, 165, 116, 0.2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: grab;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+      position: absolute;
+      min-width: 160px;
+      user-select: none;
+    }
+    .wf-node:hover {
+      border-color: rgba(212, 165, 116, 0.4);
+      background: #1a1a1e;
+      box-shadow: 0 0 20px rgba(212, 165, 116, 0.06);
+    }
+    .wf-node.dragging {
+      cursor: grabbing;
+      z-index: 20;
+      box-shadow: 0 0 30px rgba(212, 165, 116, 0.1);
+    }
+    .wf-node.selected {
+      border-color: rgba(212, 165, 116, 0.6);
+      box-shadow: 0 0 0 2px rgba(212, 165, 116, 0.15), 0 0 30px rgba(212, 165, 116, 0.08);
+    }
+
+    /* Decision node variant */
+    .wf-node.decision {
+      border-style: dashed;
+      border-color: rgba(212, 165, 116, 0.25);
+    }
+    .wf-node.decision:hover {
+      border-color: rgba(212, 165, 116, 0.45);
+    }
+
+    /* Trigger node variant */
+    .wf-node.trigger {
+      border-radius: 20px;
+      border-color: rgba(196, 154, 108, 0.25);
+    }
+    .wf-node.trigger:hover {
+      border-color: rgba(196, 154, 108, 0.45);
+    }
+
+    /* Phase group */
+    .wf-phase {
+      position: absolute;
+      background: rgba(212, 165, 116, 0.02);
+      border: 1px solid rgba(212, 165, 116, 0.08);
+      border-radius: 12px;
+      padding: 36px 16px 16px;
+    }
+    .wf-phase-label {
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      color: rgba(212, 165, 116, 0.45);
+    }
+
+    /* SVG edges — base */
+    .edge-path {
+      fill: none;
+      stroke-linecap: round;
+    }
+    .edge-path-bg {
+      fill: none;
+      stroke-linecap: round;
+      opacity: 0.12;
+    }
+    .edge-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+    }
+    .edge-label-bg {
+      fill: #08080a;
+      rx: 4;
+      ry: 4;
+    }
+
+    /* Edge type colors & widths */
+    .edge-governance       { stroke: #d4a574; stroke-width: 2; }
+    .edge-governance-bg    { stroke: #d4a574; stroke-width: 6; }
+    .edge-governance-label { fill: #d4a574; }
+
+    .edge-code             { stroke: #a78bfa; stroke-width: 2.5; }
+    .edge-code-bg          { stroke: #a78bfa; stroke-width: 7; }
+    .edge-code-label       { fill: #a78bfa; }
+
+    .edge-content          { stroke: #4ade80; stroke-width: 2; }
+    .edge-content-bg       { stroke: #4ade80; stroke-width: 6; }
+    .edge-content-label    { fill: #4ade80; }
+
+    .edge-review           { stroke: #60a5fa; stroke-width: 2; }
+    .edge-review-bg        { stroke: #60a5fa; stroke-width: 6; }
+    .edge-review-label     { fill: #60a5fa; }
+
+    .edge-ideas            { stroke: #c49a6c; stroke-width: 1.5; }
+    .edge-ideas-bg         { stroke: #c49a6c; stroke-width: 5; }
+    .edge-ideas-label      { fill: #c49a6c; }
+
+    .edge-tasks            { stroke: #e8c49a; stroke-width: 2.5; }
+    .edge-tasks-bg         { stroke: #e8c49a; stroke-width: 7; }
+    .edge-tasks-label      { fill: #e8c49a; }
+
+    .edge-audit            { stroke: #8b7355; stroke-width: 1.5; }
+    .edge-audit-bg         { stroke: #8b7355; stroke-width: 5; }
+    .edge-audit-label      { fill: #8b7355; }
+
+    .edge-feedback         { stroke: #f87171; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .edge-feedback-bg      { stroke: #f87171; stroke-width: 5; }
+    .edge-feedback-label   { fill: #f87171; }
+
+    .edge-delivery         { stroke: #34d399; stroke-width: 2; }
+    .edge-delivery-bg      { stroke: #34d399; stroke-width: 6; }
+    .edge-delivery-label   { fill: #34d399; }
+
+    /* Flowing dash animation */
+    .edge-flow {
+      fill: none;
+      stroke-linecap: round;
+      stroke-dasharray: 4 12;
+      animation: edgeFlow 1.5s linear infinite;
+    }
+    .edge-flow.slow  { animation-duration: 2.5s; }
+    .edge-flow.fast  { animation-duration: 0.8s; }
+    @keyframes edgeFlow {
+      to { stroke-dashoffset: -16; }
+    }
+
+    /* Particle dots */
+    .edge-particle {
+      r: 3;
+      opacity: 0.8;
+    }
+    .edge-particle.small { r: 2; opacity: 0.6; }
+
+    /* Detail pane */
+    .detail-pane {
+      border-left: 1px solid var(--color-dark-bronze);
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    /* Resize handle */
+    .resize-handle {
+      width: 8px;
+      cursor: col-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .resize-handle-track {
+      width: 1px;
+      height: 100%;
+      background: var(--color-dark-bronze);
+      transition: background 0.15s;
+    }
+    .resize-handle:hover .resize-handle-track {
+      background: rgba(196, 154, 108, 0.3);
+    }
+
+    /* Tooltip */
+    .node-tooltip {
+      position: absolute;
+      background: #18181b;
+      border: 1px solid rgba(212, 165, 116, 0.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 50;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .node-tooltip.visible {
+      opacity: 1;
+    }
+
+    /* Controls bar */
+    .controls-bar {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      display: flex;
+      gap: 4px;
+      z-index: 10;
+    }
+    .control-btn {
+      background: rgba(24, 24, 27, 0.9);
+      border: 1px solid var(--color-dark-bronze);
+      color: #a3a3a3;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      backdrop-filter: blur(8px);
+    }
+    .control-btn:hover {
+      border-color: rgba(212, 165, 116, 0.3);
+      color: #e5e5e5;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid rgba(212, 165, 116, 0.2);
+      color: rgba(212, 165, 116, 0.8);
+      background: rgba(212, 165, 116, 0.05);
+    }
+
+    /* Skill command copy */
+    .skill-cmd {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--color-dark-bronze);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #e5e5e5;
+    }
+    .skill-cmd button {
+      margin-left: auto;
+      color: #a3a3a3;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 2px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+    .skill-cmd button:hover {
+      color: var(--color-gold);
+    }
+
+    /* Connection list */
+    .connection-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 13px;
+      color: #a3a3a3;
+    }
+    .connection-arrow {
+      font-size: 11px;
+      color: rgba(212, 165, 116, 0.5);
+      width: 16px;
+      text-align: center;
+    }
+
+    /* Status dot */
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Smooth detail pane transition */
+    .detail-enter {
+      animation: slideIn 0.2s ease-out;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Section header matching Studio */
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #a3a3a3;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #e5e5e5;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+  <!-- Header (simulates Studio shell) -->
+  <header class="px-6 py-4 border-b border-dark-bronze/50 shrink-0">
+    <div class="section-label">Process</div>
+    <div class="section-title">Product Workflow</div>
+  </header>
+
+  <!-- Main area: canvas + detail -->
+  <div id="main" class="flex flex-1 min-h-0">
+
+    <!-- Canvas area -->
+    <div id="canvas-container" class="flex-1 relative canvas-surface overflow-hidden min-w-0">
+
+      <!-- Dot grid background (scales with camera) -->
+      <canvas id="dot-grid" class="canvas-dot-grid"></canvas>
+
+      <!-- Transform group (pan/zoom target) -->
+      <div id="canvas-transform" style="transform-origin: 0 0; position: absolute; inset: 0;">
+
+        <!-- SVG edge layer — rendered dynamically from EDGES data -->
+        <svg id="edge-layer" style="position: absolute; inset: 0; width: 3000px; height: 2000px; pointer-events: none; overflow: visible;"></svg>
+
+        <!-- Phase: Discovery -->
+        <div class="wf-phase" style="left: 800px; top: 80px; width: 210px; height: 280px;">
+          <span class="wf-phase-label">Discovery</span>
+        </div>
+
+        <!-- Phase: Governance -->
+        <div class="wf-phase" style="left: 500px; top: 370px; width: 230px; height: 270px;">
+          <span class="wf-phase-label">Governance</span>
+        </div>
+
+        <!-- Phase: Execution -->
+        <div class="wf-phase" style="left: 260px; top: 690px; width: 700px; height: 390px;">
+          <span class="wf-phase-label">Execution</span>
+        </div>
+
+        <!-- Phase: Delivery -->
+        <div class="wf-phase" style="left: 150px; top: 1080px; width: 220px; height: 190px;">
+          <span class="wf-phase-label">Delivery</span>
+        </div>
+
+        <!-- Phase: Nightly Audit -->
+        <div class="wf-phase" style="left: 1060px; top: 790px; width: 260px; height: 360px;">
+          <span class="wf-phase-label">Nightly Audit</span>
+        </div>
+
+        <!-- Phase: Morning Review -->
+        <div class="wf-phase" style="left: 320px; top: 1300px; width: 230px; height: 180px;">
+          <span class="wf-phase-label">Morning Review</span>
+        </div>
+
+        <!-- Trigger: Incoming Idea -->
+        <div class="wf-node trigger" style="left: 820px; top: 20px;" data-node="idea">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-copper);"></div>
+            <span class="text-sm font-medium">Incoming Idea</span>
+          </div>
+        </div>
+
+        <!-- Trigger: Nightly Trigger -->
+        <div class="wf-node trigger" style="left: 1120px; top: 720px;" data-node="nightly">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-copper);"></div>
+            <span class="text-sm font-medium">Nightly Trigger</span>
+          </div>
+        </div>
+
+        <!-- Discovery nodes -->
+        <div class="wf-node" style="left: 820px; top: 120px;" data-node="curate" data-phase="Discovery" data-skill="/curate">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <div>
+              <div class="text-sm font-medium">Curate</div>
+              <div class="text-xs text-neutral-500 font-mono">/curate</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node" style="left: 820px; top: 190px;" data-node="research" data-phase="Discovery" data-skill="/rr">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <div>
+              <div class="text-sm font-medium">Research</div>
+              <div class="text-xs text-neutral-500 font-mono">/rr</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node" style="left: 810px; top: 270px;" data-node="synthesize" data-phase="Discovery" data-skill="/synthesize">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <div>
+              <div class="text-sm font-medium">Synthesize</div>
+              <div class="text-xs text-neutral-500 font-mono">/synthesize</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Governance nodes -->
+        <div class="wf-node" style="left: 530px; top: 400px;" data-node="propose" data-phase="Governance" data-skill="proposal.md">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <div>
+              <div class="text-sm font-medium">Propose</div>
+              <div class="text-xs text-neutral-500 font-mono">proposal.md</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node" style="left: 510px; top: 490px;" data-node="review" data-phase="Governance" data-skill="/integration-review">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <div>
+              <div class="text-sm font-medium">Review</div>
+              <div class="text-xs text-neutral-500 font-mono">/integration-review</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node decision" style="left: 530px; top: 580px;" data-node="decide" data-phase="Governance">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <span class="text-sm font-medium">Approve / Decline</span>
+          </div>
+        </div>
+
+        <!-- Execution nodes -->
+        <div class="wf-node" style="left: 530px; top: 720px;" data-node="plan" data-phase="Execution" data-skill="/plan-tasks">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <div>
+              <div class="text-sm font-medium">Plan</div>
+              <div class="text-xs text-neutral-500 font-mono">/plan-tasks</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node decision" style="left: 540px; top: 810px;" data-node="dispatch" data-phase="Execution">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <span class="text-sm font-medium">Dispatch</span>
+          </div>
+        </div>
+
+        <div class="wf-node" style="left: 270px; top: 910px;" data-node="claude" data-phase="Execution">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: #a78bfa;"></div>
+            <div>
+              <div class="text-sm font-medium">Claude Worker</div>
+              <div class="text-xs text-neutral-500">worktree isolation</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node" style="left: 520px; top: 910px;" data-node="lmstudio" data-phase="Execution">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: #4ade80;"></div>
+            <div>
+              <div class="text-sm font-medium">LM Studio</div>
+              <div class="text-xs text-neutral-500">Qwen 3.5 9B</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node" style="left: 770px; top: 910px;" data-node="cli" data-phase="Execution">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: #60a5fa;"></div>
+            <div>
+              <div class="text-sm font-medium">CLI Agent</div>
+              <div class="text-xs text-neutral-500">opencode · codex · gemini</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node decision" style="left: 530px; top: 1010px;" data-node="judge" data-phase="Execution" data-skill="verdict">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <span class="text-sm font-medium">Judge</span>
+          </div>
+        </div>
+
+        <!-- Delivery nodes -->
+        <div class="wf-node" style="left: 180px; top: 1110px;" data-node="codereview" data-phase="Delivery">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <div>
+              <div class="text-sm font-medium">Code Review</div>
+              <div class="text-xs text-neutral-500">PR</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node" style="left: 170px; top: 1200px;" data-node="ship" data-phase="Delivery">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-gold);"></div>
+            <div>
+              <div class="text-sm font-medium">Ship</div>
+              <div class="text-xs text-neutral-500">merge to main</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit nodes -->
+        <div class="wf-node" style="left: 1100px; top: 830px;" data-node="profiles" data-phase="Nightly Audit" data-skill="audit-profiles.json">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-bronze);"></div>
+            <div>
+              <div class="text-sm font-medium">Profiles</div>
+              <div class="text-xs text-neutral-500 font-mono">audit-profiles.json</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node" style="left: 1090px; top: 920px;" data-node="chunk" data-phase="Nightly Audit">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-bronze);"></div>
+            <div>
+              <div class="text-sm font-medium">Chunk</div>
+              <div class="text-xs text-neutral-500">rules + source files</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node" style="left: 1090px; top: 1010px;" data-node="auditrun" data-phase="Nightly Audit" data-skill="nightly-audit.mjs">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-bronze);"></div>
+            <div>
+              <div class="text-sm font-medium">Dispatch</div>
+              <div class="text-xs text-neutral-500 font-mono">nightly-audit.mjs</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node" style="left: 1100px; top: 1100px;" data-node="archive" data-phase="Nightly Audit">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-bronze);"></div>
+            <div>
+              <div class="text-sm font-medium">Archive</div>
+              <div class="text-xs text-neutral-500 font-mono">logs/archive/YYYY-MM-DD</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Morning Review nodes -->
+        <div class="wf-node" style="left: 340px; top: 1330px;" data-node="morning" data-phase="Morning Review" data-skill="/morning">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-copper);"></div>
+            <div>
+              <div class="text-sm font-medium">Review Results</div>
+              <div class="text-xs text-neutral-500 font-mono">/morning</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-node decision" style="left: 370px; top: 1420px;" data-node="triage" data-phase="Morning Review">
+          <div class="flex items-center gap-2">
+            <div class="status-dot" style="background: var(--color-copper);"></div>
+            <span class="text-sm font-medium">Triage</span>
+          </div>
+        </div>
+
+      </div><!-- /canvas-transform -->
+
+      <!-- Edge type legend -->
+      <div style="position: absolute; top: 12px; right: 12px; z-index: 10; display: flex; flex-direction: column; gap: 3px; background: rgba(8,8,10,0.85); backdrop-filter: blur(8px); border: 1px solid var(--color-dark-bronze); border-radius: 8px; padding: 10px 14px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #737373; letter-spacing: 0.05em; margin-bottom: 2px;">DATA FLOW</div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+          <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#c49a6c" stroke-width="1.5"/></svg>
+          <span style="color: #c49a6c;">Ideas</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+          <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#d4a574" stroke-width="2"/></svg>
+          <span style="color: #d4a574;">Governance</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+          <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#e8c49a" stroke-width="2.5"/></svg>
+          <span style="color: #e8c49a;">Tasks</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+          <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#a78bfa" stroke-width="2.5"/></svg>
+          <span style="color: #a78bfa;">Code</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+          <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#4ade80" stroke-width="2"/></svg>
+          <span style="color: #4ade80;">Content</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+          <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#60a5fa" stroke-width="2"/></svg>
+          <span style="color: #60a5fa;">Review</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+          <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#34d399" stroke-width="2"/></svg>
+          <span style="color: #34d399;">Delivery</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+          <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#8b7355" stroke-width="1.5"/></svg>
+          <span style="color: #8b7355;">Audit</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+          <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#f87171" stroke-width="1.5" stroke-dasharray="3 2"/></svg>
+          <span style="color: #f87171;">Feedback loop</span>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls-bar">
+        <button class="control-btn" id="btn-zoom-in" title="Zoom in">+</button>
+        <button class="control-btn" id="btn-zoom-out" title="Zoom out">−</button>
+        <button class="control-btn" id="btn-fit" title="Fit to view">Fit</button>
+        <button class="control-btn" id="btn-reset" title="Reset layout">Reset Layout</button>
+        <span id="zoom-level" class="control-btn" style="cursor: default; color: #737373; min-width: 48px; text-align: center;">100%</span>
+      </div>
+
+      <!-- Tooltip (follows mouse on hover) -->
+      <div id="tooltip" class="node-tooltip">
+        <div id="tooltip-label" class="font-medium"></div>
+        <div id="tooltip-meta" class="text-neutral-500 text-xs mt-1"></div>
+      </div>
+
+    </div><!-- /canvas-container -->
+
+    <!-- Resize handle -->
+    <div id="resize-handle" class="resize-handle hidden">
+      <div class="resize-handle-track"></div>
+    </div>
+
+    <!-- Detail pane -->
+    <div id="detail-pane" class="detail-pane hidden overflow-y-auto" style="width: 360px; flex-shrink: 0;">
+      <div class="p-5 detail-enter">
+        <!-- Header -->
+        <div class="mb-5">
+          <h2 id="detail-name" class="text-base font-semibold"></h2>
+          <div class="flex items-center gap-2 mt-2">
+            <span id="detail-phase" class="badge"></span>
+            <span id="detail-type" class="text-xs text-neutral-500"></span>
+          </div>
+        </div>
+
+        <!-- Skill command -->
+        <div id="detail-skill-section" class="mb-5">
+          <div class="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Skill Command</div>
+          <div class="skill-cmd">
+            <span id="detail-skill"></span>
+            <button onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)" title="Copy">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Connections -->
+        <div class="mb-5">
+          <div class="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Connections</div>
+          <div id="detail-connections" class="space-y-0.5"></div>
+        </div>
+
+        <!-- Metadata -->
+        <div class="border-t border-dark-bronze/50 pt-4">
+          <div class="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Details</div>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-neutral-500">Phase</span>
+              <span id="detail-phase-text" class="text-neutral-300"></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-neutral-500">Type</span>
+              <span id="detail-type-text" class="text-neutral-300"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Future data placeholder -->
+        <div class="border-t border-dark-bronze/50 pt-4 mt-4">
+          <div class="rounded-lg border border-dashed border-dark-bronze p-4 text-center">
+            <div class="text-xs text-neutral-500">Live data coming in a future release</div>
+            <div class="text-xs text-neutral-600 mt-1">Active research, pending proposals, task board</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /detail-pane -->
+
+  </div><!-- /main -->
+
+  <script>
+    // ---------------------------------------------------------------------------
+    // Node data (simulates studio-core/workflow.ts)
+    // ---------------------------------------------------------------------------
+    const NODE_DATA = {
+      idea:       { label: 'Incoming Idea', phase: null, type: 'trigger', skill: null, connections: { in: [], out: ['Research'] } },
+      nightly:    { label: 'Nightly Trigger', phase: null, type: 'trigger', skill: null, connections: { in: [], out: ['Profiles'] } },
+      curate:     { label: 'Curate', phase: 'Discovery', type: 'stage', skill: '/curate', connections: { in: ['Triage (new ideas)'], out: ['Research'] } },
+      research:   { label: 'Research', phase: 'Discovery', type: 'stage', skill: '/rr', connections: { in: ['Incoming Idea', 'Curate', 'Declined (loop)'], out: ['Synthesize'] } },
+      synthesize: { label: 'Synthesize', phase: 'Discovery', type: 'stage', skill: '/synthesize', connections: { in: ['Research'], out: ['Propose'] } },
+      propose:    { label: 'Propose', phase: 'Governance', type: 'stage', skill: 'proposal.md', connections: { in: ['Synthesize'], out: ['Review'] } },
+      review:     { label: 'Review', phase: 'Governance', type: 'stage', skill: '/integration-review', connections: { in: ['Propose'], out: ['Approve / Decline'] } },
+      decide:     { label: 'Approve / Decline', phase: 'Governance', type: 'decision', skill: null, connections: { in: ['Review'], out: ['Plan (approved)', 'Research (declined)'] } },
+      plan:       { label: 'Plan', phase: 'Execution', type: 'stage', skill: '/plan-tasks', connections: { in: ['Approved', 'Triage (fix tasks)'], out: ['Dispatch'] } },
+      dispatch:   { label: 'Dispatch', phase: 'Execution', type: 'decision', skill: null, connections: { in: ['Plan', 'Judge (needs changes)'], out: ['Claude Worker', 'LM Studio', 'CLI Agent'] } },
+      claude:     { label: 'Claude Worker', phase: 'Execution', type: 'stage', skill: null, connections: { in: ['Dispatch (code tasks)'], out: ['Judge'] } },
+      lmstudio:   { label: 'LM Studio', phase: 'Execution', type: 'stage', skill: null, connections: { in: ['Dispatch (content)'], out: ['Judge'] } },
+      cli:        { label: 'CLI Agent', phase: 'Execution', type: 'stage', skill: null, connections: { in: ['Dispatch (review)'], out: ['Judge'] } },
+      judge:      { label: 'Judge', phase: 'Execution', type: 'decision', skill: 'verdict', connections: { in: ['Claude Worker', 'LM Studio', 'CLI Agent'], out: ['Code Review (approved)', 'Dispatch (needs changes)'] } },
+      codereview: { label: 'Code Review', phase: 'Delivery', type: 'stage', skill: null, connections: { in: ['Judge (approved)'], out: ['Ship'] } },
+      ship:       { label: 'Ship', phase: 'Delivery', type: 'stage', skill: null, connections: { in: ['Code Review'], out: ['Review Results'] } },
+      profiles:   { label: 'Profiles', phase: 'Nightly Audit', type: 'stage', skill: 'audit-profiles.json', connections: { in: ['Nightly Trigger'], out: ['Chunk'] } },
+      chunk:      { label: 'Chunk', phase: 'Nightly Audit', type: 'stage', skill: null, connections: { in: ['Profiles'], out: ['Dispatch (audit)'] } },
+      auditrun:   { label: 'Dispatch (audit)', phase: 'Nightly Audit', type: 'stage', skill: 'nightly-audit.mjs', connections: { in: ['Chunk'], out: ['Archive'] } },
+      archive:    { label: 'Archive', phase: 'Nightly Audit', type: 'stage', skill: null, connections: { in: ['Dispatch (audit)'], out: ['Review Results'] } },
+      morning:    { label: 'Review Results', phase: 'Morning Review', type: 'stage', skill: '/morning', connections: { in: ['Archive', 'Ship'], out: ['Triage'] } },
+      triage:     { label: 'Triage', phase: 'Morning Review', type: 'decision', skill: null, connections: { in: ['Review Results'], out: ['Plan (fix tasks)', 'Curate (new ideas)'] } },
+    };
+
+    // ---------------------------------------------------------------------------
+    // Edge definitions — source, target, exit/entry sides, label
+    // Sides: 'top' | 'bottom' | 'left' | 'right'
+    // ---------------------------------------------------------------------------
+    // Edge types define visual treatment
+    // Each type: color class, flow speed, thickness category
+    const EDGE_TYPES = {
+      ideas:      { cls: 'ideas',      flow: 'slow',  arrow: '#c49a6c' },
+      governance: { cls: 'governance', flow: null,     arrow: '#d4a574' },
+      tasks:      { cls: 'tasks',      flow: 'fast',  arrow: '#e8c49a' },
+      code:       { cls: 'code',       flow: 'fast',  arrow: '#a78bfa' },
+      content:    { cls: 'content',    flow: null,     arrow: '#4ade80' },
+      review:     { cls: 'review',     flow: null,     arrow: '#60a5fa' },
+      feedback:   { cls: 'feedback',   flow: 'slow',  arrow: '#f87171' },
+      audit:      { cls: 'audit',      flow: 'slow',  arrow: '#8b7355' },
+      delivery:   { cls: 'delivery',   flow: null,     arrow: '#34d399' },
+    };
+
+    const EDGES = [
+      // Discovery — ideas flowing in
+      { src: 'idea',       tgt: 'research',    type: 'ideas' },
+      { src: 'curate',     tgt: 'research',    type: 'ideas' },
+      { src: 'research',   tgt: 'synthesize',  type: 'ideas' },
+      // Discovery → Governance — proposals forming
+      { src: 'synthesize', tgt: 'propose',     type: 'governance' },
+      // Governance — review pipeline
+      { src: 'propose',    tgt: 'review',      type: 'governance' },
+      { src: 'review',     tgt: 'decide',      type: 'governance' },
+      // Governance → Execution — approved work
+      { src: 'decide',     tgt: 'plan',        type: 'tasks',    label: 'Approved' },
+      // Feedback: declined → back to research
+      { src: 'decide',     tgt: 'research',    type: 'feedback', label: 'Declined', srcSide: 'right', tgtSide: 'right' },
+      // Execution — task dispatch
+      { src: 'plan',       tgt: 'dispatch',    type: 'tasks' },
+      { src: 'dispatch',   tgt: 'claude',      type: 'code',     label: 'Code tasks' },
+      { src: 'dispatch',   tgt: 'lmstudio',    type: 'content',  label: 'Content' },
+      { src: 'dispatch',   tgt: 'cli',         type: 'review',   label: 'Review' },
+      { src: 'claude',     tgt: 'judge',       type: 'code' },
+      { src: 'lmstudio',   tgt: 'judge',       type: 'content' },
+      { src: 'cli',        tgt: 'judge',       type: 'review' },
+      // Feedback: judge → needs changes
+      { src: 'judge',      tgt: 'dispatch',    type: 'feedback', label: 'Needs changes', srcSide: 'left', tgtSide: 'left' },
+      // Judge → Delivery
+      { src: 'judge',      tgt: 'codereview',  type: 'delivery', label: 'Approved' },
+      // Delivery pipeline
+      { src: 'codereview', tgt: 'ship',        type: 'delivery' },
+      { src: 'ship',       tgt: 'morning',     type: 'delivery' },
+      // Nightly Audit
+      { src: 'nightly',    tgt: 'profiles',    type: 'audit' },
+      { src: 'profiles',   tgt: 'chunk',       type: 'audit' },
+      { src: 'chunk',      tgt: 'auditrun',    type: 'audit' },
+      { src: 'auditrun',   tgt: 'archive',     type: 'audit' },
+      { src: 'archive',    tgt: 'morning',     type: 'audit' },
+      // Morning Review
+      { src: 'morning',    tgt: 'triage',      type: 'governance' },
+      // Feedback: triage → loops
+      { src: 'triage',     tgt: 'plan',        type: 'feedback', label: 'Fix tasks',  srcSide: 'left',  tgtSide: 'left' },
+      { src: 'triage',     tgt: 'curate',      type: 'feedback', label: 'New ideas',  srcSide: 'right', tgtSide: 'right' },
+    ];
+
+    // ---------------------------------------------------------------------------
+    // Dynamic edge rendering
+    // ---------------------------------------------------------------------------
+    const edgeSvg = document.getElementById('edge-layer');
+
+    function getNodeRect(nodeId) {
+      const el = document.querySelector(`[data-node="${nodeId}"]`);
+      if (!el) return null;
+      const x = parseFloat(el.style.left);
+      const y = parseFloat(el.style.top);
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      return { x, y, w, h, cx: x + w / 2, cy: y + h / 2 };
+    }
+
+    function getAnchor(rect, side) {
+      switch (side) {
+        case 'top':    return { x: rect.cx, y: rect.y };
+        case 'bottom': return { x: rect.cx, y: rect.y + rect.h };
+        case 'left':   return { x: rect.x, y: rect.cy };
+        case 'right':  return { x: rect.x + rect.w, y: rect.cy };
+      }
+    }
+
+    function buildEdgePath(srcAnchor, tgtAnchor, srcSide, tgtSide) {
+      const dx = tgtAnchor.x - srcAnchor.x;
+      const dy = tgtAnchor.y - srcAnchor.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const tension = Math.max(40, Math.min(dist * 0.4, 200));
+
+      // Control points extend outward from the anchor side
+      const cpOffsets = {
+        top:    { x: 0, y: -tension },
+        bottom: { x: 0, y: tension },
+        left:   { x: -tension, y: 0 },
+        right:  { x: tension, y: 0 },
+      };
+
+      const cp1 = cpOffsets[srcSide];
+      const cp2 = cpOffsets[tgtSide];
+
+      return `M ${srcAnchor.x},${srcAnchor.y} C ${srcAnchor.x + cp1.x},${srcAnchor.y + cp1.y} ${tgtAnchor.x + cp2.x},${tgtAnchor.y + cp2.y} ${tgtAnchor.x},${tgtAnchor.y}`;
+    }
+
+    function renderEdges() {
+      // Preserve existing particle animations by storing their state
+      edgeSvg.innerHTML = '';
+
+      // Arrow markers per type
+      let defs = '<defs>';
+      for (const [name, t] of Object.entries(EDGE_TYPES)) {
+        defs += `<marker id="arrow-${name}" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 4 L 0 8 z" fill="${t.arrow}" opacity="0.6" />
+        </marker>`;
+      }
+      defs += '</defs>';
+      edgeSvg.innerHTML = defs;
+
+      const particlePaths = []; // collect for animation
+
+      for (const edge of EDGES) {
+        const srcRect = getNodeRect(edge.src);
+        const tgtRect = getNodeRect(edge.tgt);
+        if (!srcRect || !tgtRect) continue;
+
+        const srcSide = edge.srcSide || 'bottom';
+        const tgtSide = edge.tgtSide || 'top';
+        const srcAnchor = getAnchor(srcRect, srcSide);
+        const tgtAnchor = getAnchor(tgtRect, tgtSide);
+        const d = buildEdgePath(srcAnchor, tgtAnchor, srcSide, tgtSide);
+        const et = EDGE_TYPES[edge.type] || EDGE_TYPES.governance;
+
+        // Layer 1: Glow/bg path (wider, low opacity)
+        const bgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        bgPath.setAttribute('d', d);
+        bgPath.setAttribute('class', `edge-path-bg edge-${et.cls}-bg`);
+        edgeSvg.appendChild(bgPath);
+
+        // Layer 2: Main colored path
+        const mainPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        mainPath.setAttribute('d', d);
+        mainPath.setAttribute('class', `edge-path edge-${et.cls}`);
+        mainPath.setAttribute('marker-end', `url(#arrow-${et.cls})`);
+        edgeSvg.appendChild(mainPath);
+
+        // Layer 3: Flowing dash overlay (if type has flow)
+        if (et.flow) {
+          const flowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          flowPath.setAttribute('d', d);
+          flowPath.setAttribute('class', `edge-flow ${et.flow}`);
+          flowPath.setAttribute('stroke', et.arrow);
+          flowPath.setAttribute('stroke-width', edge.type === 'tasks' || edge.type === 'code' ? '2' : '1.5');
+          flowPath.setAttribute('opacity', '0.5');
+          edgeSvg.appendChild(flowPath);
+        }
+
+        // Layer 4: Particle dot traveling along the path
+        particlePaths.push({ d, color: et.arrow, type: edge.type });
+
+        // Label
+        if (edge.label) {
+          const mx = (srcAnchor.x + tgtAnchor.x) / 2;
+          const my = (srcAnchor.y + tgtAnchor.y) / 2;
+          let lx = mx, ly = my;
+          if (srcSide === 'right' && tgtSide === 'right') {
+            lx = Math.max(srcAnchor.x, tgtAnchor.x) + 50;
+          } else if (srcSide === 'left' && tgtSide === 'left') {
+            lx = Math.min(srcAnchor.x, tgtAnchor.x) - 50;
+          }
+
+          const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          textEl.setAttribute('x', lx);
+          textEl.setAttribute('y', ly);
+          textEl.setAttribute('text-anchor', 'middle');
+          textEl.setAttribute('dominant-baseline', 'middle');
+          textEl.setAttribute('class', `edge-label edge-${et.cls}-label`);
+          textEl.setAttribute('opacity', '0.7');
+          textEl.textContent = edge.label;
+
+          const tempText = textEl.cloneNode(true);
+          edgeSvg.appendChild(tempText);
+          const bbox = tempText.getBBox();
+          edgeSvg.removeChild(tempText);
+
+          const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          bg.setAttribute('x', bbox.x - 5);
+          bg.setAttribute('y', bbox.y - 2);
+          bg.setAttribute('width', bbox.width + 10);
+          bg.setAttribute('height', bbox.height + 4);
+          bg.setAttribute('class', 'edge-label-bg');
+          edgeSvg.appendChild(bg);
+          edgeSvg.appendChild(textEl);
+        }
+      }
+
+      // Start particle animations
+      startParticles(particlePaths);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Particle animation system
+    // ---------------------------------------------------------------------------
+    let particleAnimFrame = null;
+    let particles = [];
+
+    function startParticles(paths) {
+      if (particleAnimFrame) cancelAnimationFrame(particleAnimFrame);
+      particles = [];
+
+      // Create SVG path elements for length measurement (hidden)
+      const measureGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      measureGroup.setAttribute('opacity', '0');
+      edgeSvg.appendChild(measureGroup);
+
+      for (const p of paths) {
+        const measPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        measPath.setAttribute('d', p.d);
+        measureGroup.appendChild(measPath);
+        const len = measPath.getTotalLength();
+        if (len < 20) continue;
+
+        // Speed varies by type
+        const speed = { tasks: 120, code: 100, content: 70, feedback: 50, ideas: 40, audit: 35 }[p.type] || 60;
+
+        // Create 1-2 particles per edge
+        const count = len > 200 ? 2 : 1;
+        for (let i = 0; i < count; i++) {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('class', `edge-particle${count > 1 && i > 0 ? ' small' : ''}`);
+          circle.setAttribute('fill', p.color);
+          edgeSvg.appendChild(circle);
+
+          particles.push({
+            el: circle,
+            path: measPath,
+            len,
+            offset: (i / count) * len,
+            speed,
+          });
+        }
+      }
+
+      edgeSvg.removeChild(measureGroup);
+
+      // Re-add measure paths (hidden) so getTotalLength still works
+      const hiddenGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      hiddenGroup.style.display = 'none';
+      for (const p of particles) {
+        hiddenGroup.appendChild(p.path);
+      }
+      edgeSvg.appendChild(hiddenGroup);
+
+      let lastTime = performance.now();
+      function animate(now) {
+        const dt = (now - lastTime) / 1000;
+        lastTime = now;
+
+        for (const p of particles) {
+          p.offset = (p.offset + p.speed * dt) % p.len;
+          const pt = p.path.getPointAtLength(p.offset);
+          p.el.setAttribute('cx', pt.x);
+          p.el.setAttribute('cy', pt.y);
+        }
+        particleAnimFrame = requestAnimationFrame(animate);
+      }
+      particleAnimFrame = requestAnimationFrame(animate);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Camera system — pan, zoom, fit
+    // ---------------------------------------------------------------------------
+    const container = document.getElementById('canvas-container');
+    const transformEl = document.getElementById('canvas-transform');
+    const dotGrid = document.getElementById('dot-grid');
+    const zoomLabel = document.getElementById('zoom-level');
+
+    const MIN_ZOOM = 0.2;
+    const MAX_ZOOM = 2.0;
+    const ZOOM_SENSITIVITY = 0.002;
+
+    let camera = { x: 0, y: 0, k: 1 };
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+
+    function applyTransform() {
+      transformEl.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.k})`;
+      zoomLabel.textContent = Math.round(camera.k * 100) + '%';
+      drawDotGrid();
+    }
+
+    function drawDotGrid() {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      dotGrid.width = w;
+      dotGrid.height = h;
+      const ctx = dotGrid.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      const gap = 24 * camera.k;
+      if (gap < 6) return; // too small to draw
+
+      const ox = camera.x % gap;
+      const oy = camera.y % gap;
+      const alpha = Math.min(1, (gap - 6) / 12) * 0.12;
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      for (let x = ox; x < w; x += gap) {
+        for (let y = oy; y < h; y += gap) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    function screenToCanvas(sx, sy) {
+      return {
+        x: (sx - camera.x) / camera.k,
+        y: (sy - camera.y) / camera.k,
+      };
+    }
+
+    function zoomTo(newK, cx, cy) {
+      newK = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newK));
+      // Zoom toward the point (cx, cy) in screen space
+      camera.x = cx - (cx - camera.x) * (newK / camera.k);
+      camera.y = cy - (cy - camera.y) * (newK / camera.k);
+      camera.k = newK;
+      applyTransform();
+    }
+
+    function fitView() {
+      const nodes = document.querySelectorAll('.wf-node');
+      if (!nodes.length) return;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      nodes.forEach(n => {
+        const x = parseFloat(n.style.left);
+        const y = parseFloat(n.style.top);
+        const w = n.offsetWidth;
+        const h = n.offsetHeight;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x + w > maxX) maxX = x + w;
+        if (y + h > maxY) maxY = y + h;
+      });
+
+      const padding = 60;
+      const contentW = maxX - minX + padding * 2;
+      const contentH = maxY - minY + padding * 2;
+      const viewW = container.clientWidth;
+      const viewH = container.clientHeight;
+
+      const k = Math.min(viewW / contentW, viewH / contentH, 1.0);
+      const cx = (viewW - contentW * k) / 2;
+      const cy = (viewH - contentH * k) / 2;
+
+      camera.k = k;
+      camera.x = cx - (minX - padding) * k;
+      camera.y = cy - (minY - padding) * k;
+      applyTransform();
+    }
+
+    // Wheel → zoom
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = container.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+
+      // Pinch-to-zoom (ctrlKey) or regular scroll
+      const delta = e.ctrlKey ? -e.deltaY * 0.01 : -e.deltaY * ZOOM_SENSITIVITY;
+      const newK = camera.k * (1 + delta);
+      zoomTo(newK, cx, cy);
+    }, { passive: false });
+
+    // Pointer → pan (on canvas background)
+    container.addEventListener('pointerdown', (e) => {
+      // Only pan if clicking on the canvas background (not on a node or control)
+      if (e.target.closest('.wf-node') || e.target.closest('.control-btn') || e.target.closest('.controls-bar')) return;
+      isPanning = true;
+      panStart.x = e.clientX;
+      panStart.y = e.clientY;
+      container.classList.add('panning');
+      container.setPointerCapture(e.pointerId);
+    });
+
+    container.addEventListener('pointermove', (e) => {
+      if (!isPanning) return;
+      const dx = e.clientX - panStart.x;
+      const dy = e.clientY - panStart.y;
+      panStart.x = e.clientX;
+      panStart.y = e.clientY;
+      camera.x += dx;
+      camera.y += dy;
+      applyTransform();
+    });
+
+    container.addEventListener('pointerup', (e) => {
+      if (!isPanning) return;
+      isPanning = false;
+      container.classList.remove('panning');
+    });
+
+    // Control buttons
+    document.getElementById('btn-zoom-in').addEventListener('click', () => {
+      const rect = container.getBoundingClientRect();
+      zoomTo(camera.k * 1.25, rect.width / 2, rect.height / 2);
+    });
+    document.getElementById('btn-zoom-out').addEventListener('click', () => {
+      const rect = container.getBoundingClientRect();
+      zoomTo(camera.k / 1.25, rect.width / 2, rect.height / 2);
+    });
+    document.getElementById('btn-fit').addEventListener('click', fitView);
+    document.getElementById('btn-reset').addEventListener('click', fitView);
+
+    // ---------------------------------------------------------------------------
+    // Node drag
+    // ---------------------------------------------------------------------------
+    let dragNode = null;
+    let dragOffset = { x: 0, y: 0 };
+    let dragMoved = false;
+
+    document.querySelectorAll('.wf-node').forEach(node => {
+      node.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        dragNode = node;
+        dragMoved = false;
+        node.classList.add('dragging');
+        node.setPointerCapture(e.pointerId);
+
+        const rect = container.getBoundingClientRect();
+        const canvasPos = screenToCanvas(e.clientX - rect.left, e.clientY - rect.top);
+        dragOffset.x = canvasPos.x - parseFloat(node.style.left);
+        dragOffset.y = canvasPos.y - parseFloat(node.style.top);
+      });
+
+      node.addEventListener('pointermove', (e) => {
+        if (dragNode !== node) return;
+        e.preventDefault();
+        dragMoved = true;
+
+        const rect = container.getBoundingClientRect();
+        const canvasPos = screenToCanvas(e.clientX - rect.left, e.clientY - rect.top);
+        node.style.left = (canvasPos.x - dragOffset.x) + 'px';
+        node.style.top = (canvasPos.y - dragOffset.y) + 'px';
+        renderEdges(); // live edge updates while dragging
+      });
+
+      node.addEventListener('pointerup', (e) => {
+        if (dragNode !== node) return;
+        node.classList.remove('dragging');
+        dragNode = null;
+      });
+    });
+
+    // ---------------------------------------------------------------------------
+    // Tooltip behavior
+    // ---------------------------------------------------------------------------
+    const tooltip = document.getElementById('tooltip');
+    const tooltipLabel = document.getElementById('tooltip-label');
+    const tooltipMeta = document.getElementById('tooltip-meta');
+
+    document.querySelectorAll('.wf-node').forEach(node => {
+      node.addEventListener('mouseenter', (e) => {
+        if (dragNode) return; // no tooltip while dragging
+        const id = node.dataset.node;
+        const data = NODE_DATA[id];
+        if (!data) return;
+        tooltipLabel.textContent = data.label;
+        tooltipMeta.textContent = [data.phase, data.skill].filter(Boolean).join(' · ');
+        tooltip.classList.add('visible');
+      });
+
+      node.addEventListener('mousemove', (e) => {
+        if (dragNode) return;
+        const rect = container.getBoundingClientRect();
+        tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
+        tooltip.style.top = (e.clientY - rect.top - 40) + 'px';
+      });
+
+      node.addEventListener('mouseleave', () => {
+        tooltip.classList.remove('visible');
+      });
+    });
+
+    // ---------------------------------------------------------------------------
+    // Node selection + detail pane
+    // ---------------------------------------------------------------------------
+    const detailPane = document.getElementById('detail-pane');
+    const resizeHandle = document.getElementById('resize-handle');
+    let selectedNode = null;
+
+    function selectNode(id) {
+      document.querySelectorAll('.wf-node.selected').forEach(n => n.classList.remove('selected'));
+
+      if (id === selectedNode) {
+        selectedNode = null;
+        detailPane.classList.add('hidden');
+        resizeHandle.classList.add('hidden');
+        return;
+      }
+
+      selectedNode = id;
+      const data = NODE_DATA[id];
+      if (!data) return;
+
+      const el = document.querySelector(`[data-node="${id}"]`);
+      if (el) el.classList.add('selected');
+
+      document.getElementById('detail-name').textContent = data.label;
+      document.getElementById('detail-phase').textContent = data.phase || 'Entry Point';
+      document.getElementById('detail-type-text').textContent = data.type.charAt(0).toUpperCase() + data.type.slice(1);
+      document.getElementById('detail-phase-text').textContent = data.phase || '—';
+
+      const skillSection = document.getElementById('detail-skill-section');
+      if (data.skill) {
+        skillSection.classList.remove('hidden');
+        document.getElementById('detail-skill').textContent = data.skill;
+      } else {
+        skillSection.classList.add('hidden');
+      }
+
+      const connEl = document.getElementById('detail-connections');
+      connEl.innerHTML = '';
+      data.connections.in.forEach(c => {
+        connEl.innerHTML += `<div class="connection-item"><span class="connection-arrow">\u2190</span><span>${c}</span></div>`;
+      });
+      data.connections.out.forEach(c => {
+        connEl.innerHTML += `<div class="connection-item"><span class="connection-arrow">\u2192</span><span>${c}</span></div>`;
+      });
+
+      detailPane.classList.remove('hidden');
+      resizeHandle.classList.remove('hidden');
+    }
+
+    // Click on nodes — only select if we didn't drag
+    document.querySelectorAll('.wf-node').forEach(node => {
+      node.addEventListener('click', (e) => {
+        if (dragMoved) return; // was a drag, not a click
+        selectNode(node.dataset.node);
+      });
+    });
+
+    // Click canvas background to deselect
+    container.addEventListener('click', (e) => {
+      if (e.target.closest('.wf-node') || e.target.closest('.control-btn') || e.target.closest('.controls-bar')) return;
+      if (dragMoved) { dragMoved = false; return; }
+      if (selectedNode) {
+        selectedNode = null;
+        document.querySelectorAll('.wf-node.selected').forEach(n => n.classList.remove('selected'));
+        detailPane.classList.add('hidden');
+        resizeHandle.classList.add('hidden');
+      }
+    });
+
+    // ---------------------------------------------------------------------------
+    // Resize handle for detail pane
+    // ---------------------------------------------------------------------------
+    let isResizing = false;
+    resizeHandle.addEventListener('pointerdown', (e) => {
+      isResizing = true;
+      e.preventDefault();
+      resizeHandle.setPointerCapture(e.pointerId);
+    });
+    resizeHandle.addEventListener('pointermove', (e) => {
+      if (!isResizing) return;
+      const mainRect = document.getElementById('main').getBoundingClientRect();
+      const newWidth = mainRect.right - e.clientX - 8;
+      const clamped = Math.max(200, Math.min(500, newWidth));
+      detailPane.style.width = clamped + 'px';
+    });
+    resizeHandle.addEventListener('pointerup', () => { isResizing = false; });
+
+    // ---------------------------------------------------------------------------
+    // Keyboard shortcuts
+    // ---------------------------------------------------------------------------
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && selectedNode) {
+        selectedNode = null;
+        document.querySelectorAll('.wf-node.selected').forEach(n => n.classList.remove('selected'));
+        detailPane.classList.add('hidden');
+        resizeHandle.classList.add('hidden');
+      }
+      if ((e.key === '=' || e.key === '+') && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        const rect = container.getBoundingClientRect();
+        zoomTo(camera.k * 1.25, rect.width / 2, rect.height / 2);
+      }
+      if (e.key === '-' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        const rect = container.getBoundingClientRect();
+        zoomTo(camera.k / 1.25, rect.width / 2, rect.height / 2);
+      }
+      if (e.key === '0' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        fitView();
+      }
+    });
+
+    // ---------------------------------------------------------------------------
+    // Init: fit view on load
+    // ---------------------------------------------------------------------------
+    requestAnimationFrame(() => {
+      renderEdges();
+      fitView();
+      // Auto-select Research node for demo after a beat
+      setTimeout(() => selectNode('research'), 300);
+    });
+
+    // Redraw dot grid on resize
+    window.addEventListener('resize', () => drawDotGrid());
+  </script>
+
+</body>
+</html>

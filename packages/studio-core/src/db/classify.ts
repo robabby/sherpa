@@ -5,8 +5,9 @@ export interface FileClassification {
   initiative: string | null
 }
 
-/** Classify a markdown file by its path. Returns the kind and parent initiative slug. */
-export function classifyFile(relativePath: string): FileClassification {
+/** Classify a markdown file by its path. Returns the kind and parent initiative slug.
+ *  For task files, optionally reads initiative from frontmatter if provided. */
+export function classifyFile(relativePath: string, frontmatter?: Record<string, unknown> | null): FileClassification {
   // Initiative files: docs/initiatives/<slug>/...
   const initMatch = relativePath.match(/^docs\/initiatives\/([^/]+)\//)
   if (initMatch) {
@@ -21,9 +22,10 @@ export function classifyFile(relativePath: string): FileClassification {
     return { kind: null, initiative: slug }
   }
 
-  // Tasks
+  // Tasks — initiative from frontmatter if available
   if (relativePath.startsWith("docs/tasks/") && relativePath.endsWith(".md")) {
-    return { kind: "task", initiative: null }
+    const taskInitiative = typeof frontmatter?.initiative === "string" ? frontmatter.initiative : null
+    return { kind: "task", initiative: taskInitiative }
   }
 
   // Agent roles (base catalog + org-specific)

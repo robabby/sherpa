@@ -96,11 +96,51 @@ How are solo AI consultants, micro-agencies, and freelance developers using VPS 
 
 **Implications:** The consulting markup math is clear. At $0.22-0.34/hr cost for adequate inference, billing clients $2-5/hr for "dedicated AI infrastructure" yields 6-15x margins. For Sherpa's client tier, RunPod at $0.22/hr is the default recommendation; AWS/GCP for enterprise clients who need the brand on invoices.
 
+### Vector 7: Hackers, Red Teams, and Security Researchers
+**Question:** How do security professionals use VPS for AI agents?
+**Full report:** [iteration-2/vector-1-hackers-security.md](iteration-2/vector-1-hackers-security.md)
+
+- Autonomous pentesting agents (PentAGI, RedAmon, Shannon, ARACNE) all deploy via Docker Compose + Ollama
+- MCP is the bridge between AI and security tools (HexStrike, MCP Kali Server, SpiderFoot MCP)
+- Disposable VPS pattern: Terraform-managed infrastructure rebuilt in minutes (Red Baron)
+- OPSEC hierarchy: cloud API (worst) → persistent VPS → local → disposable + crypto (best)
+- **Hetzner suspends scanning accounts within hours.** OVHcloud allows pentesting in ToS.
+- DARPA AIxCC: autonomous systems found 86% of vulnerabilities in 54M lines of code
+
+**Implications:** Security community has the most mature Docker + Ollama + MCP patterns. Terraform-driven disposable infra directly informs Sherpa's client provisioning. Hetzner is unsuitable for security-adjacent client work.
+
+### Vector 8: Enterprise DevOps and Platform Engineering
+**Question:** How do enterprise teams run AI on self-managed infrastructure?
+**Full report:** [iteration-2/vector-2-enterprise-devops.md](iteration-2/vector-2-enterprise-devops.md)
+
+- vLLM is the production standard (793 TPS vs Ollama's 41 TPS). Ollama is dev-only at scale.
+- 44% of organizations cite data privacy as top LLM adoption barrier
+- Self-hosted coding assistants production-ready: Tabby (32k stars), Continue.dev (20k+ stars)
+- Break-even: small models pay back in weeks vs premium APIs; 100M+ tokens/day self-hosting wins
+- Hidden cost multiplier: true self-hosting = GPU cost x 1.3-2.0x (DevOps, infra overhead)
+- Hermes Agent: autonomous agent designed for $5/month VPS, <500MB memory, 40+ tools
+- AI gateways: Kong (23k RPS) >> Portkey (10k) >> LiteLLM (2.7k)
+
+**Implications:** Enterprise confirms hybrid model (self-host simple, API for complex). Break-even data critical for consulting pricing. Hermes Agent validates $5/month VPS baseline.
+
+### Vector 9: Researchers, Creators, Educators, and Homelabs
+**Question:** How do academics, creators, educators, and hobbyists use VPS for AI?
+**Full report:** [iteration-2/vector-3-researchers-creators-homelabs.md](iteration-2/vector-3-researchers-creators-homelabs.md)
+
+- Lambda Labs dominates academic GPU (50% discount, $5k grants, top 10 US universities)
+- n8n + Ollama is the content creator stack (n8n AI Starter Kit: 14.4k stars)
+- JupyterHub on K8s for university scale. Docker template for bootcamps.
+- r/LocalLLaMA: 266k+ members. Standard stack: Ollama + Open WebUI + Tailscale
+- $200 mini PC runs 7B models. $2.49/month VPS runs TinyLlama.
+- **Privacy is #1 motivation** across all self-hosting communities
+
+**Implications:** Homelab community validates our exact stack. Educator tier model maps to Sherpa's Sm/Md/Lg/Enterprise tiers.
+
 ## Synthesis
 
 ### The Market Is Real and Segmented
 
-Five distinct practitioner segments emerged, each with different infrastructure patterns:
+Eight distinct practitioner segments emerged, each with different infrastructure patterns:
 
 | Segment | Infrastructure Pattern | Monthly Cost | Revenue Model |
 |---------|----------------------|-------------|---------------|
@@ -109,6 +149,9 @@ Five distinct practitioner segments emerged, each with different infrastructure 
 | Freelancer (marketplace) | Cloud APIs, client's infra | $0-20/mo | Fixed-price projects |
 | Micro-SaaS founder | Serverless + API orchestration | $0-100/mo | Subscription SaaS |
 | Compliance-driven consulting | Self-hosted everything on VPS | $40-200/mo | Premium retainers ($2K-8K/mo) |
+| Security / red teams | Docker + Ollama, disposable Terraform VPS | $5-50 + GPU burst | Engagement-based |
+| Enterprise DevOps | vLLM on K8s or dedicated GPU | $500-30k/mo | Internal cost center |
+| Homelabs / educators | Ollama + Open WebUI on mini PC/VPS | $0-20/mo | Learning / community |
 
 ### The Three Value Propositions for Self-Hosting
 
@@ -137,10 +180,39 @@ Five distinct practitioner segments emerged, each with different infrastructure 
 
 No new proposals. This research validates and strengthens the existing VPS Remote Compute proposal with market evidence. The key adjustment: position Ollama (not LM Studio) as the VPS inference engine, with LM Studio remaining the local development tool.
 
+### The Universal Stack (Cross-Segment)
+
+Across **every segment** researched, the same core stack appears:
+
+**Ollama + Docker Compose + Tailscale/VPN**
+
+The variations are in what wraps around it:
+- **Consultants/agencies:** + n8n for workflow automation
+- **Security teams:** + MCP tools + Neo4j knowledge graph + Terraform for disposable infra
+- **Enterprise:** + vLLM (replaces Ollama at scale) + AI gateway (LiteLLM/Kong/Portkey)
+- **Educators:** + JupyterHub/JupyterLab
+- **Homelabs:** + Open WebUI
+- **Content creators:** + ComfyUI (images) + Whisper (audio)
+
+Sherpa's position: **Ollama + Docker Compose + Tailscale + MCP server + behavioral agents + quality gates.** The first four are commodity. The last two are the differentiator.
+
+### Three Cross-Cutting Insights
+
+**1. Privacy is the universal value proposition.**
+44% of enterprises cite it. Security teams require it. Homelabs are motivated by it. "Your data stays yours, on your infrastructure" should be the lead message, not "AI governance."
+
+**2. Ollama is dev, vLLM is production.**
+At Sherpa's scale (Sm/Md, single-digit users), Ollama is fine. For Lg/Enterprise (50+ users), vLLM is the upgrade. Docker Compose should allow swapping inference engine as a container change, not an architecture change.
+
+**3. MCP is the convergence layer.**
+Security tools use MCP (HexStrike, SpiderFoot). Coding assistants use MCP (Continue.dev). Sherpa has MCP (studio-mcp). The bridge between AI and tools is MCP everywhere. Sherpa's MCP + behavioral constraints is the differentiated version.
+
 ## Open Questions for Next Iteration
 
-1. **n8n integration** -- Should Sherpa's dispatch pipeline integrate with n8n? The market clearly uses n8n as the orchestration layer. Is there a clean boundary between Sherpa's dispatch and n8n's workflow automation?
-2. **Client isolation** -- How do agencies isolate client workloads on shared VPS infrastructure? Separate Docker networks? Separate VPS instances? Namespace-based?
-3. **OpenClaw as competitor/complement** -- OpenClaw is gaining traction as a self-hosted AI agent platform. How does it compare to Sherpa's agentic framework? Is it a competitor or a deployment target?
-4. **Productized service packaging** -- The market shows clear pricing tiers ($500/mo, $2K/mo, $5K/mo). How does Sherpa's framework map to productized service tiers that a consulting practice can sell?
-5. **Monitoring and observability** -- What lightweight monitoring do solo operators actually use on their VPS? The enterprise patterns (Prometheus + Grafana) are overkill.
+1. **n8n integration** — Should Sherpa's dispatch pipeline integrate with or replace n8n? The agency segment uses n8n heavily.
+2. **vLLM upgrade path** — Exact Docker Compose change to swap Ollama for vLLM? Same env var?
+3. **Hetzner scanning policy** — Strict enforcement details. Matters for security-adjacent client work.
+4. **MCP ecosystem** — What other MCP servers are relevant for consulting clients? Is there a "MCP marketplace" opportunity?
+5. **Compliance positioning** — The 44% privacy barrier stat is compelling. What compliance frameworks (GDPR, HIPAA, SOC 2) does self-hosted Sherpa address?
+6. **Client isolation** — Separate Docker networks? Separate VPS instances? Namespace-based?
+7. **Productized service packaging** — Clear pricing tiers ($500/mo, $2K/mo, $5K/mo). How does Sherpa map?

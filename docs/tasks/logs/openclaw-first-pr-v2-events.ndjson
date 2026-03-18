@@ -1,0 +1,4 @@
+{"timestamp":"2026-03-18T17:47:25Z","event":"worker_started","source":"worker.sh","taskSlug":"openclaw-first-pr-v2","backend":"openclaw","model":"","mode":"supervised","taskType":"research","budgetUsd":"0"}
+{"timestamp":"2026-03-18T17:47:25Z","event":"status_changed","source":"worker.sh","from":"pending","to":"dispatched"}
+{"timestamp":"2026-03-18T17:47:25Z","event":"backend_delegating","source":"worker.sh","script":"/Users/rob/Workbench/sherpa/scripts/backends/openclaw.mjs","backend":"openclaw","model":""}
+{"timestamp":"2026-03-18T17:54:51Z","event":"status_changed","source":"worker.sh","from":"dispatched","to":"completed","exitCode":0,"durationSeconds":-24754}

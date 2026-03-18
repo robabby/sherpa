@@ -1,0 +1,18 @@
+# Worker Output
+
+**Backend:** openclaw (protocol v3)
+**Gateway:** wss://sherpa-ubuntu-4gb-hil-1.tail384b2.ts.net:18790
+**Session:** sherpa-dispatch
+**Duration:** 30.9s
+
+---
+
+All done. Here's what I found and did:
+
+**CLAUDE.md** ✅ — Readable. The Sherpa repo is a pnpm monorepo for the behavioral agentic collaboration framework. Notably, Luna (OpenClaw) is already wired in as one of 9 dispatch backends (`backend: openclaw` via WebSocket protocol v3).
+
+**Git** ✅ — Was on `main`, created and switched to `test/luna-repo-access`.
+
+**Commit** ✅ — `947f8da test: verify Luna repo access from OpenClaw` — visible in git log on the new branch.
+
+**Read/write access** ✅ — Full access confirmed. The report is at `docs/tasks/logs/openclaw-repo-test-report.md`.

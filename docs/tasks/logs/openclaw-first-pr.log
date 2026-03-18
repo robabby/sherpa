@@ -1,0 +1,26 @@
+# Worker Output
+
+**Backend:** openclaw (protocol v3)
+**Gateway:** wss://sherpa-ubuntu-4gb-hil-1.tail384b2.ts.net:18790
+**Session:** sherpa-dispatch
+**Duration:** 110.1s
+
+---
+
+No SSH key, no `gh` CLI, and no GitHub token available. I can do the local work but am blocked on push and PR. Let me complete what I can, then document the blockers.Good — commit done. Now the push and PR. No SSH key and no `gh` CLI. Let me check if there's a HTTPS option or a token I can use.No GitHub credentials available in this environment — no SSH key, no `gh` CLI, no `GITHUB_TOKEN`. I've done everything I can locally. Writing the blocker report now.Here's where things landed:
+
+**✅ Done locally:**
+- Branch `luna/first-contribution` created from `main`
+- `docs/templates/server-provision.md` updated with a genuine `## Operational Notes` section in my voice (config ownership drift, the 4GB OOM lesson, health-check cron wish, non-root user prod hygiene)
+- Committed as `Luna (OpenClaw) <luna@openclaw.ai>`
+
+**⚠️ Blocked on push + PR:**
+
+The OpenClaw environment has no GitHub credentials — no SSH key in `~/.ssh/`, no `gh` CLI, no `GITHUB_TOKEN`. The remote is SSH-only (`git@github.com:robabby/sherpa.git`).
+
+**To unblock, one of:**
+1. Add an SSH private key to `~/.ssh/` with the public key on GitHub
+2. Switch remote to HTTPS and set `GITHUB_TOKEN` in the OpenClaw environment
+3. Install `gh` CLI and authenticate
+
+Once that's sorted, just `git push origin luna/first-contribution` and the `gh pr create` command in the report is ready to go. Nothing needs to be redone.

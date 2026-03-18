@@ -50,7 +50,8 @@ worktree: null
 - Luna's GitHub account (`luna-sherpa`) created, Vercel Developer access, all CI checks passing
 - Git workflow established: Luna branches → pushes → PRs → Rob reviews/merges
 - Cron: git sync + knowledge DB rebuild every 15 minutes (`/root/sherpa-sync.sh`)
-- **Remaining:** overnight dispatch cron (Option C: Luna as OpenClaw cron job), non-root deploy user, backup cron, log rotation
+- Luna configured 3 OpenClaw cron jobs: nightly task runner (1am PST), memory housekeeping (2am PST), morning briefing (6am PST)
+- **Remaining:** non-root deploy user, backup cron (Hetzner API), log rotation
 
 ## 2026-03-18 — Iteration 2 expanded: full segment landscape
 

@@ -16,8 +16,22 @@ describe("classifyFile", () => {
     })
   })
 
-  it("classifies task files", () => {
+  it("classifies task files without frontmatter", () => {
     expect(classifyFile("docs/tasks/fix-bug.md")).toEqual({
+      kind: "task",
+      initiative: null,
+    })
+  })
+
+  it("classifies task files with initiative from frontmatter", () => {
+    expect(classifyFile("docs/tasks/sek-validate.md", { initiative: "semantic-knowledge-engine" })).toEqual({
+      kind: "task",
+      initiative: "semantic-knowledge-engine",
+    })
+  })
+
+  it("classifies task files with non-string initiative as null", () => {
+    expect(classifyFile("docs/tasks/fix-bug.md", { initiative: 42 })).toEqual({
       kind: "task",
       initiative: null,
     })
