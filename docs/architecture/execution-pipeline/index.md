@@ -13,10 +13,11 @@ source-initiatives:
   - mcp-coordination-layer
   - semantic-knowledge-engine
   - mcp-multi-backend-dispatch
+  - mcp-initiative-governance
 ---
 
 > **AI-updated** 2026-03-17 · Awaiting human review
-> Sources: dispatch-center, agent-narrative-streaming, studio-agent-missions, sqlite-agentic-state, mcp-coordination-layer, semantic-knowledge-engine, mcp-multi-backend-dispatch
+> Sources: dispatch-center, agent-narrative-streaming, studio-agent-missions, sqlite-agentic-state, mcp-coordination-layer, semantic-knowledge-engine, mcp-multi-backend-dispatch, mcp-initiative-governance
 
 # Execution Pipeline
 
@@ -154,6 +155,8 @@ Status lifecycle: `pending` → `dispatched` → `completed`/`failed` → `revie
 **MCP Coordination Server:** Single-process MCP server at `packages/studio-mcp/` serving Streamable HTTP on port 3100 (`/mcp` endpoint). Multi-client session management — each connecting Claude Code client gets its own `McpServer` + `StreamableHTTPServerTransport` pair, routed by `mcp-session-id` header. Health check at `/health`. Authority lease system backed by SQLite `coordination.db` with three tools (`authority_acquire`, `authority_release`, `authority_renew`), one resource (`authority://{scope}`), and a `get_dashboard` bootstrap tool. Fencing tokens are globally monotonic via a `fence_token_seq` counter. TTL reaper cleans expired leases every 60 seconds. Authority enforcement (hooks) is deferred — applies only to autonomous agents, not collaborative sessions. See [0008 — Authority enforcement scoped to autonomous agents](../../decisions/0008-authority-enforcement-autonomous-only.md).
 
 **MCP Task Dispatch:** The `task_create` and `task_dispatch` MCP tools route to all configured backends, not just lm-studio. `task_create` accepts optional `backend` (explicit override) and `task_type` (for route resolution via `resolveRoute()` from `@sherpa/studio-core`). When backend is omitted, `task_type` determines the backend via `DEFAULT_DISPATCH` config. `task_dispatch` delegates to `scripts/worker.sh` which handles env var setup, backend script selection, NDJSON event logging, and log streamer sidecars for all backend types. Health checks remain scoped to lm-studio only — other backends fail naturally via worker.sh.
+
+**MCP Initiative Governance:** Seven initiative lifecycle tools registered in `packages/studio-mcp/src/initiative/tools.ts` — list, get, seeds (read-only), create, approve, update_status, activity (write, authority-gated). Write tools check authority leases when a coordination DB is available. Approval is governance-policy-gated via `governance.approval.agents` in `sherpa.config.ts` (default: `'never'`). Backed by `packages/studio-core/src/initiative-ops.ts` — filesystem CRUD with Zod validation and lifecycle transition enforcement.
 
 **Seeds (from completed initiatives):** Scheduled dispatch, cost tracking dashboard, parallel dispatch, live terminal feed, backend-specific log parsers, hook enforcement for autonomous agents, bootstrap protocol with resource subscriptions, implicit authority via task dispatch.
 

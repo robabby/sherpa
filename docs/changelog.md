@@ -16,6 +16,7 @@ source-initiatives:
   - mcp-coordination-layer
   - semantic-knowledge-engine
   - mcp-multi-backend-dispatch
+  - mcp-initiative-governance
 ---
 
 > **AI-updated** 2026-03-17 · Awaiting human review
@@ -23,6 +24,20 @@ source-initiatives:
 # Changelog
 
 Reverse-chronological record of integrated initiatives and their system impact.
+
+## 2026-03-17 — Expose Initiative System via MCP
+
+The initiative lifecycle — the core governance workflow — is now accessible via MCP. External agents can propose work, read what's in flight, approve proposals (policy-gated), and participate in governance through standard protocol. Seven new MCP tools backed by a filesystem CRUD operations module with Zod-validated frontmatter and lifecycle transition enforcement.
+
+**Initiative:** [mcp-initiative-governance](initiatives/mcp-initiative-governance/proposal.md)
+**Pillar:** Governance Engine
+**Key changes:**
+- `packages/studio-core/src/initiative-ops.ts` — new CRUD operations module (list, get, seeds, create, approve, update_status, activity) with explicit `root` parameter and 25 tests
+- `packages/studio-mcp/src/initiative/tools.ts` — 7 MCP tools following the authority tools registration pattern
+- `packages/studio-core/src/config/` — new `governance` section with `approval.agents` policy (`'never'` | `'additive-only'` | `'always'`, default: `'never'`)
+- Lifecycle transitions enforced via `VALID_TRANSITIONS` map — strict, no `--force` escape hatch in v1
+- Authority gating on write tools when coordination DB is available
+- 15 commits, 1 session (estimated 3)
 
 ## 2026-03-17 — MCP Multi-Backend Dispatch
 

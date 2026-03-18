@@ -1,5 +1,5 @@
 ---
-status: approved
+status: integrated
 initiative: mcp-initiative-governance
 created: 2026-03-17T00:00:00.000Z
 updated: '2026-03-17'
