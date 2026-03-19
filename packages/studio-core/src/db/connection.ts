@@ -15,6 +15,7 @@ const DB_FILES = {
   coordination: "coordination.db",
   events: "events.db",
   knowledge: "knowledge.db",
+  auth: "auth.db",
 } as const
 
 /** Resolve absolute DB paths from project root. Convention: .sherpa/*.db */
@@ -25,6 +26,7 @@ export function resolveDbPaths(projectRoot: string, dbDir?: string): ResolvedDbP
     coordination: path.join(dir, DB_FILES.coordination),
     events: path.join(dir, DB_FILES.events),
     knowledge: path.join(dir, DB_FILES.knowledge),
+    auth: path.join(dir, DB_FILES.auth),
   }
 }
 
