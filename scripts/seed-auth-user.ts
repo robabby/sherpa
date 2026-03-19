@@ -41,6 +41,10 @@ const auth = betterAuth({
   plugins: [apiKey({ defaultPrefix: "sk_sherpa_" })],
 })
 
+// Run migrations to create tables on first use
+const ctx = await auth.$context
+await ctx.runMigrations()
+
 const result = await auth.api.signUpEmail({
   body: {
     email: values.email,
