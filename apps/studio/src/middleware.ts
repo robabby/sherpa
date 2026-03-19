@@ -15,7 +15,10 @@ export function middleware(request: NextRequest) {
 
   // Optimistic cookie check — if no session cookie, redirect to sign-in.
   // Full session validation happens in the layout (server component).
-  const sessionCookie = request.cookies.get("better-auth.session_token")
+  // Better Auth uses __Secure- prefix on HTTPS, plain name on HTTP.
+  const sessionCookie =
+    request.cookies.get("__Secure-better-auth.session_token") ??
+    request.cookies.get("better-auth.session_token")
   if (!sessionCookie) {
     const signInUrl = new URL("/auth/sign-in", request.url)
     signInUrl.searchParams.set("callbackUrl", pathname)
