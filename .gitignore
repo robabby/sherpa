@@ -16,6 +16,7 @@ apps/website/public/storybook/
 .env
 .env.local
 .env.*.local
+.env.production
 
 # OpenClaw dispatch identity (private keys)
 .openclaw-dispatch/

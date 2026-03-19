@@ -16,6 +16,8 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.2",
     "@sherpa/studio-core": "workspace:*",
+    "better-auth": "^1.5.5",
+    "better-sqlite3": "^12.8.0",
     "drizzle-orm": "^0.45.1",
     "zod": "^3.25.76"
   },
