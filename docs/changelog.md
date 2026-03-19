@@ -3,8 +3,8 @@ doc-type: changelog
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-18
-last-verified: 2026-03-18
+last-updated: 2026-03-19
+last-verified: 2026-03-19
 source-initiatives:
   - parallel-workflow-governance
   - dispatch-center
@@ -18,13 +18,33 @@ source-initiatives:
   - mcp-multi-backend-dispatch
   - mcp-initiative-governance
   - vps-remote-compute
+  - studio-production-auth
 ---
 
-> **AI-updated** 2026-03-18 · Awaiting human review
+> **AI-updated** 2026-03-19 · Awaiting human review
 
 # Changelog
 
 Reverse-chronological record of integrated initiatives and their system impact.
+
+## 2026-03-19 — Studio Production Auth
+
+Sherpa Studio and the MCP server are now auth-gated in production at `https://studio.sherpa.solar`. Better Auth (chosen over Supabase Auth via ADR 0012) provides dual-identity authentication: session cookies for humans, API keys (`sk_sherpa_` prefix) for agents. The VPS is hardened with Caddy (auto-TLS), CrowdSec (community IDS with 512MB memory cap), and a Lynis-verified security baseline.
+
+**Initiative:** [studio-production-auth](initiatives/studio-production-auth/proposal.md)
+**Pillar:** Studio Application
+**Key changes:**
+- Better Auth v1.5 with `@better-auth/api-key` plugin — TypeScript-native, SQLite-backed, self-hosted, MIT licensed
+- Route group restructure: `(studio)/` for authenticated routes, `auth/` for sign-in (separate layout, no sidebar)
+- Next.js middleware (`src/middleware.ts`) — optimistic cookie check with `__Secure-` prefix support for HTTPS
+- MCP server auth middleware (`packages/studio-mcp/src/auth/`) — API key + session cookie dual path, `/health` remains open
+- `.sherpa/auth.db` — dedicated SQLite database shared between Studio and MCP via WAL mode
+- Sign-in page with shadcn/ui Card + form components, user menu in sidebar footer (Avatar + DropdownMenu)
+- `scripts/seed-auth-user.ts` and `scripts/generate-api-key.ts` — CLI tools for user/key management
+- Environment validation (`src/env.ts`) with production fail-fast on missing `BETTER_AUTH_SECRET`
+- DNS A record `studio.sherpa.solar` → VPS via Vercel DNS, Caddy reverse proxy with method-based MCP routing
+- CrowdSec with firewall bouncer + console enrollment, Lynis hardening (umask 027, core dumps disabled)
+- 4 sessions (shaped for 4, used 4)
 
 ## 2026-03-18 — VPS Remote Compute
 

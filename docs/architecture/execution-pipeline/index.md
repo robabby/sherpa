@@ -3,8 +3,8 @@ doc-type: architecture
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-18
-last-verified: 2026-03-18
+last-updated: 2026-03-19
+last-verified: 2026-03-19
 source-initiatives:
   - dispatch-center
   - agent-narrative-streaming
@@ -16,10 +16,11 @@ source-initiatives:
   - mcp-initiative-governance
   - agentic-runtime-platforms
   - vps-remote-compute
+  - studio-production-auth
 ---
 
-> **AI-updated** 2026-03-18 · Awaiting human review
-> Sources: dispatch-center, agent-narrative-streaming, studio-agent-missions, sqlite-agentic-state, mcp-coordination-layer, semantic-knowledge-engine, mcp-multi-backend-dispatch, mcp-initiative-governance, agentic-runtime-platforms
+> **AI-updated** 2026-03-19 · Awaiting human review
+> Sources: dispatch-center, agent-narrative-streaming, studio-agent-missions, sqlite-agentic-state, mcp-coordination-layer, semantic-knowledge-engine, mcp-multi-backend-dispatch, mcp-initiative-governance, agentic-runtime-platforms, studio-production-auth
 
 # Execution Pipeline
 
@@ -157,7 +158,7 @@ Status lifecycle: `pending` → `dispatched` → `completed`/`failed` → `revie
 
 **SQLite State Layer:** Task coordination and agent session state backed by SQLite in WAL mode (`@sherpa/studio-core/db`). Connection factory at `packages/studio-core/src/db/connection.ts` with pooled connections and standard pragmas. Coordination database (`.sherpa/coordination.db`) stores agent_sessions and task_claims with CAS via version columns. Events database (`.sherpa/events.db`) provides append-only audit trail with ULID-keyed entries. See [0007 — SQLite embedded state, Fossil pattern](../../decisions/0007-sqlite-embedded-state-fossil-pattern.md).
 
-**MCP Coordination Server:** Single-process MCP server at `packages/studio-mcp/` serving Streamable HTTP on port 3100 (`/mcp` endpoint). Multi-client session management — each connecting Claude Code client gets its own `McpServer` + `StreamableHTTPServerTransport` pair, routed by `mcp-session-id` header. Health check at `/health`. Authority lease system backed by SQLite `coordination.db` with three tools (`authority_acquire`, `authority_release`, `authority_renew`), one resource (`authority://{scope}`), and a `get_dashboard` bootstrap tool. Fencing tokens are globally monotonic via a `fence_token_seq` counter. TTL reaper cleans expired leases every 60 seconds. Authority enforcement (hooks) is deferred — applies only to autonomous agents, not collaborative sessions. See [0008 — Authority enforcement scoped to autonomous agents](../../decisions/0008-authority-enforcement-autonomous-only.md).
+**MCP Coordination Server:** Single-process MCP server at `packages/studio-mcp/` serving Streamable HTTP on port 3100 (`/mcp` endpoint). **Auth-gated** — all requests (except `/health`) must provide either an `x-api-key` header (agents, validated via Better Auth API key plugin) or a session cookie (humans, validated via `fromNodeHeaders`). Auth middleware at `packages/studio-mcp/src/auth/middleware.ts` shares `.sherpa/auth.db` with Studio via SQLite WAL. Multi-client session management — each connecting client gets its own `McpServer` + `StreamableHTTPServerTransport` pair, routed by `mcp-session-id` header. Health check at `/health` (unauthenticated). Authority lease system backed by SQLite `coordination.db` with three tools (`authority_acquire`, `authority_release`, `authority_renew`), one resource (`authority://{scope}`), and a `get_dashboard` bootstrap tool. Fencing tokens are globally monotonic via a `fence_token_seq` counter. TTL reaper cleans expired leases every 60 seconds. Authority enforcement (hooks) is deferred — applies only to autonomous agents, not collaborative sessions. See [0008 — Authority enforcement scoped to autonomous agents](../../decisions/0008-authority-enforcement-autonomous-only.md), [0012 — Better Auth over Supabase Auth](../../decisions/0012-better-auth-over-supabase.md).
 
 **MCP Task Dispatch:** The `task_create` and `task_dispatch` MCP tools route to all configured backends, not just lm-studio. `task_create` accepts optional `backend` (explicit override) and `task_type` (for route resolution via `resolveRoute()` from `@sherpa/studio-core`). When backend is omitted, `task_type` determines the backend via `DEFAULT_DISPATCH` config. `task_dispatch` delegates to `scripts/worker.sh` which handles env var setup, backend script selection, NDJSON event logging, and log streamer sidecars for all backend types. Health checks remain scoped to lm-studio only — other backends fail naturally via worker.sh.
 

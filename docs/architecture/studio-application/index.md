@@ -3,20 +3,21 @@ doc-type: architecture
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-16
-last-verified: 2026-03-16
+last-updated: 2026-03-19
+last-verified: 2026-03-19
 source-initiatives:
   - studio-ux-patterns
   - studio-agent-missions
   - agent-narrative-streaming
+  - studio-production-auth
 ---
 
-> **AI-generated** 2026-03-16 · Awaiting human review
-> Sources: studio-ux-patterns, studio-agent-missions, agent-narrative-streaming
+> **AI-updated** 2026-03-19 · Awaiting human review
+> Sources: studio-ux-patterns, studio-agent-missions, agent-narrative-streaming, studio-production-auth
 
 # Studio Application
 
-Next.js 16 application that visualizes agentic workflows. Four-package architecture: studio-core (domain logic), studio-ui (110+ React components), studio-mcp (MCP server), and studio (umbrella with Next.js integration). Runs at localhost:3000 against Sherpa's own governance data.
+Next.js 16 application that visualizes agentic workflows. Four-package architecture: studio-core (domain logic), studio-ui (110+ React components), studio-mcp (MCP server), and studio (umbrella with Next.js integration). Production deployment at `https://studio.sherpa.solar` on Hetzner VPS, auth-gated via Better Auth (ADR 0012). Runs against Sherpa's own governance data with co-located MCP server and coordination databases.
 
 ## Package Architecture
 
@@ -29,9 +30,26 @@ Next.js 16 application that visualizes agentic workflows. Four-package architect
 
 Data flow: routes call studio-core functions → studio-core reads filesystem → components receive resolved data as props → client components stream real-time events via SSE.
 
+## Authentication
+
+Better Auth (ADR 0012) provides dual-identity authentication:
+
+- **Humans** — email/password sign-in, session cookies. Middleware at `src/middleware.ts` redirects unauthenticated requests to `/auth/sign-in`. Layout at `(studio)/layout.tsx` validates sessions server-side.
+- **Agents** — API keys (`sk_sherpa_` prefix) for MCP server access. Keys validated via `@better-auth/api-key` plugin in `packages/studio-mcp/src/auth/middleware.ts`.
+
+Route group separation: `(studio)/` contains all authenticated routes with sidebar chrome. `auth/` contains the sign-in page with its own centered layout (no sidebar). Auth database at `.sherpa/auth.db` (SQLite WAL, shared between Studio and MCP server processes).
+
+User menu in sidebar footer shows avatar + email + sign-out. No self-registration — admin creates accounts via `scripts/seed-auth-user.ts`.
+
+## Deployment
+
+**Production:** Hetzner VPS at `https://studio.sherpa.solar`. Caddy reverse proxy handles TLS (Let's Encrypt). Systemd services for Studio (port 3000) and MCP (port 3100). DNS managed in Vercel (A record → VPS IP). Not deployed to Vercel — Studio needs filesystem access and co-location with MCP/coordination databases.
+
+**Local dev:** `pnpm dev` on localhost:3000. Auth env vars in root `.env.local`.
+
 ## Route Structure
 
-14 top-level sections in `apps/studio/src/app/`:
+14 top-level sections in `apps/studio/src/app/(studio)/`:
 
 | Route | Purpose | Layout Pattern |
 |-------|---------|---------------|
@@ -90,10 +108,13 @@ Dashboard sections that provide at-a-glance status:
 
 ## Shell Structure
 
-Root layout (`apps/studio/src/app/layout.tsx`):
-- Radix UI theme + custom globals
-- Three fonts: Fraunces (display), DM Sans (body), JetBrains Mono (code)
-- Component hierarchy: `TooltipProvider` → `CommandPalette` → `SidebarProvider` → `StudioSidebar` + `SidebarInset`
+Two-level layout with route group separation:
+
+**Root layout** (`apps/studio/src/app/layout.tsx`): HTML shell, fonts (Fraunces, DM Sans, JetBrains Mono), `TooltipProvider`. Shared by all routes including auth pages.
+
+**Studio layout** (`apps/studio/src/app/(studio)/layout.tsx`): Server-side session validation via Better Auth. Component hierarchy: `CommandPalette` → `SidebarProvider` → `StudioSidebar` (with `UserMenu` slot) + `SidebarInset` → `StudioShellHeader` → `main`.
+
+**Auth layout** (`apps/studio/src/app/auth/layout.tsx`): Centered card layout with Sherpa logo. No sidebar, no header. Used only for `/auth/sign-in`.
 
 ## Hooks
 
@@ -112,7 +133,9 @@ Root layout (`apps/studio/src/app/layout.tsx`):
 - **UI primitives:** Radix UI (accordion, dialog, dropdown, popover, select, tabs, tooltip)
 - **Visualization:** Recharts, Mermaid, D3 modules
 - **Animation:** Motion (formerly Framer Motion)
-- **Database:** better-sqlite3 with Drizzle ORM (coordination, knowledge, events schemas)
+- **Auth:** Better Auth v1.5 with `@better-auth/api-key` plugin
+- **Database:** better-sqlite3 with Drizzle ORM (coordination, knowledge, events, auth schemas)
+- **Reverse proxy:** Caddy (production TLS)
 - **Search:** Fuse.js (client-side), SQLite FTS5 (server-side)
 
 ## Current State
@@ -131,3 +154,4 @@ Root layout (`apps/studio/src/app/layout.tsx`):
 
 - [0005 — Mission control over table board](../../decisions/0005-mission-control-over-table-board.md)
 - [0006 — SSE streaming for agent events](../../decisions/0006-sse-streaming-for-agent-events.md)
+- [0012 — Better Auth over Supabase Auth](../../decisions/0012-better-auth-over-supabase.md)

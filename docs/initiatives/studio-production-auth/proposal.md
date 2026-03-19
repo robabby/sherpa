@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: integrated
 initiative: studio-production-auth
 created: 2026-03-18
 updated: '2026-03-18'
