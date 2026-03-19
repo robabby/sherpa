@@ -28,3 +28,5 @@ export type {
 } from "./authority"
 export { buildDashboard } from "./dashboard"
 export type { Dashboard, DashboardOptions } from "./dashboard"
+export { createMcpAuth } from "./auth"
+export type { McpAuthOptions } from "./auth"

@@ -8,6 +8,7 @@ import { SessionManager } from "./session-manager.js"
 import { resolvePort } from "./port.js"
 import { applyAuthoritySchema } from "./authority/schema.js"
 import { startReaper, stopReaper } from "./authority/reaper.js"
+import { createMcpAuth } from "./auth/middleware.js"
 
 export interface HttpServerOptions extends StudioMcpOptions {
   port?: number
@@ -37,6 +38,12 @@ export async function startHttpServer(opts?: HttpServerOptions): Promise<{
   applyCoordinationSchema(coordinationDb)
   applyAuthoritySchema(coordinationDb)
 
+  // Initialize auth middleware
+  const mcpAuth = createMcpAuth({
+    authDbPath: dbPaths.auth,
+    publicPaths: ["/health"],
+  })
+
   // Start TTL reaper
   startReaper(coordinationDb)
 
@@ -56,6 +63,14 @@ export async function startHttpServer(opts?: HttpServerOptions): Promise<{
     if (req.url === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" })
       res.end(JSON.stringify({ status: "ok", sessions: sessions.size }))
+      return
+    }
+
+    // Auth check (after health, before /mcp)
+    const authError = await mcpAuth.authenticate(req)
+    if (authError) {
+      res.writeHead(authError.status, { "Content-Type": "application/json" })
+      res.end(JSON.stringify({ error: authError.error }))
       return
     }
 
