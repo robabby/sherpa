@@ -1,6 +1,6 @@
 ---
 id: research-opencode-rate-limits
-status: pending
+status: completed
 created: 2026-03-14T00:15:27Z
 role: research-lead
 initiative: dispatch-center
