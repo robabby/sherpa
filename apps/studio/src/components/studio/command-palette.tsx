@@ -28,8 +28,8 @@ import {
 import type {
   CommandPaletteData,
   CommandPaletteItem,
-} from "@/app/actions/command-palette-items";
-import { getCommandPaletteItems } from "@/app/actions/command-palette-items";
+} from "@/app/(studio)/actions/command-palette-items";
+import { getCommandPaletteItems } from "@/app/(studio)/actions/command-palette-items";
 
 /* -------------------------------------------------------------------------- */
 /*  Route icon map                                                             */

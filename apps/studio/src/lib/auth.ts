@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth"
-import { apiKey } from "better-auth/plugins/api-key"
-import { nextCookies } from "better-auth/plugins/next-cookies"
+import { nextCookies } from "better-auth/next-js"
+import { apiKey } from "@better-auth/api-key"
 import Database from "better-sqlite3"
 import path from "node:path"
 
@@ -20,7 +20,7 @@ export const auth = betterAuth({
   },
   plugins: [
     apiKey({
-      apiKeyPrefix: "sk_sherpa_",
+      defaultPrefix: "sk_sherpa_",
     }),
     nextCookies(),
   ],

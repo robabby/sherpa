@@ -1,0 +1,34 @@
+import { redirect } from "next/navigation"
+import { headers } from "next/headers"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { StudioSidebar } from "@/components/studio/studio-sidebar"
+import { StudioShellHeader } from "@/components/studio/studio-shell-header"
+import { CommandPalette } from "@/components/studio/command-palette"
+import { auth } from "@/lib/auth"
+
+export default async function StudioLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  if (!session) {
+    redirect("/auth/sign-in")
+  }
+
+  return (
+    <>
+      <CommandPalette />
+      <SidebarProvider>
+        <StudioSidebar />
+        <SidebarInset>
+          <StudioShellHeader />
+          <main className="flex-1 overflow-y-auto">
+            {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </>
+  )
+}

@@ -4,11 +4,7 @@ import "@/styles/globals.css"
 
 import type { Metadata, Viewport } from "next"
 import { Fraunces, DM_Sans, JetBrains_Mono } from "next/font/google"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { StudioSidebar } from "@/components/studio/studio-sidebar"
-import { StudioShellHeader } from "@/components/studio/studio-shell-header"
-import { CommandPalette } from "@/components/studio/command-palette"
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -50,16 +46,7 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
         <TooltipProvider>
-          <CommandPalette />
-          <SidebarProvider>
-            <StudioSidebar />
-            <SidebarInset>
-              <StudioShellHeader />
-              <main className="flex-1 overflow-y-auto">
-                {children}
-              </main>
-            </SidebarInset>
-          </SidebarProvider>
+          {children}
         </TooltipProvider>
       </body>
     </html>

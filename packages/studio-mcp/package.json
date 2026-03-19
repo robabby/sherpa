@@ -14,6 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@better-auth/api-key": "^1.5.5",
     "@modelcontextprotocol/sdk": "^1.18.2",
     "@sherpa/studio-core": "workspace:*",
     "better-auth": "^1.5.5",

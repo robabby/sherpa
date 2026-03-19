@@ -41,7 +41,7 @@ import {
   AGENT_PATTERNS,
   AGENT_STRUCTURES,
 } from "@/lib/studio/types";
-import { updateAgentRole } from "@/app/workforce/actions";
+import { updateAgentRole } from "@/app/(studio)/workforce/actions";
 
 interface RoleEditorProps {
   role: AgentRole;
