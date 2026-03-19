@@ -3,14 +3,15 @@ import { nextCookies } from "better-auth/next-js"
 import { apiKey } from "@better-auth/api-key"
 import Database from "better-sqlite3"
 import path from "node:path"
+import { env } from "@/env"
 
 const projectRoot = process.env.SHERPA_PROJECT_ROOT ?? process.cwd()
 const dbPath = path.join(projectRoot, ".sherpa", "auth.db")
 
 export const auth = betterAuth({
   database: new Database(dbPath),
-  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
-  secret: process.env.BETTER_AUTH_SECRET,
+  baseURL: env.BETTER_AUTH_URL,
+  secret: env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: true,
   },
