@@ -256,6 +256,105 @@ docker compose run --rm openclaw-cli devices list
 docker compose run --rm openclaw-cli devices approve <request-id>
 ```
 
+## Caddy Reverse Proxy (TLS for Web Apps)
+
+Automatic HTTPS for public-facing web apps. Caddy handles Let's Encrypt certificates with zero config.
+
+### Install
+
+```bash
+apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf "https://dl.cloudsmith.io/public/caddy/stable/gpg.key" | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf "https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt" | tee /etc/apt/sources.list.d/caddy-stable.list
+apt update && apt install -y caddy
+```
+
+### Configure
+
+`/etc/caddy/Caddyfile` — route by method to separate web app from MCP protocol:
+
+```
+studio.sherpa.solar {
+    @mcp_protocol {
+        path /mcp
+        method POST DELETE
+    }
+    handle @mcp_protocol {
+        reverse_proxy localhost:3100
+    }
+    handle /health {
+        reverse_proxy localhost:3100
+    }
+    reverse_proxy localhost:3000
+}
+```
+
+Reload: `systemctl reload caddy`
+
+**Prerequisites:** DNS A record pointing to VPS IP. CAA record allowing `letsencrypt.org`. Ports 80/443 open in UFW.
+
+## CrowdSec (Intrusion Detection)
+
+Community-driven IDS with shared threat intelligence. Replaces/complements fail2ban.
+
+### Install
+
+```bash
+curl -s https://install.crowdsec.net | bash
+apt install -y crowdsec crowdsec-firewall-bouncer-iptables
+```
+
+### Memory Limit
+
+CrowdSec can grow unbounded under attack. Set a 512MB cap:
+
+```bash
+mkdir -p /etc/systemd/system/crowdsec.service.d
+echo -e "[Service]\nMemoryMax=512M" > /etc/systemd/system/crowdsec.service.d/memory.conf
+systemctl daemon-reload && systemctl restart crowdsec
+```
+
+### Verify
+
+```bash
+cscli metrics                          # Shows acquisition + parsed lines
+systemctl show crowdsec | grep MemoryMax  # Should be 536870912 (512MB)
+```
+
+## Security Hardening Checklist
+
+Run after initial provisioning and periodically:
+
+```bash
+# Install Lynis security scanner
+apt install -y lynis debsums
+lynis audit system --quick
+
+# Tighten umask (027 instead of 022)
+sed -i 's/^UMASK\t\t022/UMASK\t\t027/' /etc/login.defs
+
+# Disable core dumps
+echo "* hard core 0" >> /etc/security/limits.conf
+
+# Verify unattended-upgrades
+dpkg-reconfigure -plow unattended-upgrades
+```
+
+### UFW Audit
+
+Only these ports should be open:
+
+| Port | Access | Purpose |
+|------|--------|---------|
+| 22/tcp | Public | SSH |
+| 80/tcp | Public | Caddy HTTP → HTTPS redirect |
+| 443/tcp | Public | Caddy HTTPS → Studio/MCP |
+| 3000 | Docker bridge (172.16.0.0/12) | Studio (internal) |
+| 3100 | Docker bridge (172.16.0.0/12) | MCP (internal) |
+| 18790 | Tailscale only | OpenClaw gateway |
+
+Verify: `ufw status verbose` and `curl -m 5 http://<public-ip>:18790` should timeout.
+
 ## Future Additions
 
 Items to standardize as we learn:
