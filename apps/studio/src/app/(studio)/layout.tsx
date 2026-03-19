@@ -5,6 +5,7 @@ import { StudioSidebar } from "@/components/studio/studio-sidebar"
 import { StudioShellHeader } from "@/components/studio/studio-shell-header"
 import { CommandPalette } from "@/components/studio/command-palette"
 import { auth } from "@/lib/auth"
+import { UserMenu } from "@/components/auth/user-menu"
 
 export default async function StudioLayout({
   children,
@@ -21,7 +22,7 @@ export default async function StudioLayout({
     <>
       <CommandPalette />
       <SidebarProvider>
-        <StudioSidebar />
+        <StudioSidebar userMenu={<UserMenu user={session.user} />} />
         <SidebarInset>
           <StudioShellHeader />
           <main className="flex-1 overflow-y-auto">

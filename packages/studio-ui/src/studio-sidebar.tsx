@@ -93,7 +93,11 @@ function isActive(pathname: string, href: string): boolean {
 /*  StudioSidebar                                                             */
 /* -------------------------------------------------------------------------- */
 
-export function StudioSidebar() {
+interface StudioSidebarProps {
+  userMenu?: React.ReactNode;
+}
+
+export function StudioSidebar({ userMenu }: StudioSidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -150,8 +154,9 @@ export function StudioSidebar() {
         ))}
       </SidebarContent>
 
-      {/* ---- Footer: collapse toggle ---- */}
+      {/* ---- Footer: user menu + collapse toggle ---- */}
       <SidebarFooter className="border-t border-sidebar-border">
+        {userMenu}
         <SidebarTrigger />
       </SidebarFooter>
     </Sidebar>
