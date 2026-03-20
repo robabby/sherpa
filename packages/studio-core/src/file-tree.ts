@@ -1,11 +1,13 @@
 import fs from "fs"
 
+import { getDefaultContext } from "./config"
+import type { ProjectContext } from "./config/types"
 import {
-  listMarkdownFiles,
-  listSubdirectories,
-  readProjectFile,
-  resolveProjectPath,
-} from "./content"
+  readCtxFile,
+  resolveCtxPath,
+  listCtxMarkdownFiles,
+  listCtxSubdirectories,
+} from "./context"
 import { extractTitle, parseFrontmatter } from "./markdown"
 import type { FileTreeNode } from "./process-nodes-shared"
 import type { BranchSeed, InitiativeResearch } from "./types"
@@ -42,9 +44,9 @@ const CANONICAL_ITEMS: {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function fileExists(relativePath: string): boolean {
+function fileExists(relativePath: string, ctx: ProjectContext): boolean {
   try {
-    return fs.existsSync(resolveProjectPath(relativePath))
+    return fs.existsSync(resolveCtxPath(ctx, relativePath))
   } catch {
     return false
   }
@@ -52,10 +54,11 @@ function fileExists(relativePath: string): boolean {
 
 function buildFileNode(
   relativePath: string,
+  ctx: ProjectContext,
   annotation?: FileTreeNode["annotation"],
 ): FileTreeNode {
   const name = relativePath.split("/").pop() ?? relativePath
-  const source = readProjectFile(relativePath)
+  const source = readCtxFile(ctx, relativePath)
   if (!source) {
     return {
       name,
@@ -83,6 +86,7 @@ function buildFileNode(
 function buildResearchChildren(
   basePath: string,
   research: InitiativeResearch | null,
+  ctx: ProjectContext,
   options?: FileTreeOptions,
 ): FileTreeNode[] {
   const children: FileTreeNode[] = []
@@ -146,14 +150,14 @@ function buildResearchChildren(
 
   // Scan for research report JSON files
   const researchDir = `${basePath}/research`
-  const absResearchDir = resolveProjectPath(researchDir)
+  const absResearchDir = resolveCtxPath(ctx, researchDir)
   if (fs.existsSync(absResearchDir)) {
     const jsonFiles = fs
       .readdirSync(absResearchDir, { withFileTypes: true })
       .filter((e) => e.isFile() && e.name.endsWith(".json"))
     for (const jf of jsonFiles) {
       const jsonPath = `${researchDir}/${jf.name}`
-      const source = readProjectFile(jsonPath)
+      const source = readCtxFile(ctx, jsonPath)
       if (!source) continue
       try {
         const parsed = JSON.parse(source)
@@ -182,6 +186,7 @@ function buildBranchesChildren(
   basePath: string,
   seeds: BranchSeed[],
   initiativeSlug: string,
+  ctx: ProjectContext,
 ): FileTreeNode[] {
   return seeds.map((seed) => ({
     name: `${seed.slug}.md`,
@@ -200,13 +205,14 @@ function buildBranchesChildren(
 function buildSubInitiativesChildren(
   basePath: string,
   initiativeSlug: string,
+  ctx: ProjectContext,
 ): FileTreeNode[] {
   const subDirPath = `${basePath}/sub-initiatives`
-  const slugs = listSubdirectories(subDirPath)
+  const slugs = listCtxSubdirectories(ctx, subDirPath)
   return slugs.map((subSlug) => {
     const subPath = `${subDirPath}/${subSlug}`
     const proposalPath = `${subPath}/proposal.md`
-    const proposal = buildFileNode(proposalPath, "proposal")
+    const proposal = buildFileNode(proposalPath, ctx, "proposal")
     return {
       name: subSlug,
       relativePath: subPath,
@@ -221,9 +227,9 @@ function buildSubInitiativesChildren(
   })
 }
 
-function buildDeliverablesChildren(basePath: string): FileTreeNode[] {
+function buildDeliverablesChildren(basePath: string, ctx: ProjectContext): FileTreeNode[] {
   const dirPath = `${basePath}/deliverables`
-  const abs = resolveProjectPath(dirPath)
+  const abs = resolveCtxPath(ctx, dirPath)
   if (!fs.existsSync(abs)) return []
 
   const files = fs.readdirSync(abs).filter((f) => f.endsWith(".json"))
@@ -249,12 +255,14 @@ export function buildBranchFileTree(
   initiativeSlug: string,
   parentResearch: InitiativeResearch | null,
   options?: FileTreeOptions,
+  ctx?: ProjectContext,
 ): FileTreeNode {
+  const c = ctx ?? getDefaultContext()
   const children: FileTreeNode[] = []
   const parentBasePath = `docs/initiatives/${initiativeSlug}`
 
   // 1. The branch .md file itself
-  children.push(buildFileNode(seed.relativePath, "seed"))
+  children.push(buildFileNode(seed.relativePath, c, "seed"))
 
   // 2. Source research iteration from parent
   if (parentResearch && seed.sourceIteration > 0) {
@@ -305,19 +313,19 @@ export function buildBranchFileTree(
   if (seed.subInitiativePath) {
     const subPath = `${parentBasePath}/${seed.subInitiativePath}`
     const subSlug = seed.subInitiativePath.split("/").pop() ?? seed.slug
-    if (fileExists(subPath)) {
+    if (fileExists(subPath, c)) {
       const proposalPath = `${subPath}/proposal.md`
-      const proposalNode = fileExists(proposalPath)
-        ? buildFileNode(proposalPath, "proposal")
+      const proposalNode = fileExists(proposalPath, c)
+        ? buildFileNode(proposalPath, c, "proposal")
         : null
       const subChildren: FileTreeNode[] = []
       if (proposalNode) {
         subChildren.push(proposalNode)
       }
       const subResearchPath = `${subPath}/research`
-      if (fileExists(subResearchPath)) {
-        const subResearchFiles = listMarkdownFiles(subResearchPath)
-        const researchChildren = subResearchFiles.map((fp) => buildFileNode(fp))
+      if (fileExists(subResearchPath, c)) {
+        const subResearchFiles = listCtxMarkdownFiles(c, subResearchPath)
+        const researchChildren = subResearchFiles.map((fp) => buildFileNode(fp, c))
         subChildren.push({
           name: "research/",
           relativePath: subResearchPath,
@@ -327,13 +335,13 @@ export function buildBranchFileTree(
         })
       }
       const subDeliverablesPath = `${subPath}/deliverables`
-      if (fileExists(subDeliverablesPath)) {
+      if (fileExists(subDeliverablesPath, c)) {
         subChildren.push({
           name: "deliverables/",
           relativePath: subDeliverablesPath,
           type: "directory",
           exists: true,
-          children: buildDeliverablesChildren(subPath),
+          children: buildDeliverablesChildren(subPath, c),
         })
       }
       children.push({
@@ -358,7 +366,7 @@ export function buildBranchFileTree(
 
   // 4. Research report JSON files related to this branch
   const researchDir = `${parentBasePath}/research`
-  const absResearchDir = resolveProjectPath(researchDir)
+  const absResearchDir = resolveCtxPath(c, researchDir)
   if (fs.existsSync(absResearchDir)) {
     const jsonFiles = fs
       .readdirSync(absResearchDir, { withFileTypes: true })
@@ -366,7 +374,7 @@ export function buildBranchFileTree(
     const relatedReports: FileTreeNode[] = []
     for (const jf of jsonFiles) {
       const jsonPath = `${researchDir}/${jf.name}`
-      const source = readProjectFile(jsonPath)
+      const source = readCtxFile(c, jsonPath)
       if (!source) continue
       try {
         const parsed = JSON.parse(source)
@@ -428,16 +436,18 @@ export function buildInitiativeFileTree(
   seeds: BranchSeed[],
   research: InitiativeResearch | null,
   options?: FileTreeOptions,
+  ctx?: ProjectContext,
 ): FileTreeNode {
+  const c = ctx ?? getDefaultContext()
   const children: FileTreeNode[] = []
 
   for (const item of CANONICAL_ITEMS) {
     const itemPath = `${basePath}/${item.name}`
-    const exists = fileExists(itemPath)
+    const exists = fileExists(itemPath, c)
 
     if (item.type === "file") {
       if (exists) {
-        children.push(buildFileNode(itemPath, item.annotation))
+        children.push(buildFileNode(itemPath, c, item.annotation))
       } else {
         children.push({
           name: item.name,
@@ -454,16 +464,16 @@ export function buildInitiativeFileTree(
       if (exists) {
         switch (item.name) {
           case "research":
-            dirChildren = buildResearchChildren(basePath, research, options)
+            dirChildren = buildResearchChildren(basePath, research, c, options)
             break
           case "branches":
-            dirChildren = buildBranchesChildren(basePath, seeds, slug)
+            dirChildren = buildBranchesChildren(basePath, seeds, slug, c)
             break
           case "sub-initiatives":
-            dirChildren = buildSubInitiativesChildren(basePath, slug)
+            dirChildren = buildSubInitiativesChildren(basePath, slug, c)
             break
           case "deliverables":
-            dirChildren = buildDeliverablesChildren(basePath)
+            dirChildren = buildDeliverablesChildren(basePath, c)
             break
         }
       }
@@ -479,8 +489,8 @@ export function buildInitiativeFileTree(
   }
 
   // Add any non-canonical files/dirs that exist on disk
-  const allSubDirs = listSubdirectories(basePath)
-  const allFiles = listMarkdownFiles(basePath)
+  const allSubDirs = listCtxSubdirectories(c, basePath)
+  const allFiles = listCtxMarkdownFiles(c, basePath)
   const canonicalNames = new Set(CANONICAL_ITEMS.map((i) => i.name))
 
   for (const dirName of allSubDirs) {
@@ -498,7 +508,7 @@ export function buildInitiativeFileTree(
   for (const filePath of allFiles) {
     const fileName = filePath.split("/").pop() ?? ""
     if (!canonicalNames.has(fileName)) {
-      children.push(buildFileNode(filePath))
+      children.push(buildFileNode(filePath, c))
     }
   }
 

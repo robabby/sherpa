@@ -1,14 +1,16 @@
 import fs from "fs"
 
-import { readProjectFile, resolveProjectPath } from "./content"
+import { getDefaultContext } from "./config"
+import type { ProjectContext } from "./config/types"
+import { readCtxFile, resolveCtxPath } from "./context"
 import { chartSpecSchema, deckSpecSchema } from "./schemas"
 import type { ChartSpec, DeckSpec, DeliverableSummary } from "./types"
 
 /**
  * List JSON files in a directory within the project.
  */
-function listDeliverableJsonFiles(dirPath: string): string[] {
-  const abs = resolveProjectPath(dirPath)
+function listDeliverableJsonFiles(dirPath: string, ctx: ProjectContext): string[] {
+  const abs = resolveCtxPath(ctx, dirPath)
   if (!fs.existsSync(abs)) return []
 
   return fs
@@ -23,8 +25,9 @@ function listDeliverableJsonFiles(dirPath: string): string[] {
  */
 function parseDeliverable(
   relativePath: string,
+  ctx: ProjectContext,
 ): ChartSpec | DeckSpec | null {
-  const source = readProjectFile(relativePath)
+  const source = readCtxFile(ctx, relativePath)
   if (!source) return null
 
   try {
@@ -50,13 +53,14 @@ function parseDeliverable(
 /**
  * Get lightweight summaries of all deliverables for an initiative.
  */
-export function getDeliverables(basePath: string): DeliverableSummary[] {
+export function getDeliverables(basePath: string, ctx?: ProjectContext): DeliverableSummary[] {
+  const c = ctx ?? getDefaultContext()
   const dirPath = `${basePath}/deliverables`
-  const files = listDeliverableJsonFiles(dirPath)
+  const files = listDeliverableJsonFiles(dirPath, c)
   const summaries: DeliverableSummary[] = []
 
   for (const filePath of files) {
-    const spec = parseDeliverable(filePath)
+    const spec = parseDeliverable(filePath, c)
     if (!spec) continue
 
     const fileName = filePath.split("/").pop() ?? filePath
@@ -83,12 +87,14 @@ export function getDeliverables(basePath: string): DeliverableSummary[] {
 export function getDeliverable(
   basePath: string,
   id: string,
+  ctx?: ProjectContext,
 ): ChartSpec | DeckSpec | null {
+  const c = ctx ?? getDefaultContext()
   const dirPath = `${basePath}/deliverables`
-  const files = listDeliverableJsonFiles(dirPath)
+  const files = listDeliverableJsonFiles(dirPath, c)
 
   for (const filePath of files) {
-    const spec = parseDeliverable(filePath)
+    const spec = parseDeliverable(filePath, c)
     if (spec && spec.id === id) return spec
   }
 
@@ -98,9 +104,10 @@ export function getDeliverable(
 /**
  * Count deliverables for an initiative (lightweight — no parsing).
  */
-export function getDeliverableCount(basePath: string): number {
+export function getDeliverableCount(basePath: string, ctx?: ProjectContext): number {
+  const c = ctx ?? getDefaultContext()
   const dirPath = `${basePath}/deliverables`
-  const abs = resolveProjectPath(dirPath)
+  const abs = resolveCtxPath(c, dirPath)
   if (!fs.existsSync(abs)) return 0
 
   return fs.readdirSync(abs).filter((f) => f.endsWith(".json")).length
