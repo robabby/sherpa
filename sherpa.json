@@ -1,0 +1,19 @@
+{
+  "$schema": "https://sherpa.solar/schema.json",
+  "admin": {
+    "projectName": "Sherpa",
+    "projectDescription": "Behavioral agentic collaboration framework"
+  },
+  "paths": {
+    "initiatives": "docs/initiatives",
+    "agentRoles": "docs/agents/roles",
+    "rules": ".claude/rules",
+    "skills": ".claude/skills"
+  },
+  "entities": {
+    "projectSkillSlugs": ["rr", "integration-review", "plan-tasks"],
+    "claudeMdLocations": ["CLAUDE.md"],
+    "claudeMdScanDirs": []
+  },
+  "projects": []
+}

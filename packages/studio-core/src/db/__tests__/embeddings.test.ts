@@ -7,11 +7,17 @@ import { applyKnowledgeSchema } from "../knowledge-schema"
 import { syncFromFilesystem } from "../knowledge-sync"
 import { syncEmbeddings } from "../knowledge-embeddings"
 import { AlgorithmicBackend } from "../../knowledge/algorithmic"
+import { DEFAULT_PATHS } from "../../config/defaults"
+import type { ProjectContext } from "../../config/types"
 
 function writeFixture(dir: string, relativePath: string, content: string) {
   const abs = path.join(dir, relativePath)
   fs.mkdirSync(path.dirname(abs), { recursive: true })
   fs.writeFileSync(abs, content)
+}
+
+function makeCtx(root: string): ProjectContext {
+  return { root, paths: DEFAULT_PATHS, claudeMdLocations: [], claudeMdScanDirs: [] }
 }
 
 describe("syncEmbeddings", () => {
@@ -105,7 +111,7 @@ describe("syncEmbeddings", () => {
   it("creates summaries for all initiative proposals", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
 
     const backend = new AlgorithmicBackend()
     const stats = syncEmbeddings(db, backend)
@@ -123,7 +129,7 @@ describe("syncEmbeddings", () => {
   it("stores embeddings as JSON arrays", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
     syncEmbeddings(db, new AlgorithmicBackend())
 
     const row = db.prepare("SELECT embedding FROM summaries WHERE id = ?").get("sqlite-state") as { embedding: string }
@@ -136,7 +142,7 @@ describe("syncEmbeddings", () => {
   it("creates inferred edges with similarity scores", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
     syncEmbeddings(db, new AlgorithmicBackend())
 
     const edges = db.prepare("SELECT source, target, similarity, kind FROM inferred_edges ORDER BY similarity DESC").all() as Array<{
@@ -150,7 +156,7 @@ describe("syncEmbeddings", () => {
   it("ranks related initiatives higher than unrelated ones", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
     syncEmbeddings(db, new AlgorithmicBackend())
 
     // sqlite-state and knowledge-engine should have higher similarity than either to design-system
@@ -170,7 +176,7 @@ describe("syncEmbeddings", () => {
   it("is idempotent — second run updates, not duplicates", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
     const backend = new AlgorithmicBackend()
 
     syncEmbeddings(db, backend)

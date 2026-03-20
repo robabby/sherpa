@@ -1,12 +1,14 @@
+import { getDefaultContext } from "./config"
+import type { ProjectContext } from "./config/types"
 import {
-  countFiles,
-  findClaudeMdFiles,
-  getFileStats,
-  listJsonFiles,
-  listMarkdownFiles,
-  listSubdirectories,
-  readProjectFile,
-} from "./content"
+  readCtxFile,
+  listCtxMarkdownFiles,
+  listCtxSubdirectories,
+  countCtxFiles,
+  listCtxJsonFiles,
+  getCtxFileStats,
+  findCtxClaudeMdFiles,
+} from "./context"
 import {
   countLines,
   extractNumberedItems,
@@ -59,11 +61,11 @@ import { DOC_CATEGORIES } from "./types"
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function buildContentFile(relativePath: string): ContentFile | null {
-  const source = readProjectFile(relativePath)
+function buildContentFile(relativePath: string, ctx: ProjectContext): ContentFile | null {
+  const source = readCtxFile(ctx, relativePath)
   if (source === null) return null
 
-  const stats = getFileStats(relativePath)
+  const stats = getCtxFileStats(ctx, relativePath)
   const { data } = parseFrontmatter(source)
   const title = extractTitle(source) ?? fileNameToTitle(relativePath)
 
@@ -93,15 +95,16 @@ function fileNameToTitle(filePath: string): string {
 /**
  * Scan docs/initiatives/ proposal.md files, parse frontmatter, count subdirs.
  */
-export function getInitiatives(): Initiative[] {
-  const slugs = listSubdirectories("docs/initiatives").filter(
+export function getInitiatives(ctx?: ProjectContext): Initiative[] {
+  const c = ctx ?? getDefaultContext()
+  const slugs = listCtxSubdirectories(c, "docs/initiatives").filter(
     (s) => !s.startsWith("."),
   )
   const initiatives: Initiative[] = []
 
   for (const slug of slugs) {
     const proposalPath = `docs/initiatives/${slug}/proposal.md`
-    const source = readProjectFile(proposalPath)
+    const source = readCtxFile(c, proposalPath)
     if (!source) continue
 
     const { data, content } = parseValidatedFrontmatter(
@@ -113,12 +116,13 @@ export function getInitiatives(): Initiative[] {
     const title = extractTitle(content) ?? fileNameToTitle(slug)
     const summary = extractSummarySection(content) ?? ""
 
-    const subDirNames = listSubdirectories(
+    const subDirNames = listCtxSubdirectories(
+      c,
       `docs/initiatives/${slug}`
     )
     const subDirectories = subDirNames.map((name) => ({
       name,
-      fileCount: countFiles(`docs/initiatives/${slug}/${name}`),
+      fileCount: countCtxFiles(c, `docs/initiatives/${slug}/${name}`),
     }))
 
     initiatives.push({
@@ -130,6 +134,7 @@ export function getInitiatives(): Initiative[] {
       updated: String(data.updated),
       targets: data.targets ?? [],
       dependencies: data.dependencies ?? [],
+      informs: data.informs ?? [],
       spawnedFrom: data["spawned-from"] ?? null,
       title,
       summary,
@@ -143,13 +148,14 @@ export function getInitiatives(): Initiative[] {
 /**
  * Scan docs/initiatives/.archive/ proposal.md files for archived initiatives.
  */
-export function getArchivedInitiatives(): Initiative[] {
-  const slugs = listSubdirectories("docs/initiatives/.archive")
+export function getArchivedInitiatives(ctx?: ProjectContext): Initiative[] {
+  const c = ctx ?? getDefaultContext()
+  const slugs = listCtxSubdirectories(c, "docs/initiatives/.archive")
   const initiatives: Initiative[] = []
 
   for (const slug of slugs) {
     const proposalPath = `docs/initiatives/.archive/${slug}/proposal.md`
-    const source = readProjectFile(proposalPath)
+    const source = readCtxFile(c, proposalPath)
     if (!source) continue
 
     const { data, content } = parseValidatedFrontmatter(
@@ -161,12 +167,13 @@ export function getArchivedInitiatives(): Initiative[] {
     const title = extractTitle(content) ?? fileNameToTitle(slug)
     const summary = extractSummarySection(content) ?? ""
 
-    const subDirNames = listSubdirectories(
+    const subDirNames = listCtxSubdirectories(
+      c,
       `docs/initiatives/.archive/${slug}`
     )
     const subDirectories = subDirNames.map((name) => ({
       name,
-      fileCount: countFiles(`docs/initiatives/.archive/${slug}/${name}`),
+      fileCount: countCtxFiles(c, `docs/initiatives/.archive/${slug}/${name}`),
     }))
 
     initiatives.push({
@@ -178,6 +185,7 @@ export function getArchivedInitiatives(): Initiative[] {
       updated: String(data.updated),
       targets: data.targets ?? [],
       dependencies: data.dependencies ?? [],
+      informs: data.informs ?? [],
       spawnedFrom: data["spawned-from"] ?? null,
       title,
       summary,
@@ -200,17 +208,18 @@ export function getWorkstreams(): Workstream[] {
 /**
  * Group docs/ subdirectory files by category.
  */
-export function getDocsByCategory(): Record<DocCategory, ContentFile[]> {
+export function getDocsByCategory(ctx?: ProjectContext): Record<DocCategory, ContentFile[]> {
+  const c = ctx ?? getDefaultContext()
   const result = Object.fromEntries(
     DOC_CATEGORIES.map((cat) => [cat, [] as ContentFile[]])
   ) as Record<DocCategory, ContentFile[]>
 
   for (const category of DOC_CATEGORIES) {
     const dirPath = `docs/${category}`
-    const files = listMarkdownFiles(dirPath, { recursive: true })
+    const files = listCtxMarkdownFiles(c, dirPath, { recursive: true })
 
     for (const filePath of files) {
-      const cf = buildContentFile(filePath)
+      const cf = buildContentFile(filePath, c)
       if (cf) result[category].push(cf)
     }
   }
@@ -221,17 +230,19 @@ export function getDocsByCategory(): Record<DocCategory, ContentFile[]> {
 /**
  * Get conventions: rules, CLAUDE.md files, and UX guides.
  */
-export function getConventions(): {
+export function getConventions(ctx?: ProjectContext): {
   rules: Rule[]
   claudeMdFiles: ContentFile[]
   uxGuides: ContentFile[]
 } {
+  const c = ctx ?? getDefaultContext()
+
   // Rules from .claude/rules/
-  const ruleFiles = listMarkdownFiles(".claude/rules")
+  const ruleFiles = listCtxMarkdownFiles(c, ".claude/rules")
   const rules: Rule[] = []
 
   for (const filePath of ruleFiles) {
-    const source = readProjectFile(filePath)
+    const source = readCtxFile(c, filePath)
     if (!source) continue
 
     const { data, content } = parseValidatedFrontmatter(
@@ -252,18 +263,18 @@ export function getConventions(): {
   }
 
   // CLAUDE.md files
-  const claudePaths = findClaudeMdFiles()
+  const claudePaths = findCtxClaudeMdFiles(c)
   const claudeMdFiles: ContentFile[] = []
   for (const p of claudePaths) {
-    const cf = buildContentFile(p)
+    const cf = buildContentFile(p, c)
     if (cf) claudeMdFiles.push(cf)
   }
 
   // UX guides
-  const uxFiles = listMarkdownFiles("docs/ux")
+  const uxFiles = listCtxMarkdownFiles(c, "docs/ux")
   const uxGuides: ContentFile[] = []
   for (const p of uxFiles) {
-    const cf = buildContentFile(p)
+    const cf = buildContentFile(p, c)
     if (cf) uxGuides.push(cf)
   }
 
@@ -273,8 +284,9 @@ export function getConventions(): {
 /**
  * Parse docs/roadmap.md tables and sections into portfolio data.
  */
-export function getPortfolio(): PortfolioData {
-  const source = readProjectFile("docs/roadmap.md")
+export function getPortfolio(ctx?: ProjectContext): PortfolioData {
+  const c = ctx ?? getDefaultContext()
+  const source = readCtxFile(c, "docs/roadmap.md")
   if (!source) {
     return {
       lastUpdated: "",
@@ -366,13 +378,14 @@ export function getPortfolio(): PortfolioData {
  * Scan .claude/skills/ directories, parse SKILL.md frontmatter.
  * @param projectSkillSlugs — Set of slugs for project-owned skills (not symlinked)
  */
-export function getSkills(projectSkillSlugs?: Set<string>): Skill[] {
-  const slugs = listSubdirectories(".claude/skills")
+export function getSkills(projectSkillSlugs?: Set<string>, ctx?: ProjectContext): Skill[] {
+  const c = ctx ?? getDefaultContext()
+  const slugs = listCtxSubdirectories(c, ".claude/skills")
   const skills: Skill[] = []
 
   for (const slug of slugs) {
     const skillPath = `.claude/skills/${slug}/SKILL.md`
-    const source = readProjectFile(skillPath)
+    const source = readCtxFile(c, skillPath)
     if (!source) continue
 
     const { data } = parseValidatedFrontmatter(
@@ -400,14 +413,15 @@ export function getSkills(projectSkillSlugs?: Set<string>): Skill[] {
  * Scan agents/ (base catalog) and docs/agents/roles/ (org-specific),
  * parse frontmatter, return AgentRole[].
  */
-export function getAgentRoles(): AgentRole[] {
+export function getAgentRoles(ctx?: ProjectContext): AgentRole[] {
+  const c = ctx ?? getDefaultContext()
   const roles: AgentRole[] = []
 
   // Base catalog (agents/) — uses behavioral agent schema
-  const baseCatalogFiles = listMarkdownFiles("agents")
+  const baseCatalogFiles = listCtxMarkdownFiles(c, "agents")
     .filter((f) => !f.endsWith("README.md"))
   for (const filePath of baseCatalogFiles) {
-    const source = readProjectFile(filePath)
+    const source = readCtxFile(c, filePath)
     if (!source) continue
 
     const { data: rawData, content } = parseFrontmatter(source)
@@ -446,9 +460,9 @@ export function getAgentRoles(): AgentRole[] {
   }
 
   // Org-specific roles (docs/agents/roles/) — uses behavioral agent schema
-  const orgFiles = listMarkdownFiles("docs/agents/roles")
+  const orgFiles = listCtxMarkdownFiles(c, "docs/agents/roles")
   for (const filePath of orgFiles) {
-    const source = readProjectFile(filePath)
+    const source = readCtxFile(c, filePath)
     if (!source) continue
 
     const { data: rawData, content } = parseFrontmatter(source)
@@ -503,13 +517,15 @@ export function getAgentRoles(): AgentRole[] {
 export function getInitiativeFilesFromPath(
   basePath: string,
   subDir: string,
+  ctx?: ProjectContext,
 ): ContentFile[] {
+  const c = ctx ?? getDefaultContext()
   const dirPath = `${basePath}/${subDir}`
-  const files = listMarkdownFiles(dirPath)
+  const files = listCtxMarkdownFiles(c, dirPath)
   const result: ContentFile[] = []
 
   for (const filePath of files) {
-    const cf = buildContentFile(filePath)
+    const cf = buildContentFile(filePath, c)
     if (cf) result.push(cf)
   }
 
@@ -522,8 +538,9 @@ export function getInitiativeFilesFromPath(
 export function getInitiativeFiles(
   slug: string,
   subDir: string,
+  ctx?: ProjectContext,
 ): ContentFile[] {
-  return getInitiativeFilesFromPath(`docs/initiatives/${slug}`, subDir)
+  return getInitiativeFilesFromPath(`docs/initiatives/${slug}`, subDir, ctx)
 }
 
 /**
@@ -532,10 +549,12 @@ export function getInitiativeFiles(
 export function getResearchIterations(
   _slug: string,
   basePath: string,
+  ctx?: ProjectContext,
 ): InitiativeResearch {
+  const c = ctx ?? getDefaultContext()
   const researchPath = `${basePath}/research`
-  const topFiles = listMarkdownFiles(researchPath)
-  const subDirs = listSubdirectories(researchPath)
+  const topFiles = listCtxMarkdownFiles(c, researchPath)
+  const subDirs = listCtxSubdirectories(c, researchPath)
 
   let readme: ContentFile | null = null
   const iterationMap = new Map<number, ResearchIteration>()
@@ -547,7 +566,7 @@ export function getResearchIterations(
     const fileName = filePath.split("/").pop() ?? ""
 
     if (fileName.toLowerCase() === "readme.md") {
-      readme = buildContentFile(filePath)
+      readme = buildContentFile(filePath, c)
       continue
     }
 
@@ -556,18 +575,18 @@ export function getResearchIterations(
       const num = parseInt(iterMatch[1]!, 10)
       const existing = iterationMap.get(num)
       if (existing) {
-        existing.synthesis = buildContentFile(filePath)
+        existing.synthesis = buildContentFile(filePath, c)
       } else {
         iterationMap.set(num, {
           number: num,
-          synthesis: buildContentFile(filePath),
+          synthesis: buildContentFile(filePath, c),
           vectors: [],
         })
       }
       continue
     }
 
-    const cf = buildContentFile(filePath)
+    const cf = buildContentFile(filePath, c)
     if (cf) looseFiles.push(cf)
   }
 
@@ -576,12 +595,12 @@ export function getResearchIterations(
     if (!dirMatch) continue
 
     const num = parseInt(dirMatch[1]!, 10)
-    const vectorFiles = listMarkdownFiles(`${researchPath}/${dirName}`)
+    const vectorFiles = listCtxMarkdownFiles(c, `${researchPath}/${dirName}`)
     const vectors: ContentFile[] = []
 
     for (const vf of vectorFiles) {
       totalFiles++
-      const cf = buildContentFile(vf)
+      const cf = buildContentFile(vf, c)
       if (cf) vectors.push(cf)
     }
 
@@ -603,8 +622,10 @@ export function getResearchIterations(
 /**
  * Read the research README for an initiative and extract open questions.
  */
-export function getResearchOpenQuestions(initiativeSlug: string): string[] {
-  const source = readProjectFile(
+export function getResearchOpenQuestions(initiativeSlug: string, ctx?: ProjectContext): string[] {
+  const c = ctx ?? getDefaultContext()
+  const source = readCtxFile(
+    c,
     `docs/initiatives/${initiativeSlug}/research/README.md`
   )
   if (!source) return []
@@ -615,9 +636,11 @@ export function getResearchOpenQuestions(initiativeSlug: string): string[] {
  * Get a single document with full content for rendering.
  */
 export function getDocument(
-  relativePath: string
+  relativePath: string,
+  ctx?: ProjectContext,
 ): DocumentContent | null {
-  const source = readProjectFile(relativePath)
+  const c = ctx ?? getDefaultContext()
+  const source = readCtxFile(c, relativePath)
   if (source === null) return null
 
   const { data, content } = parseFrontmatter(source)
@@ -638,16 +661,17 @@ export function getDocument(
 /**
  * Get recent activity entries from the roadmap.
  */
-export function getRecentActivity(): ActivityEntry[] {
-  const portfolio = getPortfolio()
+export function getRecentActivity(ctx?: ProjectContext): ActivityEntry[] {
+  const portfolio = getPortfolio(ctx)
   return portfolio.recentActivity
 }
 
 /**
  * Aggregate all activity for a specific date across portfolio and workstreams.
  */
-export function getActivityByDate(date: string): DateActivityData | null {
-  const portfolio = getPortfolio()
+export function getActivityByDate(date: string, ctx?: ProjectContext): DateActivityData | null {
+  const c = ctx ?? getDefaultContext()
+  const portfolio = getPortfolio(c)
   const workstreams = getWorkstreams()
 
   const portfolioActivity = portfolio.recentActivity.filter(
@@ -689,13 +713,13 @@ export function getActivityByDate(date: string): DateActivityData | null {
 // Research branching
 // ---------------------------------------------------------------------------
 
-function getBranchSeedsFromPath(basePath: string): BranchSeed[] {
+function getBranchSeedsFromPath(basePath: string, ctx: ProjectContext): BranchSeed[] {
   const branchDir = `${basePath}/branches`
-  const files = listMarkdownFiles(branchDir)
+  const files = listCtxMarkdownFiles(ctx, branchDir)
   const seeds: BranchSeed[] = []
 
   for (const filePath of files) {
-    const source = readProjectFile(filePath)
+    const source = readCtxFile(ctx, filePath)
     if (!source) continue
 
     const { data, content } = parseValidatedFrontmatter(
@@ -733,8 +757,9 @@ function getBranchSeedsFromPath(basePath: string): BranchSeed[] {
 /**
  * Get branch seeds for an initiative by slug.
  */
-export function getBranchSeeds(slug: string, basePath?: string): BranchSeed[] {
-  return getBranchSeedsFromPath(basePath ?? `docs/initiatives/${slug}`)
+export function getBranchSeeds(slug: string, basePath?: string, ctx?: ProjectContext): BranchSeed[] {
+  const c = ctx ?? getDefaultContext()
+  return getBranchSeedsFromPath(basePath ?? `docs/initiatives/${slug}`, c)
 }
 
 /**
@@ -745,21 +770,24 @@ export function getResearchTree(
   depth = 0,
   maxDepth = 3,
   basePath?: string,
+  ctx?: ProjectContext,
 ): ResearchTreeNode | null {
+  const c = ctx ?? getDefaultContext()
   if (depth > maxDepth) return null
 
   const resolvedPath = basePath ?? `docs/initiatives/${slug}`
-  return getResearchTreeFromPath(resolvedPath, slug, depth, maxDepth)
+  return getResearchTreeFromPath(resolvedPath, slug, depth, maxDepth, c)
 }
 
 function getResearchTreeFromPath(
   basePath: string,
   slug: string,
   depth: number,
-  maxDepth: number
+  maxDepth: number,
+  ctx: ProjectContext,
 ): ResearchTreeNode | null {
   const proposalPath = `${basePath}/proposal.md`
-  const source = readProjectFile(proposalPath)
+  const source = readCtxFile(ctx, proposalPath)
   if (!source) return null
 
   const { data, content } = parseValidatedFrontmatter(
@@ -770,16 +798,16 @@ function getResearchTreeFromPath(
 
   const title = extractTitle(content) ?? fileNameToTitle(slug)
 
-  const researchFiles = listMarkdownFiles(`${basePath}/research`)
+  const researchFiles = listCtxMarkdownFiles(ctx, `${basePath}/research`)
   const iterationCount = researchFiles.filter((f) =>
     /iteration-\d+\.md$/.test(f)
   ).length
 
-  const readmeSource = readProjectFile(`${basePath}/research/README.md`)
+  const readmeSource = readCtxFile(ctx, `${basePath}/research/README.md`)
   const openQuestions = readmeSource ? extractOpenQuestions(readmeSource) : []
 
-  const seeds = getBranchSeedsFromPath(basePath)
-  const subInitSlugs = listSubdirectories(`${basePath}/sub-initiatives`)
+  const seeds = getBranchSeedsFromPath(basePath, ctx)
+  const subInitSlugs = listCtxSubdirectories(ctx, `${basePath}/sub-initiatives`)
 
   const children: ResearchTreeNode[] = []
 
@@ -794,7 +822,8 @@ function getResearchTreeFromPath(
       subPath,
       subSlug,
       depth + 1,
-      maxDepth
+      maxDepth,
+      ctx,
     )
     if (subNode) {
       subNode.kind = "sub-initiative"
@@ -917,8 +946,10 @@ function sortUnifiedEntries(
  */
 export function getUnifiedProcessData(
   sort: ProcessSortOption = "activity",
+  ctx?: ProjectContext,
 ): UnifiedProcessData {
-  const initiatives = getInitiatives()
+  const c = ctx ?? getDefaultContext()
+  const initiatives = getInitiatives(c)
   const workstreams = getWorkstreams()
 
   const wsMap = new Map<string, Workstream[]>()
@@ -942,7 +973,7 @@ export function getUnifiedProcessData(
     const linkedWs = wsMap.get(init.slug) ?? []
     for (const ws of linkedWs) matched.add(ws.slug)
 
-    const tree = getResearchTree(init.slug)
+    const tree = getResearchTree(init.slug, 0, 3, undefined, c)
     const treeStats = tree
       ? countTreeStats(tree)
       : { iterations: 0, questions: 0, seeds: 0 }
@@ -996,12 +1027,13 @@ export function getUnifiedProcessData(
 /**
  * Scan docs/sessions/*.json, parse and validate each, return Session[].
  */
-export function getSessions(): Session[] {
-  const files = listJsonFiles("docs/sessions")
+export function getSessions(ctx?: ProjectContext): Session[] {
+  const c = ctx ?? getDefaultContext()
+  const files = listCtxJsonFiles(c, "docs/sessions")
   const sessions: Session[] = []
 
   for (const filePath of files) {
-    const source = readProjectFile(filePath)
+    const source = readCtxFile(c, filePath)
     if (!source) continue
 
     try {
@@ -1021,12 +1053,12 @@ export function getSessions(): Session[] {
 /**
  * Get sessions filtered by initiative slug.
  */
-export function getSessionsForInitiative(slug: string): Session[] {
-  return getSessions().filter((s) => s.initiative === slug)
+export function getSessionsForInitiative(slug: string, ctx?: ProjectContext): Session[] {
+  return getSessions(ctx).filter((s) => s.initiative === slug)
 }
 
-function getSessionStats(): HubStats["sessions"] {
-  const sessions = getSessions()
+function getSessionStats(ctx: ProjectContext): HubStats["sessions"] {
+  const sessions = getSessions(ctx)
   const now = new Date()
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
   const weekAgoStr = weekAgo.toISOString()
@@ -1051,12 +1083,13 @@ function getSessionStats(): HubStats["sessions"] {
  * Get base hub stats from all data sources.
  * Consumers can extend with domain-specific stats.
  */
-export function getHubStats(): HubStats {
-  const initiatives = getInitiatives()
+export function getHubStats(ctx?: ProjectContext): HubStats {
+  const c = ctx ?? getDefaultContext()
+  const initiatives = getInitiatives(c)
   const workstreams = getWorkstreams()
-  const docs = getDocsByCategory()
-  const conventions = getConventions()
-  const portfolio = getPortfolio()
+  const docs = getDocsByCategory(c)
+  const conventions = getConventions(c)
+  const portfolio = getPortfolio(c)
 
   const totalDocs = Object.values(docs).reduce(
     (sum, files) => sum + files.length,
@@ -1092,7 +1125,7 @@ export function getHubStats(): HubStats {
       claudeMdCount: conventions.claudeMdFiles.length,
       uxGuideCount: conventions.uxGuides.length,
     },
-    sessions: getSessionStats(),
+    sessions: getSessionStats(c),
     extensions: {},
   }
 }

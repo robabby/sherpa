@@ -57,3 +57,14 @@ export function closeAll(): void {
   }
   pool.clear()
 }
+
+/** Close connections for a specific project root. Stress-test A3 finding. */
+export function closeForProject(projectRoot: string): void {
+  const prefix = path.resolve(projectRoot)
+  for (const [dbPath, db] of pool.entries()) {
+    if (dbPath.startsWith(prefix)) {
+      try { db.close() } catch { /* already closed */ }
+      pool.delete(dbPath)
+    }
+  }
+}

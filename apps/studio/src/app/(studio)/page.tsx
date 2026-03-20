@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic"
 
+import { redirect } from "next/navigation"
 import { HubOperationalPulse } from "@/components/studio/hub-operational-pulse"
 import type { AttentionItem, PendingReviewItem } from "@/components/studio/hub-process-panel"
 import {
@@ -15,7 +16,7 @@ import { readProjectFile } from "@/lib/studio/content"
 import type { HubStats, Initiative, Session } from "@/lib/studio"
 import path from "path"
 import { getTaskBoard } from "@/lib/studio/tasks"
-import { getBackendHealth } from "@sherpa/studio-core"
+import { getBackendHealth, getAllProjects, getPrimarySlug } from "@sherpa/studio-core"
 
 const PROJECT_ROOT = path.resolve(process.cwd(), "../..")
 import { getMcpDashboard } from "@/lib/studio/mcp"
@@ -151,6 +152,15 @@ function ActionCard({ href, title, description, badge, badgeVariant, days }: {
 }
 
 export default async function StudioPage() {
+  // Redirect to project-scoped routes
+  const projects = getAllProjects()
+  if (projects.length > 1) {
+    redirect("/projects")
+  }
+  if (projects.length === 1) {
+    redirect(`/projects/${getPrimarySlug()}/process`)
+  }
+
   const initiatives = getInitiatives()
   const workstreams = getWorkstreams()
   const portfolio = getPortfolio()

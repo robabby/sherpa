@@ -33,6 +33,7 @@ export const initiativeFrontmatterSchema = z.object({
     .default(null),
   targets: z.array(z.string()).default([]),
   dependencies: z.array(z.string()).optional().default([]),
+  informs: z.array(z.string()).optional().default([]),
   "spawned-from": z.string().nullable().optional().default(null),
 });
 

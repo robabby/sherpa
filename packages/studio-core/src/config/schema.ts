@@ -7,7 +7,21 @@ const lifecycleStageSchema = z.object({
   color: z.string(),
 })
 
+const docSectionConfigSchema = z.object({
+  label: z.string().min(1),
+  path: z.string().min(1),
+  type: z.enum(["directory", "files", "file"]),
+})
+
+const projectConfigSchema = z.object({
+  name: z.string().min(1),
+  slug: z.string().regex(/^[a-z0-9-]+$/, "slug must be kebab-case"),
+  root: z.string().min(1),
+  remote: z.string().optional(),
+})
+
 export const userConfigSchema = z.object({
+  $schema: z.string().optional(),
   projectRoot: z.string().optional(),
   admin: z.object({
     projectName: z.string().optional(),
@@ -29,6 +43,7 @@ export const userConfigSchema = z.object({
     roadmap: z.string().optional(),
     mcpConfig: z.string().optional(),
     archive: z.string().optional(),
+    docSections: z.array(docSectionConfigSchema).optional(),
   }).optional(),
   vocabulary: z.object({
     initiative: z.string().optional(),
@@ -82,6 +97,8 @@ export const userConfigSchema = z.object({
       requireAuthority: z.boolean().optional(),
     }).optional(),
   }).optional(),
+  projects: z.array(projectConfigSchema).optional(),
+  extends: z.union([z.string(), z.array(z.string())]).optional(),
   // plugins validated at runtime, not by Zod (function types don't serialize)
   plugins: z.array(z.any()).optional(),
 }).strict()

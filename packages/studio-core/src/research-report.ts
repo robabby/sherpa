@@ -1,4 +1,6 @@
-import { readProjectFile } from "./content"
+import { getDefaultContext } from "./config"
+import type { ProjectContext } from "./config/types"
+import { readCtxFile } from "./context"
 
 // ---------------------------------------------------------------------------
 // Extensible report registry
@@ -29,11 +31,12 @@ export function getReportFilePath(slug: string): string | undefined {
  * Load raw JSON for a research report by slug.
  * Returns null if the slug is unknown or the file is missing/unparseable.
  */
-export function getResearchReportRaw(slug: string): unknown | null {
+export function getResearchReportRaw(slug: string, ctx?: ProjectContext): unknown | null {
   const filePath = REPORT_REGISTRY.get(slug)
   if (!filePath) return null
 
-  const source = readProjectFile(filePath)
+  const c = ctx ?? getDefaultContext()
+  const source = readCtxFile(c, filePath)
   if (!source) return null
 
   try {

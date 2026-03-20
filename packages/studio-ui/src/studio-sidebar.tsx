@@ -32,6 +32,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
+import { ProjectSwitcher } from "./project-switcher";
+
 /* -------------------------------------------------------------------------- */
 /*  Navigation configuration                                                  */
 /* -------------------------------------------------------------------------- */
@@ -95,14 +97,22 @@ function isActive(pathname: string, href: string): boolean {
 
 interface StudioSidebarProps {
   userMenu?: React.ReactNode;
+  projects?: { name: string; slug: string }[];
 }
 
-export function StudioSidebar({ userMenu }: StudioSidebarProps) {
+export function StudioSidebar({ userMenu, projects }: StudioSidebarProps) {
   const pathname = usePathname();
+
+  // Derive active project from the URL: /projects/[slug]/...
+  const projectMatch = pathname.match(/^\/projects\/([^/]+)/);
+  const activeProject = projectMatch?.[1] ?? null;
+
+  // When a project is active, prefix all nav hrefs with /projects/{slug}
+  const hrefPrefix = activeProject ? `/projects/${activeProject}` : "";
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
-      {/* ---- Header: wordmark ---- */}
+      {/* ---- Header: wordmark + project switcher ---- */}
       <SidebarHeader>
         <Link href="/" className="flex items-center gap-2.5 px-1 py-1.5 transition-opacity hover:opacity-80">
           {/* Gradient icon */}
@@ -120,6 +130,12 @@ export function StudioSidebar({ userMenu }: StudioSidebarProps) {
             </span>
           </div>
         </Link>
+
+        {projects && projects.length > 1 && (
+          <div className="group-data-[collapsible=icon]:hidden">
+            <ProjectSwitcher projects={projects} activeProject={activeProject} />
+          </div>
+        )}
       </SidebarHeader>
 
       {/* ---- Content: navigation groups ---- */}
@@ -132,7 +148,8 @@ export function StudioSidebar({ userMenu }: StudioSidebarProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
-                  const active = isActive(pathname, item.href);
+                  const fullHref = `${hrefPrefix}${item.href}`;
+                  const active = isActive(pathname, fullHref);
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
@@ -140,7 +157,7 @@ export function StudioSidebar({ userMenu }: StudioSidebarProps) {
                         isActive={active}
                         tooltip={item.label}
                       >
-                        <Link href={item.href}>
+                        <Link href={fullHref}>
                           <item.icon />
                           <span>{item.label}</span>
                         </Link>

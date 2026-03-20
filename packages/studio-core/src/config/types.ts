@@ -12,6 +12,15 @@ export type SherpaPlugin = (config: SherpaConfig) => SherpaConfig
 // Sub-configs
 // ---------------------------------------------------------------------------
 
+export interface DocSectionConfig {
+  /** Display label in the doc tree. */
+  label: string
+  /** Path relative to project root (e.g., "docs/architecture"). */
+  path: string
+  /** How to render: "directory" scans for index.md, "files" lists standalone .md files, "file" is a single file. */
+  type: "directory" | "files" | "file"
+}
+
 export interface PathsConfig {
   initiatives?: string
   tasks?: string
@@ -24,6 +33,8 @@ export interface PathsConfig {
   roadmap?: string
   mcpConfig?: string
   archive?: string
+  /** Configurable doc tree sections. Each entry: { label, path, type }. */
+  docSections?: DocSectionConfig[]
 }
 
 export interface VocabularyConfig {
@@ -121,11 +132,40 @@ export interface GovernanceConfig {
   }
 }
 
+export interface ProjectConfig {
+  /** Display name in Studio UI. */
+  name: string
+  /** Unique URL-safe identifier. */
+  slug: string
+  /** Absolute path to project root. */
+  root: string
+  /** Git remote URL for sync (optional). */
+  remote?: string
+}
+
+/**
+ * Runtime context for a resolved project.
+ * Passed explicitly to all domain functions — no module-level globals.
+ * This design avoids the race condition identified in stress-test A1.
+ */
+export interface ProjectContext {
+  /** Absolute path to project root. */
+  root: string
+  /** Resolved paths config for this project. */
+  paths: Required<PathsConfig>
+  /** CLAUDE.md locations for this project. */
+  claudeMdLocations: string[]
+  /** CLAUDE.md scan directories for this project. */
+  claudeMdScanDirs: string[]
+}
+
 // ---------------------------------------------------------------------------
 // User config — what consumers write in sherpa.config.ts
 // ---------------------------------------------------------------------------
 
 export interface SherpaUserConfig {
+  /** JSON Schema URL for IDE validation (ignored at runtime). */
+  $schema?: string
   /** Absolute path to project root. Defaults to process.cwd(). */
   projectRoot?: string
   /** Project metadata. */
@@ -148,6 +188,14 @@ export interface SherpaUserConfig {
   governance?: GovernanceConfig
   /** Dispatch routing configuration. */
   dispatch?: Partial<DispatchConfig>
+  /** Additional projects to federate in Studio. */
+  projects?: ProjectConfig[]
+  /**
+   * Upstream convention package(s) to inherit from.
+   * Resolved with ESLint flat-config last-wins merge semantics.
+   * Currently parsed but not resolved — resolution deferred to a future session.
+   */
+  extends?: string | string[]
   /** Plugins applied in order after defaults are merged. */
   plugins?: SherpaPlugin[]
 }
@@ -167,6 +215,7 @@ export interface SherpaConfig {
   mcp: Required<McpConfig>
   knowledge: Required<KnowledgeConfig>
   governance: GovernanceConfig
+  projects: ProjectConfig[]
   dispatch: DispatchConfig
   plugins: SherpaPlugin[]
 }

@@ -5,11 +5,17 @@ import os from "node:os"
 import { openDb, closeAll } from "../connection"
 import { applyKnowledgeSchema, KNOWLEDGE_SCHEMA_VERSION } from "../knowledge-schema"
 import { syncFromFilesystem } from "../knowledge-sync"
+import { DEFAULT_PATHS } from "../../config/defaults"
+import type { ProjectContext } from "../../config/types"
 
 function writeFixture(dir: string, relativePath: string, content: string) {
   const abs = path.join(dir, relativePath)
   fs.mkdirSync(path.dirname(abs), { recursive: true })
   fs.writeFileSync(abs, content)
+}
+
+function makeCtx(root: string): ProjectContext {
+  return { root, paths: DEFAULT_PATHS, claudeMdLocations: [], claudeMdScanDirs: [] }
 }
 
 describe("applyKnowledgeSchema", () => {
@@ -124,7 +130,7 @@ describe("syncFromFilesystem", () => {
   it("indexes markdown files into the files table", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    const stats = syncFromFilesystem(db, tmpDir)
+    const stats = syncFromFilesystem(db, makeCtx(tmpDir))
 
     expect(stats.filesProcessed).toBe(2)
     expect(stats.filesSkipped).toBe(0)
@@ -142,7 +148,7 @@ describe("syncFromFilesystem", () => {
   it("extracts edges from frontmatter", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
 
     const edges = db
       .prepare("SELECT source, target, kind FROM edges ORDER BY kind, target")
@@ -156,8 +162,8 @@ describe("syncFromFilesystem", () => {
   it("skips unchanged files on second sync", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
-    const stats2 = syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
+    const stats2 = syncFromFilesystem(db, makeCtx(tmpDir))
 
     expect(stats2.filesSkipped).toBe(2)
     expect(stats2.filesProcessed).toBe(0)
@@ -166,7 +172,7 @@ describe("syncFromFilesystem", () => {
   it("re-indexes changed files", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
 
     writeFixture(tmpDir, "docs/initiatives/test-init/proposal.md", [
       "---",
@@ -186,7 +192,7 @@ describe("syncFromFilesystem", () => {
       "Updated content.",
     ].join("\n"))
 
-    const stats2 = syncFromFilesystem(db, tmpDir)
+    const stats2 = syncFromFilesystem(db, makeCtx(tmpDir))
     expect(stats2.filesProcessed).toBe(1)
 
     const row = db
@@ -199,7 +205,7 @@ describe("syncFromFilesystem", () => {
   it("populates FTS5 index for search", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
 
     const results = db
       .prepare("SELECT path FROM files_fts WHERE files_fts MATCH ?")
@@ -210,7 +216,7 @@ describe("syncFromFilesystem", () => {
   it("updates FTS5 on re-sync without corruption", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
 
     // Modify the proposal
     writeFixture(tmpDir, "docs/initiatives/test-init/proposal.md", [
@@ -229,7 +235,7 @@ describe("syncFromFilesystem", () => {
       "Entirely different content about fencing tokens.",
     ].join("\n"))
 
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
 
     // New content should be found
     const found = db
@@ -247,11 +253,11 @@ describe("syncFromFilesystem", () => {
   it("removes files from DB that no longer exist on disk", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
 
     fs.unlinkSync(path.join(tmpDir, "docs/tasks/fix-bug.md"))
 
-    const stats2 = syncFromFilesystem(db, tmpDir)
+    const stats2 = syncFromFilesystem(db, makeCtx(tmpDir))
     expect(stats2.filesRemoved).toBe(1)
 
     const rows = db.prepare("SELECT path FROM files").all()
@@ -261,7 +267,7 @@ describe("syncFromFilesystem", () => {
   it("removes orphaned edges when an initiative proposal is deleted", () => {
     const db = openDb(dbPath)
     applyKnowledgeSchema(db)
-    syncFromFilesystem(db, tmpDir)
+    syncFromFilesystem(db, makeCtx(tmpDir))
 
     // Verify edges exist after initial sync
     const edgesBefore = db.prepare("SELECT COUNT(*) as c FROM edges WHERE source = ?").get("test-init") as { c: number }
@@ -271,7 +277,7 @@ describe("syncFromFilesystem", () => {
     fs.unlinkSync(path.join(tmpDir, "docs/initiatives/test-init/proposal.md"))
     fs.rmdirSync(path.join(tmpDir, "docs/initiatives/test-init"))
 
-    const stats2 = syncFromFilesystem(db, tmpDir)
+    const stats2 = syncFromFilesystem(db, makeCtx(tmpDir))
     expect(stats2.filesRemoved).toBe(1)
 
     // Edges for that initiative should be gone

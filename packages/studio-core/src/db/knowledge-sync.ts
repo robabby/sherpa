@@ -3,6 +3,10 @@ import fs from "node:fs"
 import path from "node:path"
 import matter from "gray-matter"
 import { classifyFile, extractEdgesFromFrontmatter, computeContentHash } from "./classify"
+import type { ProjectContext } from "../config/types"
+import { getAllProjects } from "../projects"
+import { resolveDbPaths, openDb } from "./connection"
+import { applyKnowledgeSchema } from "./knowledge-schema"
 
 export interface SyncStats {
   filesProcessed: number
@@ -11,15 +15,17 @@ export interface SyncStats {
   edgesCreated: number
 }
 
-/** Directories to scan for markdown files, relative to project root. */
-const SCAN_DIRS = [
-  "docs/initiatives",
-  "docs/tasks",
-  "docs/agents/roles",
-  "agents",
-  ".claude/rules",
-  ".claude/skills",
-]
+/** Derive scan directories from a ProjectContext. */
+function getScanDirs(ctx: ProjectContext): string[] {
+  return [
+    ctx.paths.initiatives,
+    ctx.paths.tasks,
+    ctx.paths.agentRoles,
+    ctx.paths.baseCatalog,
+    ctx.paths.rules,
+    ctx.paths.skills,
+  ]
+}
 
 /** Extract the first H1 heading from markdown. */
 function extractTitle(markdown: string): string | null {
@@ -55,13 +61,13 @@ function walkMarkdownFiles(projectRoot: string, relativeDir: string): string[] {
  * Sync all markdown files from the filesystem into the knowledge database.
  * Skips files whose content hash hasn't changed. Removes stale DB entries.
  */
-export function syncFromFilesystem(db: Database.Database, projectRoot: string): SyncStats {
+export function syncFromFilesystem(db: Database.Database, ctx: ProjectContext): SyncStats {
   const stats: SyncStats = { filesProcessed: 0, filesSkipped: 0, filesRemoved: 0, edgesCreated: 0 }
 
   // Collect all markdown files
   const allFiles = new Set<string>()
-  for (const dir of SCAN_DIRS) {
-    for (const file of walkMarkdownFiles(projectRoot, dir)) {
+  for (const dir of getScanDirs(ctx)) {
+    for (const file of walkMarkdownFiles(ctx.root, dir)) {
       allFiles.add(file)
     }
   }
@@ -115,7 +121,7 @@ export function syncFromFilesystem(db: Database.Database, projectRoot: string): 
 
   // Process each file
   for (const relativePath of allFiles) {
-    const absPath = path.join(projectRoot, relativePath)
+    const absPath = path.join(ctx.root, relativePath)
     const content = fs.readFileSync(absPath, "utf-8")
     const hash = computeContentHash(content)
 
@@ -175,4 +181,20 @@ export function syncFromFilesystem(db: Database.Database, projectRoot: string): 
   }
 
   return stats
+}
+
+/**
+ * Sync knowledge databases for all registered projects.
+ * Opens a per-project DB, ensures the schema, and runs syncFromFilesystem.
+ */
+export function syncAllProjects(): Map<string, SyncStats> {
+  const results = new Map<string, SyncStats>()
+  for (const project of getAllProjects()) {
+    const dbPaths = resolveDbPaths(project.root)
+    const db = openDb(dbPaths.knowledge)
+    applyKnowledgeSchema(db)
+    const stats = syncFromFilesystem(db, project.context)
+    results.set(project.slug, stats)
+  }
+  return results
 }

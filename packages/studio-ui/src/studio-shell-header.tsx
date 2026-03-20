@@ -27,6 +27,44 @@ function buildSegments(pathname: string): { label: string; href?: string }[] {
 
   const parts = pathname.replace(/^\//, "").split("/").filter(Boolean);
   if (parts.length === 0) return [{ label: "Dashboard" }];
+
+  // Project-scoped routes: /projects/{slug}/section/...
+  if (parts[0] === "projects" && parts.length >= 2) {
+    const projectSlug = parts[1]!;
+    const projectLabel = projectSlug.charAt(0).toUpperCase() + projectSlug.slice(1);
+
+    if (parts.length === 2) {
+      return [
+        { label: "Projects", href: "/projects" },
+        { label: projectLabel },
+      ];
+    }
+
+    const sectionKey = parts[2]!;
+    const sectionLabel = sectionLabels[sectionKey] ?? sectionKey;
+    const projectBase = `/projects/${projectSlug}`;
+
+    if (parts.length === 3) {
+      return [
+        { label: projectLabel, href: `${projectBase}/process` },
+        { label: sectionLabel },
+      ];
+    }
+
+    const subLabel = parts.slice(3).join("/");
+    return [
+      { label: projectLabel, href: `${projectBase}/process` },
+      { label: sectionLabel, href: `${projectBase}/${sectionKey}` },
+      { label: subLabel },
+    ];
+  }
+
+  // Projects listing
+  if (parts[0] === "projects" && parts.length === 1) {
+    return [{ label: "Projects" }];
+  }
+
+  // Legacy unscoped routes
   const sectionKey = parts[0]!;
   const label = sectionLabels[sectionKey] ?? sectionKey;
 

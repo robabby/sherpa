@@ -5,6 +5,22 @@ const PUBLIC_PATHS = [
   "/api/auth",
 ]
 
+/** Legacy unscoped routes that should redirect to /projects/{primary}/... */
+const LEGACY_ROUTE_PREFIXES = [
+  "/process",
+  "/tasks",
+  "/docs",
+  "/conventions",
+  "/skills",
+  "/playbooks",
+  "/workforce",
+  "/sessions",
+  "/mcp",
+  "/dispatch",
+  "/workflow",
+  "/activity",
+]
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -23,6 +39,16 @@ export function middleware(request: NextRequest) {
     const signInUrl = new URL("/auth/sign-in", request.url)
     signInUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(signInUrl)
+  }
+
+  // Legacy route redirects: unscoped routes → primary project scope.
+  // The primary slug is read from a header set by the Next.js config,
+  // or defaults to "sherpa" (the monorepo's own project name).
+  if (!pathname.startsWith("/projects") && LEGACY_ROUTE_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+    const primarySlug = process.env.SHERPA_PRIMARY_SLUG ?? "sherpa"
+    const url = request.nextUrl.clone()
+    url.pathname = `/projects/${primarySlug}${pathname}`
+    return NextResponse.redirect(url)
   }
 
   return NextResponse.next()
