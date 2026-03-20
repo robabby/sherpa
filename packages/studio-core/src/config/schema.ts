@@ -7,6 +7,13 @@ const lifecycleStageSchema = z.object({
   color: z.string(),
 })
 
+const projectConfigSchema = z.object({
+  name: z.string().min(1),
+  slug: z.string().regex(/^[a-z0-9-]+$/, "slug must be kebab-case"),
+  root: z.string().min(1),
+  remote: z.string().optional(),
+})
+
 export const userConfigSchema = z.object({
   projectRoot: z.string().optional(),
   admin: z.object({
@@ -82,6 +89,7 @@ export const userConfigSchema = z.object({
       requireAuthority: z.boolean().optional(),
     }).optional(),
   }).optional(),
+  projects: z.array(projectConfigSchema).optional(),
   // plugins validated at runtime, not by Zod (function types don't serialize)
   plugins: z.array(z.any()).optional(),
 }).strict()

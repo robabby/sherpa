@@ -121,6 +121,33 @@ export interface GovernanceConfig {
   }
 }
 
+export interface ProjectConfig {
+  /** Display name in Studio UI. */
+  name: string
+  /** Unique URL-safe identifier. */
+  slug: string
+  /** Absolute path to project root. */
+  root: string
+  /** Git remote URL for sync (optional). */
+  remote?: string
+}
+
+/**
+ * Runtime context for a resolved project.
+ * Passed explicitly to all domain functions — no module-level globals.
+ * This design avoids the race condition identified in stress-test A1.
+ */
+export interface ProjectContext {
+  /** Absolute path to project root. */
+  root: string
+  /** Resolved paths config for this project. */
+  paths: Required<PathsConfig>
+  /** CLAUDE.md locations for this project. */
+  claudeMdLocations: string[]
+  /** CLAUDE.md scan directories for this project. */
+  claudeMdScanDirs: string[]
+}
+
 // ---------------------------------------------------------------------------
 // User config — what consumers write in sherpa.config.ts
 // ---------------------------------------------------------------------------
@@ -148,6 +175,8 @@ export interface SherpaUserConfig {
   governance?: GovernanceConfig
   /** Dispatch routing configuration. */
   dispatch?: Partial<DispatchConfig>
+  /** Additional projects to federate in Studio. */
+  projects?: ProjectConfig[]
   /** Plugins applied in order after defaults are merged. */
   plugins?: SherpaPlugin[]
 }
@@ -167,6 +196,7 @@ export interface SherpaConfig {
   mcp: Required<McpConfig>
   knowledge: Required<KnowledgeConfig>
   governance: GovernanceConfig
+  projects: ProjectConfig[]
   dispatch: DispatchConfig
   plugins: SherpaPlugin[]
 }

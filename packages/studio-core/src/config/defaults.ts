@@ -128,6 +128,7 @@ export function buildDefaults(userConfig: SherpaUserConfig): SherpaConfig {
         requireAuthority: userConfig.governance?.approval?.requireAuthority ?? DEFAULT_GOVERNANCE.approval.requireAuthority,
       },
     },
+    projects: userConfig.projects ?? [],
     dispatch: { ...DEFAULT_DISPATCH, ...userConfig.dispatch },
     plugins: userConfig.plugins ?? [],
   }
