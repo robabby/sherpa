@@ -98,6 +98,7 @@ export const userConfigSchema = z.object({
     }).optional(),
   }).optional(),
   projects: z.array(projectConfigSchema).optional(),
+  extends: z.union([z.string(), z.array(z.string())]).optional(),
   // plugins validated at runtime, not by Zod (function types don't serialize)
   plugins: z.array(z.any()).optional(),
 }).strict()

@@ -190,6 +190,12 @@ export interface SherpaUserConfig {
   dispatch?: Partial<DispatchConfig>
   /** Additional projects to federate in Studio. */
   projects?: ProjectConfig[]
+  /**
+   * Upstream convention package(s) to inherit from.
+   * Resolved with ESLint flat-config last-wins merge semantics.
+   * Currently parsed but not resolved — resolution deferred to a future session.
+   */
+  extends?: string | string[]
   /** Plugins applied in order after defaults are merged. */
   plugins?: SherpaPlugin[]
 }
