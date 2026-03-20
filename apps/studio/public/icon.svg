@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="96" fill="#1a1a2e"/>
+
+  <!-- Mountain peak — clean geometric Sherpa mark -->
+  <!-- Main peak -->
+  <polygon points="256,100 370,340 142,340" fill="#e8e4df"/>
+
+  <!-- Snow cap / ridge cut -->
+  <polygon points="256,100 290,170 222,170" fill="#8b9dc3"/>
+
+  <!-- Second smaller peak behind-right -->
+  <polygon points="340,160 410,340 270,340" fill="#b0a99f" opacity="0.5"/>
+
+  <!-- Base line — the path/trail -->
+  <line x1="95" y1="370" x2="417" y2="370" stroke="#e8e4df" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Trail dots suggesting the journey -->
+  <circle cx="130" cy="370" r="6" fill="#e8e4df"/>
+  <circle cx="256" cy="370" r="6" fill="#e8e4df"/>
+  <circle cx="382" cy="370" r="6" fill="#e8e4df"/>
+</svg>
