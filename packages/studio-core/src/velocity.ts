@@ -2,7 +2,9 @@ import { execSync } from "child_process"
 import fs from "fs"
 import path from "path"
 
-import { getProjectRoot } from "./content"
+import { getDefaultContext } from "./config"
+import type { ProjectContext } from "./config/types"
+import { resolveCtxPath } from "./context"
 import type { ActivityEntry } from "./types"
 
 // ---------------------------------------------------------------------------
@@ -43,8 +45,8 @@ const COOLING_THRESHOLD = 7
 // File mtime staleness
 // ---------------------------------------------------------------------------
 
-function getMostRecentMtime(dirPath: string): Date | null {
-  const absDir = path.resolve(getProjectRoot(), dirPath)
+function getMostRecentMtime(dirPath: string, ctx: ProjectContext): Date | null {
+  const absDir = resolveCtxPath(ctx, dirPath)
   if (!fs.existsSync(absDir)) return null
 
   let latest: Date | null = null
@@ -72,8 +74,8 @@ function daysSince(date: Date): number {
   return Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24))
 }
 
-function getMtimeStaleness(slug: string): number | null {
-  const mtime = getMostRecentMtime(`docs/initiatives/${slug}`)
+function getMtimeStaleness(slug: string, ctx: ProjectContext): number | null {
+  const mtime = getMostRecentMtime(`docs/initiatives/${slug}`, ctx)
   return mtime ? daysSince(mtime) : null
 }
 
@@ -174,9 +176,11 @@ export function getInitiativeVelocity(
     iterationCount?: number
     openQuestionCount?: number
   },
+  ctx?: ProjectContext,
 ): InitiativeVelocity {
-  const mtimeStaleness = getMtimeStaleness(slug)
-  const gitStaleness = getGitStaleness(slug, getProjectRoot())
+  const c = ctx ?? getDefaultContext()
+  const mtimeStaleness = getMtimeStaleness(slug, c)
+  const gitStaleness = getGitStaleness(slug, c.root)
   const staleDays = gitStaleness ?? mtimeStaleness
 
   let momentum: MomentumLevel | null = null
@@ -210,7 +214,9 @@ export function getAllVelocity(
     iterationCount?: number
     openQuestionCount?: number
   }[],
+  ctx?: ProjectContext,
 ): Map<string, InitiativeVelocity> {
+  const c = ctx ?? getDefaultContext()
   const map = new Map<string, InitiativeVelocity>()
   for (const init of initiatives) {
     map.set(
@@ -219,7 +225,7 @@ export function getAllVelocity(
         activityLog: init.activityLog,
         iterationCount: init.iterationCount,
         openQuestionCount: init.openQuestionCount,
-      }),
+      }, c),
     )
   }
   return map
