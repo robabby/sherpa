@@ -1,4 +1,6 @@
-import { readProjectFile } from "./content"
+import { getDefaultContext } from "./config"
+import type { ProjectContext } from "./config/types"
+import { readCtxFile } from "./context"
 import { parseActivityLog } from "./markdown"
 import { detectPlaybook, getPlaybookStatus, type ArtifactFlags } from "./playbooks"
 import type {
@@ -208,7 +210,9 @@ export interface ProcessNodeGetters {
 
 export function getProcessNodes(
   getters: ProcessNodeGetters,
+  ctx?: ProjectContext,
 ): ProcessNode[] {
+  const c = ctx ?? getDefaultContext()
   const nodes: ProcessNode[] = []
 
   // Pre-build workstream lookup for velocity enrichment
@@ -251,7 +255,7 @@ export function getProcessNodes(
     // Enrich with lifecycle data
     if (getters.getLifecycleInfo) {
       const iterationCount = research?.iterations.length ?? 0
-      const hasPlan = readProjectFile(`docs/initiatives/${init.slug}/plan.md`) !== null ||
+      const hasPlan = readCtxFile(c,`docs/initiatives/${init.slug}/plan.md`) !== null ||
         init.subDirectories.some((d) => d.name === "phases")
       const linkedWs = wsByInitiative.get(init.slug) ?? []
       let linkedWorkstreamStatus: string | null = null
@@ -271,15 +275,15 @@ export function getProcessNodes(
       // Enrich with playbook data
       const artifactFlags: ArtifactFlags = {
         hasResearch: !!research && research.iterations.length > 0,
-        hasStake: readProjectFile(`${basePath}/stake.md`) !== null,
-        hasPremortem: readProjectFile(`${basePath}/premortem.md`) !== null,
-        hasStressTest: readProjectFile(`${basePath}/stress-test.md`) !== null,
-        hasSpike: readProjectFile(`${basePath}/spike.md`) !== null,
-        hasShape: readProjectFile(`${basePath}/shape.md`) !== null,
-        hasDesign: readProjectFile(`${basePath}/design.md`) !== null,
+        hasStake: readCtxFile(c,`${basePath}/stake.md`) !== null,
+        hasPremortem: readCtxFile(c,`${basePath}/premortem.md`) !== null,
+        hasStressTest: readCtxFile(c,`${basePath}/stress-test.md`) !== null,
+        hasSpike: readCtxFile(c,`${basePath}/spike.md`) !== null,
+        hasShape: readCtxFile(c,`${basePath}/shape.md`) !== null,
+        hasDesign: readCtxFile(c,`${basePath}/design.md`) !== null,
         hasPlan,
-        hasMemo: readProjectFile(`${basePath}/memo.md`) !== null,
-        hasRadar: readProjectFile(`${basePath}/radar.md`) !== null,
+        hasMemo: readCtxFile(c,`${basePath}/memo.md`) !== null,
+        hasRadar: readCtxFile(c,`${basePath}/radar.md`) !== null,
       }
       const playbookId = detectPlaybook(init.risk)
       node.metadata.playbook = getPlaybookStatus(playbookId, artifactFlags)
@@ -294,7 +298,7 @@ export function getProcessNodes(
       )
     }
     // Enrich with activity log (parsed from activity.md)
-    const activitySource = readProjectFile(`${basePath}/activity.md`)
+    const activitySource = readCtxFile(c,`${basePath}/activity.md`)
     if (activitySource) {
       const activityEntries = parseActivityLog(activitySource)
       if (activityEntries.length > 0) {

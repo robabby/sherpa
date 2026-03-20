@@ -2,7 +2,9 @@ import fs from "fs"
 import path from "path"
 import matter from "gray-matter"
 
-import { resolveProjectPath } from "./content"
+import { getDefaultContext } from "./config"
+import type { ProjectContext } from "./config/types"
+import { resolveCtxPath } from "./context"
 import { parseProvenance, computeState } from "./doc-tree-types"
 import type { DocTreeNode, DocTreeSection, Provenance } from "./doc-tree-types"
 
@@ -133,26 +135,27 @@ export function scanDirectory(
  * 4. Framework — `docs/framework.md`, `docs/roadmap.md`, `docs/foundation-stone.md`
  * 5. UX — `docs/ux/` (flat .md files)
  */
-export function getDocTree(): DocTreeSection[] {
-  const basePath = resolveProjectPath("docs")
+export function getDocTree(ctx?: ProjectContext): DocTreeSection[] {
+  const c = ctx ?? getDefaultContext()
+  const basePath = resolveCtxPath(c, "docs")
   const sections: DocTreeSection[] = []
 
   // 1. Architecture
-  const archDir = resolveProjectPath("docs/architecture")
+  const archDir = resolveCtxPath(c, "docs/architecture")
   const archNodes = scanDirectory(archDir, basePath)
   if (archNodes.length > 0) {
     sections.push({ label: "Architecture", nodes: archNodes })
   }
 
   // 2. Decisions
-  const decisionsDir = resolveProjectPath("docs/decisions")
+  const decisionsDir = resolveCtxPath(c, "docs/decisions")
   const decisionNodes = scanDirectory(decisionsDir, basePath)
   if (decisionNodes.length > 0) {
     sections.push({ label: "Decisions", nodes: decisionNodes })
   }
 
   // 3. Changelog
-  const changelogPath = resolveProjectPath("docs/changelog.md")
+  const changelogPath = resolveCtxPath(c, "docs/changelog.md")
   const changelogNode = readDocNode(changelogPath, basePath)
   if (changelogNode) {
     sections.push({ label: "Changelog", nodes: [changelogNode] })
@@ -166,7 +169,7 @@ export function getDocTree(): DocTreeSection[] {
   ]
   const frameworkNodes: DocTreeNode[] = []
   for (const relPath of frameworkFiles) {
-    const absPath = resolveProjectPath(relPath)
+    const absPath = resolveCtxPath(c, relPath)
     const node = readDocNode(absPath, basePath)
     if (node) {
       frameworkNodes.push(node)
@@ -177,7 +180,7 @@ export function getDocTree(): DocTreeSection[] {
   }
 
   // 5. UX
-  const uxDir = resolveProjectPath("docs/ux")
+  const uxDir = resolveCtxPath(c, "docs/ux")
   const uxNodes = scanDirectory(uxDir, basePath)
   if (uxNodes.length > 0) {
     sections.push({ label: "UX", nodes: uxNodes })
@@ -197,12 +200,14 @@ export function getDocTree(): DocTreeSection[] {
  * or null if the document is not found.
  */
 export function getDocContent(
-  slug: string
+  slug: string,
+  ctx?: ProjectContext,
 ): { content: string; relativePath: string; provenance: Provenance } | null {
-  const basePath = resolveProjectPath(".")
+  const c = ctx ?? getDefaultContext()
+  const basePath = resolveCtxPath(c, ".")
 
   // Try flat file first: docs/<slug>.md
-  const flatPath = resolveProjectPath(`docs/${slug}.md`)
+  const flatPath = resolveCtxPath(c, `docs/${slug}.md`)
   if (fs.existsSync(flatPath)) {
     try {
       const raw = fs.readFileSync(flatPath, "utf-8")
@@ -220,7 +225,7 @@ export function getDocContent(
   }
 
   // Try directoturtle: docs/<slug>/index.md
-  const indexPath = resolveProjectPath(`docs/${slug}/index.md`)
+  const indexPath = resolveCtxPath(c, `docs/${slug}/index.md`)
   if (fs.existsSync(indexPath)) {
     try {
       const raw = fs.readFileSync(indexPath, "utf-8")
