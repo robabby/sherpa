@@ -8,6 +8,7 @@ import {
   CheckSquare,
   Clock,
   FileText,
+  FlaskConical,
   GitBranch,
   Play,
   Plug,
@@ -62,6 +63,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Knowledge",
     items: [
+      { label: "Research", href: "/research", icon: FlaskConical },
       { label: "Docs", href: "/docs", icon: FileText },
       { label: "Conventions", href: "/conventions", icon: BookOpen },
       { label: "Skills", href: "/skills", icon: Zap },

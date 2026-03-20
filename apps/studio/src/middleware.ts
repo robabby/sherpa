@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
 const LEGACY_ROUTE_PREFIXES = [
   "/process",
   "/tasks",
+  "/research",
   "/docs",
   "/conventions",
   "/skills",

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Project Studio — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['DM Sans', 'system-ui', 'sans-serif'],
+            display: ['Fraunces', 'Georgia', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: '#08080a',
+            'warm-charcoal': '#18181b',
+            'dark-bronze': '#27272a',
+            gold: '#d4a574',
+            'gold-bright': '#e8c49a',
+            'gold-muted': '#b08a5e',
+            copper: '#c49a6c',
+            bronze: '#8b7355',
+            tarnished: '#6b5a42',
+            cream: '#f5f0e8',
+            'warm-gray': '#9a8e80',
+            dim: '#71665a',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #08080a; color: #e4e4e7; }
+
+    /* Sidebar */
+    .sidebar { width: 260px; background: #0f0f12; border-right: 1px solid #27272a; }
+    .sidebar-group-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.25em; color: #71665a; padding: 8px 12px 4px; }
+    .sidebar-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 6px; font-size: 14px; color: #a1a1aa; cursor: pointer; transition: all 0.15s; }
+    .sidebar-item:hover { background: #1a1a1f; color: #e4e4e7; }
+    .sidebar-item.active { background: #1f1f24; color: #e4e4e7; }
+    .sidebar-item svg { width: 16px; height: 16px; opacity: 0.7; }
+
+    /* Project switcher */
+    .project-select { width: 100%; background: #1a1a1f; border: 1px solid #27272a; border-radius: 6px; padding: 6px 10px; color: #e4e4e7; font-size: 13px; font-family: 'DM Sans', sans-serif; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b5a42' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+    .project-select:focus { outline: none; border-color: #d4a574; box-shadow: 0 0 0 1px #d4a574; }
+
+    /* Cards */
+    .card { background: #18181b; border: 1px solid #27272a; border-radius: 8px; transition: border-color 0.15s; }
+    .card:hover { border-color: #3f3f46; }
+
+    /* Badge */
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 500; }
+    .badge-gold { background: #d4a57420; color: #d4a574; }
+    .badge-green { background: #22c55e20; color: #4ade80; }
+    .badge-blue { background: #3b82f620; color: #60a5fa; }
+    .badge-muted { background: #27272a; color: #71665a; }
+
+    /* Research list */
+    .research-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #27272a; cursor: pointer; transition: background 0.1s; }
+    .research-row:hover { background: #1a1a1f; }
+    .research-row:last-child { border-bottom: none; }
+
+    /* Breadcrumb */
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #71665a; }
+    .breadcrumb a { color: #71665a; text-decoration: none; }
+    .breadcrumb a:hover { color: #9a8e80; }
+    .breadcrumb .current { color: #e4e4e7; }
+    .breadcrumb .sep { color: #3f3f46; }
+
+    /* Tabs */
+    .tab { padding: 6px 12px; font-size: 13px; color: #71665a; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .tab:hover { color: #9a8e80; }
+    .tab.active { color: #d4a574; border-bottom-color: #d4a574; }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden font-sans">
+
+  <!-- ============================================================= -->
+  <!-- SIDEBAR                                                        -->
+  <!-- ============================================================= -->
+  <aside class="sidebar flex flex-col h-full shrink-0">
+    <!-- Header: Logo + Project Switcher -->
+    <div class="p-3 border-b border-dark-bronze">
+      <!-- Logo -->
+      <a href="#" class="flex items-center gap-2.5 px-1 py-1.5 mb-3">
+        <div class="flex items-center justify-center w-8 h-8 rounded-md bg-gradient-to-br from-gold to-copper">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-display text-sm leading-tight tracking-tight text-zinc-100">Sherpa</span>
+          <span class="font-mono text-[10px] uppercase leading-tight tracking-[0.25em] text-dim">Studio</span>
+        </div>
+      </a>
+
+      <!-- Project Switcher -->
+      <div class="flex items-center gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b5a42" stroke-width="2" class="shrink-0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <select class="project-select" id="projectSwitcher" onchange="switchProject(this.value)">
+          <option value="all">All Projects</option>
+          <option value="sherpa" selected>Sherpa</option>
+          <option value="wavepoint">WavePoint</option>
+          <option value="robabby">Rob Abby</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Nav Groups -->
+    <nav class="flex-1 overflow-y-auto py-2 px-2">
+      <div class="sidebar-group-label">Operations</div>
+      <div class="sidebar-item active" onclick="showView('process')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+        Process
+      </div>
+      <div class="sidebar-item" onclick="showView('tasks')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Tasks
+      </div>
+      <div class="sidebar-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Dispatch
+      </div>
+
+      <div class="sidebar-group-label mt-3">Knowledge</div>
+      <div class="sidebar-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Docs
+      </div>
+      <div class="sidebar-item" onclick="showView('research')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Research
+      </div>
+      <div class="sidebar-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Skills
+      </div>
+
+      <div class="sidebar-group-label mt-3">System</div>
+      <div class="sidebar-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Workforce
+      </div>
+    </nav>
+
+    <!-- Footer -->
+    <div class="border-t border-dark-bronze p-3">
+      <div class="flex items-center gap-2 px-1">
+        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-gold to-copper flex items-center justify-center text-[11px] font-semibold text-white">RA</div>
+        <span class="text-sm text-zinc-300">Rob Abby</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================= -->
+  <!-- MAIN CONTENT                                                   -->
+  <!-- ============================================================= -->
+  <main class="flex-1 overflow-y-auto">
+    <!-- Shell Header / Breadcrumb -->
+    <header class="sticky top-0 z-10 border-b border-dark-bronze bg-obsidian/80 backdrop-blur-sm px-6 py-3">
+      <div class="breadcrumb" id="breadcrumb">
+        <a href="#">Studio</a>
+        <span class="sep">/</span>
+        <span class="badge badge-gold" id="projectBadge">Sherpa</span>
+        <span class="sep">/</span>
+        <span class="current" id="sectionName">Process</span>
+      </div>
+    </header>
+
+    <!-- View: Projects Listing -->
+    <div id="view-projects" class="p-6 hidden">
+      <h1 class="text-xl font-display font-semibold mb-6">Projects</h1>
+      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <!-- Sherpa -->
+        <div class="card p-5 cursor-pointer" onclick="document.getElementById('projectSwitcher').value='sherpa'; switchProject('sherpa')">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-9 h-9 rounded-md bg-gradient-to-br from-gold to-copper flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div>
+              <div class="font-semibold text-zinc-100">Sherpa</div>
+              <div class="text-xs text-dim font-mono">/root/sherpa</div>
+            </div>
+          </div>
+          <div class="flex gap-3 text-xs text-warm-gray">
+            <span>62 initiatives</span>
+            <span>28 tasks</span>
+            <span>25 agents</span>
+          </div>
+        </div>
+        <!-- WavePoint -->
+        <div class="card p-5 cursor-pointer" onclick="document.getElementById('projectSwitcher').value='wavepoint'; switchProject('wavepoint')">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-9 h-9 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <div>
+              <div class="font-semibold text-zinc-100">WavePoint</div>
+              <div class="text-xs text-dim font-mono">/root/wavepoint</div>
+            </div>
+          </div>
+          <div class="flex gap-3 text-xs text-warm-gray">
+            <span>8 initiatives</span>
+            <span>12 tasks</span>
+            <span>5 agents</span>
+          </div>
+        </div>
+        <!-- Rob Abby -->
+        <div class="card p-5 cursor-pointer" onclick="document.getElementById('projectSwitcher').value='robabby'; switchProject('robabby')">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-9 h-9 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div>
+              <div class="font-semibold text-zinc-100">Rob Abby</div>
+              <div class="text-xs text-dim font-mono">/root/robabby</div>
+            </div>
+          </div>
+          <div class="flex gap-3 text-xs text-warm-gray">
+            <span>0 initiatives</span>
+            <span>0 tasks</span>
+            <span class="badge badge-green">3 research files</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Process (Sherpa) -->
+    <div id="view-process" class="p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-xl font-display font-semibold">Process</h1>
+        <div class="flex gap-2">
+          <div class="tab active">Initiative Tree</div>
+          <div class="tab">Workstreams</div>
+          <div class="tab">Seeds</div>
+          <div class="tab">Skills</div>
+        </div>
+      </div>
+      <div class="grid gap-3">
+        <div class="card p-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+            <div>
+              <div class="text-sm font-medium text-zinc-200">multi-project-studio</div>
+              <div class="text-xs text-dim">Extend Studio from single-project to multi-project hub</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge badge-gold">approved</span>
+            <span class="text-xs text-dim">2 research iterations</span>
+          </div>
+        </div>
+        <div class="card p-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+            <div>
+              <div class="text-sm font-medium text-zinc-200">sherpa-framework-extraction</div>
+              <div class="text-xs text-dim">Extract @sherpa/studio packages from WavePoint</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge badge-blue">in-progress</span>
+            <span class="text-xs text-dim">iteration 4</span>
+          </div>
+        </div>
+        <div class="card p-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+            <div>
+              <div class="text-sm font-medium text-zinc-200">agent-context-portability</div>
+              <div class="text-xs text-dim">Make governance portable across agent backends</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge badge-gold">approved</span>
+          </div>
+        </div>
+        <div class="card p-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-zinc-500"></div>
+            <div>
+              <div class="text-sm font-medium text-zinc-200">client-deployment-pipeline</div>
+              <div class="text-xs text-dim">End-to-end client deployment system</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge badge-muted">pending</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Tasks -->
+    <div id="view-tasks" class="p-6 hidden">
+      <h1 class="text-xl font-display font-semibold mb-6">Tasks</h1>
+      <div class="card">
+        <div class="research-row">
+          <span class="badge badge-blue">in-progress</span>
+          <span class="text-sm text-zinc-200 flex-1">Extract studio-core types into standalone package</span>
+          <span class="text-xs text-dim">Worker: claude</span>
+        </div>
+        <div class="research-row">
+          <span class="badge badge-muted">pending</span>
+          <span class="text-sm text-zinc-200 flex-1">Research competitive positioning for AI-native engineers</span>
+          <span class="text-xs text-dim">Worker: openclaw</span>
+        </div>
+        <div class="research-row">
+          <span class="badge badge-green">completed</span>
+          <span class="text-sm text-zinc-200 flex-1">Audit behavioral agent schema for identity language</span>
+          <span class="text-xs text-dim">Worker: openclaw</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Research (Rob Abby project) -->
+    <div id="view-research" class="p-6 hidden">
+      <h1 class="text-xl font-display font-semibold mb-6">Research</h1>
+      <div class="mb-4">
+        <div class="flex gap-2">
+          <div class="tab active">All</div>
+          <div class="tab">Job Market</div>
+          <div class="tab">Competitive</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="research-row" onclick="showView('research-detail')">
+          <div class="w-10 text-xs text-dim font-mono">Mar 20</div>
+          <div class="flex-1">
+            <div class="text-sm font-medium text-zinc-200">Job Market & Positioning Research</div>
+            <div class="text-xs text-dim mt-0.5">Agentic engineer titles emerging, compensation signals for senior AI-native roles</div>
+          </div>
+          <span class="badge badge-gold">job-market</span>
+        </div>
+        <div class="research-row">
+          <div class="w-10 text-xs text-dim font-mono">Mar 20</div>
+          <div class="flex-1">
+            <div class="text-sm font-medium text-zinc-200">Competitive & Reference Research</div>
+            <div class="text-xs text-dim mt-0.5">AI-native developer space landscape, positioning framing, notable case studies</div>
+          </div>
+          <span class="badge badge-blue">competitive</span>
+        </div>
+        <div class="research-row">
+          <div class="w-10 text-xs text-dim font-mono">Mar 19</div>
+          <div class="flex-1">
+            <div class="text-sm font-medium text-zinc-200">Job Market & Positioning Research</div>
+            <div class="text-xs text-dim mt-0.5">Initial survey of AI-accelerated development job postings</div>
+          </div>
+          <span class="badge badge-gold">job-market</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Research Detail -->
+    <div id="view-research-detail" class="p-6 hidden">
+      <div class="mb-6">
+        <button onclick="showView('research')" class="text-sm text-warm-gray hover:text-zinc-300 flex items-center gap-1 mb-4">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to Research
+        </button>
+        <div class="flex items-center gap-3 mb-2">
+          <span class="badge badge-gold">job-market</span>
+          <span class="text-xs text-dim font-mono">2026-03-20</span>
+        </div>
+        <h1 class="text-xl font-display font-semibold mb-2">Job Market & Positioning Research</h1>
+        <p class="text-sm text-warm-gray">Generated by Luna (OpenClaw) — Nightly research cron</p>
+      </div>
+      <div class="card p-6">
+        <div class="prose prose-invert prose-sm max-w-none">
+          <h2 class="text-base font-semibold text-zinc-200 mb-3">Summary</h2>
+          <ul class="text-sm text-zinc-300 space-y-1.5 list-disc pl-4 mb-6">
+            <li>"Agentic Engineer" is appearing in job postings at 3 major companies</li>
+            <li>Staff-level AI-native roles command 15-25% premium over standard Staff FE</li>
+            <li>Solo+AI case studies gaining traction on LinkedIn and Hacker News</li>
+            <li>Key differentiator: shipping velocity metrics, not just AI tool usage</li>
+          </ul>
+          <h2 class="text-base font-semibold text-zinc-200 mb-3">Emerging Titles & Patterns</h2>
+          <p class="text-sm text-zinc-400 mb-4">The term "Agentic Engineer" appeared in 12 job postings across Anthropic, Vercel, and Stripe in the past 30 days. More common titles remain "Staff Engineer, AI Platform" and "Senior Engineer, Developer Tools" but the agentic framing is emerging as a distinct category...</p>
+          <h2 class="text-base font-semibold text-zinc-200 mb-3">Compensation Signals</h2>
+          <p class="text-sm text-zinc-400">Based on 8 postings with disclosed ranges: $220K-$340K total comp for Staff-level roles with AI-native development experience. The premium appears tied to demonstrated shipping velocity with AI tools rather than traditional experience years...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const views = ['projects', 'process', 'tasks', 'research', 'research-detail'];
+    const projectNames = { all: 'All Projects', sherpa: 'Sherpa', wavepoint: 'WavePoint', robabby: 'Rob Abby' };
+
+    function showView(viewId) {
+      views.forEach(v => {
+        document.getElementById('view-' + v).classList.toggle('hidden', v !== viewId);
+      });
+
+      // Update breadcrumb
+      const sectionMap = { process: 'Process', tasks: 'Tasks', research: 'Research', 'research-detail': 'Research', projects: 'Projects' };
+      document.getElementById('sectionName').textContent = sectionMap[viewId] || viewId;
+
+      // Update active sidebar item
+      document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+      const label = sectionMap[viewId];
+      document.querySelectorAll('.sidebar-item').forEach(el => {
+        if (el.textContent.trim() === label) el.classList.add('active');
+      });
+    }
+
+    function switchProject(slug) {
+      const badge = document.getElementById('projectBadge');
+      badge.textContent = projectNames[slug] || slug;
+
+      if (slug === 'all') {
+        showView('projects');
+        badge.className = 'badge badge-muted';
+      } else if (slug === 'robabby') {
+        showView('research');
+        badge.className = 'badge badge-green';
+      } else {
+        showView('process');
+        badge.className = 'badge badge-gold';
+      }
+    }
+  </script>
+</body>
+</html>
