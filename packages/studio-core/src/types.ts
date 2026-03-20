@@ -150,6 +150,7 @@ export interface Initiative {
   updated: string;
   targets: string[];
   dependencies: string[];
+  informs: string[];
   spawnedFrom: string | null;
   title: string;
   summary: string;

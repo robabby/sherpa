@@ -39,6 +39,7 @@ export * from "./research-report"
 
 // Project registry
 export * from "./projects"
+export * from "./cross-project"
 
 // Doc tree (types + pure functions only — fs-dependent functions via sub-path "@sherpa/studio-core/doc-tree")
 export * from "./doc-tree-types"
