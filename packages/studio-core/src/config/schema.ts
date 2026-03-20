@@ -7,6 +7,12 @@ const lifecycleStageSchema = z.object({
   color: z.string(),
 })
 
+const docSectionConfigSchema = z.object({
+  label: z.string().min(1),
+  path: z.string().min(1),
+  type: z.enum(["directory", "files", "file"]),
+})
+
 const projectConfigSchema = z.object({
   name: z.string().min(1),
   slug: z.string().regex(/^[a-z0-9-]+$/, "slug must be kebab-case"),
@@ -37,6 +43,7 @@ export const userConfigSchema = z.object({
     roadmap: z.string().optional(),
     mcpConfig: z.string().optional(),
     archive: z.string().optional(),
+    docSections: z.array(docSectionConfigSchema).optional(),
   }).optional(),
   vocabulary: z.object({
     initiative: z.string().optional(),

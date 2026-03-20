@@ -88,8 +88,9 @@ export type {
   KnowledgeConfig,
   GovernanceConfig,
   LifecycleStageDefinition,
+  DocSectionConfig,
   ProjectConfig,
   ProjectContext,
 } from "./types"
-export { DEFAULT_PATHS, DEFAULT_VOCABULARY, DEFAULT_GOVERNANCE } from "./defaults"
+export { DEFAULT_PATHS, DEFAULT_DOC_SECTIONS, DEFAULT_VOCABULARY, DEFAULT_GOVERNANCE } from "./defaults"
 export { DOTFOLDER, DOTFOLDER_DIRS, scaffoldDotfolder, hasDotfolder } from "./dotfolder"

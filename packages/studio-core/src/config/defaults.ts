@@ -1,6 +1,7 @@
 import type {
   AdminConfig,
   AgentsConfig,
+  DocSectionConfig,
   EntitiesConfig,
   GovernanceConfig,
   KnowledgeConfig,
@@ -12,6 +13,13 @@ import type {
   VocabularyConfig,
 } from "./types"
 import { DEFAULT_DISPATCH } from "../dispatch"
+
+export const DEFAULT_DOC_SECTIONS: DocSectionConfig[] = [
+  { label: "Architecture", path: "docs/architecture", type: "directory" },
+  { label: "Decisions", path: "docs/decisions", type: "directory" },
+  { label: "Changelog", path: "docs/changelog.md", type: "file" },
+  { label: "UX", path: "docs/ux", type: "directory" },
+]
 
 export const DEFAULT_PATHS: Required<PathsConfig> = {
   initiatives: "docs/initiatives",
@@ -25,6 +33,7 @@ export const DEFAULT_PATHS: Required<PathsConfig> = {
   roadmap: "docs/roadmap.md",
   mcpConfig: ".mcp.json",
   archive: ".archive",
+  docSections: DEFAULT_DOC_SECTIONS,
 }
 
 export const DEFAULT_VOCABULARY: Required<VocabularyConfig> = {

@@ -128,62 +128,29 @@ export function scanDirectory(
 /**
  * Build the full documentation tree, grouped into labeled sections.
  *
- * Sections:
- * 1. Architecture — `docs/architecture/` (directoturtle subdirs with index.md)
- * 2. Decisions — `docs/decisions/` (flat .md files)
- * 3. Changelog — `docs/changelog.md` (single file)
- * 4. Framework — `docs/framework.md`, `docs/roadmap.md`, `docs/foundation-stone.md`
- * 5. UX — `docs/ux/` (flat .md files)
+ * Sections are driven by `ctx.paths.docSections` — each entry specifies
+ * a label, path, and scan type ("directory", "files", or "file").
  */
 export function getDocTree(ctx?: ProjectContext): DocTreeSection[] {
   const c = ctx ?? getDefaultContext()
   const basePath = resolveCtxPath(c, "docs")
   const sections: DocTreeSection[] = []
 
-  // 1. Architecture
-  const archDir = resolveCtxPath(c, "docs/architecture")
-  const archNodes = scanDirectory(archDir, basePath)
-  if (archNodes.length > 0) {
-    sections.push({ label: "Architecture", nodes: archNodes })
-  }
-
-  // 2. Decisions
-  const decisionsDir = resolveCtxPath(c, "docs/decisions")
-  const decisionNodes = scanDirectory(decisionsDir, basePath)
-  if (decisionNodes.length > 0) {
-    sections.push({ label: "Decisions", nodes: decisionNodes })
-  }
-
-  // 3. Changelog
-  const changelogPath = resolveCtxPath(c, "docs/changelog.md")
-  const changelogNode = readDocNode(changelogPath, basePath)
-  if (changelogNode) {
-    sections.push({ label: "Changelog", nodes: [changelogNode] })
-  }
-
-  // 4. Framework
-  const frameworkFiles = [
-    "docs/framework.md",
-    "docs/roadmap.md",
-    "docs/foundation-stone.md",
-  ]
-  const frameworkNodes: DocTreeNode[] = []
-  for (const relPath of frameworkFiles) {
-    const absPath = resolveCtxPath(c, relPath)
-    const node = readDocNode(absPath, basePath)
-    if (node) {
-      frameworkNodes.push(node)
+  for (const section of c.paths.docSections) {
+    if (section.type === "file") {
+      const absPath = resolveCtxPath(c, section.path)
+      const node = readDocNode(absPath, basePath)
+      if (node) {
+        sections.push({ label: section.label, nodes: [node] })
+      }
+    } else {
+      // "directory" or "files" — both use scanDirectory
+      const absDir = resolveCtxPath(c, section.path)
+      const nodes = scanDirectory(absDir, basePath)
+      if (nodes.length > 0) {
+        sections.push({ label: section.label, nodes })
+      }
     }
-  }
-  if (frameworkNodes.length > 0) {
-    sections.push({ label: "Framework", nodes: frameworkNodes })
-  }
-
-  // 5. UX
-  const uxDir = resolveCtxPath(c, "docs/ux")
-  const uxNodes = scanDirectory(uxDir, basePath)
-  if (uxNodes.length > 0) {
-    sections.push({ label: "UX", nodes: uxNodes })
   }
 
   return sections

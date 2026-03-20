@@ -12,6 +12,15 @@ export type SherpaPlugin = (config: SherpaConfig) => SherpaConfig
 // Sub-configs
 // ---------------------------------------------------------------------------
 
+export interface DocSectionConfig {
+  /** Display label in the doc tree. */
+  label: string
+  /** Path relative to project root (e.g., "docs/architecture"). */
+  path: string
+  /** How to render: "directory" scans for index.md, "files" lists standalone .md files, "file" is a single file. */
+  type: "directory" | "files" | "file"
+}
+
 export interface PathsConfig {
   initiatives?: string
   tasks?: string
@@ -24,6 +33,8 @@ export interface PathsConfig {
   roadmap?: string
   mcpConfig?: string
   archive?: string
+  /** Configurable doc tree sections. Each entry: { label, path, type }. */
+  docSections?: DocSectionConfig[]
 }
 
 export interface VocabularyConfig {
