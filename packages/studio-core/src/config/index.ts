@@ -1,8 +1,20 @@
-import type { SherpaUserConfig, SherpaConfig, SherpaPlugin } from "./types"
+import type { SherpaUserConfig, SherpaConfig, SherpaPlugin, ProjectContext } from "./types"
 import { buildDefaults } from "./defaults"
 import { userConfigSchema } from "./schema"
 import { setProjectRoot, setClaudeMdLocations, setClaudeMdScanDirs } from "../content"
+import { buildProjectContext } from "../context"
 import { loadJsonConfig } from "./load-json"
+
+let _defaultContext: ProjectContext | null = null
+
+/**
+ * Get the default ProjectContext set by the most recent defineConfig() call.
+ * Throws if defineConfig() has not been called yet.
+ */
+export function getDefaultContext(): ProjectContext {
+  if (!_defaultContext) throw new Error("defineConfig() has not been called")
+  return _defaultContext
+}
 
 /**
  * Define a Sherpa Studio configuration.
@@ -21,7 +33,7 @@ export function defineConfig(userConfig: SherpaUserConfig): SherpaConfig {
     config = plugin(config)
   }
 
-  // 4. Wire up the content module
+  // 4. Wire up the content module (legacy globals)
   setProjectRoot(config.projectRoot)
   if (config.entities.claudeMdLocations.length > 0) {
     setClaudeMdLocations(config.entities.claudeMdLocations)
@@ -29,6 +41,9 @@ export function defineConfig(userConfig: SherpaUserConfig): SherpaConfig {
   if (config.entities.claudeMdScanDirs.length > 0) {
     setClaudeMdScanDirs(config.entities.claudeMdScanDirs)
   }
+
+  // 5. Build the default ProjectContext for context-aware functions
+  _defaultContext = buildProjectContext(config)
 
   return config
 }
@@ -69,6 +84,8 @@ export type {
   KnowledgeConfig,
   GovernanceConfig,
   LifecycleStageDefinition,
+  ProjectConfig,
+  ProjectContext,
 } from "./types"
 export { DEFAULT_PATHS, DEFAULT_VOCABULARY, DEFAULT_GOVERNANCE } from "./defaults"
 export { DOTFOLDER, DOTFOLDER_DIRS, scaffoldDotfolder, hasDotfolder } from "./dotfolder"
