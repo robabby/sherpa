@@ -15,5 +15,18 @@
     "claudeMdLocations": ["CLAUDE.md"],
     "claudeMdScanDirs": []
   },
-  "projects": []
+  "projects": [
+    {
+      "name": "WavePoint",
+      "slug": "wavepoint",
+      "root": "${SHERPA_PROJECTS_DIR}/wavepoint",
+      "remote": "git@github.com:robabby/wavepoint.git"
+    },
+    {
+      "name": "Rob Abby",
+      "slug": "robabby",
+      "root": "${SHERPA_PROJECTS_DIR}/robabby",
+      "remote": "git@github.com:robabby/robabby.git"
+    }
+  ]
 }
