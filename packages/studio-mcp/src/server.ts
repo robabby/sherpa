@@ -31,6 +31,8 @@ import {
   BACKEND_META,
 } from "@sherpa/studio-core"
 import type { Backend } from "@sherpa/studio-core"
+import { DEFAULT_PATHS } from "@sherpa/studio-core/config"
+import type { ProjectContext } from "@sherpa/studio-core/config"
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -686,12 +688,18 @@ ${deliverables}
   let knowledgeReady = false
   const dbPaths = resolveDbPaths(projectRoot)
   const knowledgeBackend = new AlgorithmicBackend()
+  const knowledgeCtx: ProjectContext = {
+    root: projectRoot,
+    paths: DEFAULT_PATHS,
+    claudeMdLocations: [],
+    claudeMdScanDirs: [],
+  }
 
   function ensureKnowledgeDb() {
     const db = openDb(dbPaths.knowledge)
     if (!knowledgeReady) {
       applyKnowledgeSchema(db)
-      syncFromFilesystem(db, projectRoot)
+      syncFromFilesystem(db, knowledgeCtx)
       syncEmbeddings(db, knowledgeBackend)
       knowledgeReady = true
     }

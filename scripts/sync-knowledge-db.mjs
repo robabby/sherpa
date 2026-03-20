@@ -6,6 +6,7 @@
 import path from "node:path"
 import { resolveDbPaths, openDb, closeAll, applyKnowledgeSchema, syncFromFilesystem, syncEmbeddings } from "@sherpa/studio-core/db"
 import { AlgorithmicBackend } from "@sherpa/studio-core/knowledge"
+import { DEFAULT_PATHS } from "@sherpa/studio-core/config"
 
 const projectRoot = process.argv.includes("--project-root")
   ? process.argv[process.argv.indexOf("--project-root") + 1]
@@ -20,8 +21,16 @@ console.log(`  Database:     ${paths.knowledge}`)
 const db = openDb(paths.knowledge)
 applyKnowledgeSchema(db)
 
+/** @type {import("@sherpa/studio-core/config").ProjectContext} */
+const ctx = {
+  root: projectRoot,
+  paths: DEFAULT_PATHS,
+  claudeMdLocations: [],
+  claudeMdScanDirs: [],
+}
+
 const start = Date.now()
-const stats = syncFromFilesystem(db, projectRoot)
+const stats = syncFromFilesystem(db, ctx)
 const elapsed = Date.now() - start
 
 console.log(`\nSync complete in ${elapsed}ms:`)
