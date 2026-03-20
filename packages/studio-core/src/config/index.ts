@@ -4,6 +4,7 @@ import { userConfigSchema } from "./schema"
 import { setProjectRoot, setClaudeMdLocations, setClaudeMdScanDirs } from "../content"
 import { buildProjectContext } from "../context"
 import { loadJsonConfig } from "./load-json"
+import { initProjectRegistry } from "../projects"
 
 let _defaultContext: ProjectContext | null = null
 
@@ -44,6 +45,9 @@ export function defineConfig(userConfig: SherpaUserConfig): SherpaConfig {
 
   // 5. Build the default ProjectContext for context-aware functions
   _defaultContext = buildProjectContext(config)
+
+  // 6. Initialize project registry
+  initProjectRegistry(config)
 
   return config
 }
