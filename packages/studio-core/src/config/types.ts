@@ -153,6 +153,8 @@ export interface ProjectContext {
 // ---------------------------------------------------------------------------
 
 export interface SherpaUserConfig {
+  /** JSON Schema URL for IDE validation (ignored at runtime). */
+  $schema?: string
   /** Absolute path to project root. Defaults to process.cwd(). */
   projectRoot?: string
   /** Project metadata. */

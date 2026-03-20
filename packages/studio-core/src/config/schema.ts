@@ -15,6 +15,7 @@ const projectConfigSchema = z.object({
 })
 
 export const userConfigSchema = z.object({
+  $schema: z.string().optional(),
   projectRoot: z.string().optional(),
   admin: z.object({
     projectName: z.string().optional(),

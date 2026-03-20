@@ -2,6 +2,7 @@ import type { SherpaUserConfig, SherpaConfig, SherpaPlugin } from "./types"
 import { buildDefaults } from "./defaults"
 import { userConfigSchema } from "./schema"
 import { setProjectRoot, setClaudeMdLocations, setClaudeMdScanDirs } from "../content"
+import { loadJsonConfig } from "./load-json"
 
 /**
  * Define a Sherpa Studio configuration.
@@ -41,6 +42,18 @@ export function createPlugin<TOptions>(
   return factory
 }
 
+/**
+ * Load config from sherpa.json (or .sherpa/config.json).
+ * Falls back to defaults if no config file found.
+ * sherpa.config.ts remains as escape hatch for plugins (stress-test A2).
+ */
+export function loadConfig(projectRoot?: string): SherpaConfig {
+  const root = projectRoot ?? process.cwd()
+  const jsonConfig = loadJsonConfig(root)
+  return defineConfig(jsonConfig ?? { projectRoot: root })
+}
+
+export { loadJsonConfig } from "./load-json"
 export { withSherpa } from "./next-wrapper"
 export type {
   SherpaUserConfig,
