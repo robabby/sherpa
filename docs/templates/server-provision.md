@@ -271,7 +271,7 @@ apt update && apt install -y caddy
 
 ### Configure
 
-`/etc/caddy/Caddyfile` — route by method to separate web app from MCP protocol:
+`/etc/caddy/Caddyfile` — route by method to separate web app from MCP protocol. The Studio upstream is imported from a snippet file managed by the deploy script (see Blue-Green Deploy below):
 
 ```
 studio.sherpa.solar {
@@ -285,13 +285,103 @@ studio.sherpa.solar {
     handle /health {
         reverse_proxy localhost:3100
     }
-    reverse_proxy localhost:3000
+    handle {
+        import /opt/sherpa/studio-upstream.caddy
+    }
 }
 ```
 
 Reload: `systemctl reload caddy`
 
 **Prerequisites:** DNS A record pointing to VPS IP. CAA record allowing `letsencrypt.org`. Ports 80/443 open in UFW.
+
+## Blue-Green Deploy (Zero-Downtime)
+
+Studio deploys use blue-green slot swapping. Two standalone Next.js copies live at `/opt/sherpa/blue/` and `/opt/sherpa/green/`. The deploy script builds, copies to the standby slot, health-checks, then swaps the Caddy upstream — zero dropped requests.
+
+### Setup
+
+```bash
+# Deploy directories
+mkdir -p /opt/sherpa/blue /opt/sherpa/green
+echo "blue" > /opt/sherpa/active
+
+# Per-slot port config
+echo "PORT=3000" > /opt/sherpa/blue.env
+echo "PORT=3001" > /opt/sherpa/green.env
+
+# Initial Caddy upstream (must be world-readable for Caddy user)
+echo "reverse_proxy localhost:3000" > /opt/sherpa/studio-upstream.caddy
+chmod 644 /opt/sherpa/studio-upstream.caddy
+chmod 755 /opt/sherpa
+```
+
+### Systemd Template
+
+```bash
+cat > /etc/systemd/system/sherpa-studio@.service << 'EOF'
+[Unit]
+Description=Sherpa Studio (%i slot)
+After=network.target
+
+[Service]
+Type=simple
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+EnvironmentFile=/opt/sherpa/%i.env
+EnvironmentFile=/root/sherpa/.env.production
+WorkingDirectory=/opt/sherpa/%i
+ExecStart=/usr/bin/node apps/studio/server.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+```
+
+After the first deploy, disable the old non-templated service:
+
+```bash
+systemctl stop sherpa-studio
+systemctl disable sherpa-studio
+```
+
+### Usage
+
+```bash
+/root/sherpa/scripts/deploy.sh              # Full deploy (pull + build + swap)
+/root/sherpa/scripts/deploy.sh --skip-build # Swap with current build
+/root/sherpa/scripts/deploy.sh --rollback   # Swap back to previous slot
+```
+
+The 15-minute sync cron (`sherpa-sync.sh`) calls `deploy.sh` automatically — no separate cron entry needed.
+
+### How It Works
+
+1. Determines standby slot (blue/green) from `/opt/sherpa/active`
+2. `git pull` → `pnpm install` → `pnpm build` (standalone output)
+3. Copies standalone output + static files to standby slot directory
+4. Starts standby via `systemctl start sherpa-studio@<slot>`
+5. Health-checks the standby port (30s timeout)
+6. Writes new port to `/opt/sherpa/studio-upstream.caddy` and reloads Caddy (graceful — drains connections)
+7. Stops old slot, updates `/opt/sherpa/active`
+8. On health-check failure: stops standby, exits without touching Caddy — old instance keeps serving
+
+### Permissions
+
+Caddy runs as uid 999 (`caddy` user). The deploy directory and upstream snippet must be readable:
+- `/opt/sherpa/` — `755` (world-readable directory)
+- `/opt/sherpa/studio-upstream.caddy` — `644` (world-readable file)
+- The deploy script sets `chmod 644` on the snippet after every write
+
+### Notes
+
+- **HOSTNAME=127.0.0.1** — Studio binds localhost only. Caddy handles external access. This prevents port conflicts with Tailscale or other services.
+- **MCP is not blue-green'd** — agent-facing, ~1s startup, simple restart after Studio swap is acceptable.
+- **Rollback** — starts the previous slot, swaps Caddy, stops current. The previous slot's files are untouched until the next deploy.
 
 ## CrowdSec (Intrusion Detection)
 
