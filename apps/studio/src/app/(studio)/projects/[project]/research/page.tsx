@@ -1,88 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import fs from "node:fs";
-import path from "node:path";
-import matter from "gray-matter";
 
-import { getProject } from "@/lib/studio";
+import { getProject, scanResearchFiles } from "@/lib/studio";
+import type { ResearchFile } from "@/lib/studio";
 
 export const metadata: Metadata = {
   title: "Research | Studio",
   robots: "noindex, nofollow",
 };
-
-interface ResearchFile {
-  title: string;
-  date: string;
-  category: string;
-  slug: string; // category/filename-without-ext
-  relativePath: string;
-}
-
-function scanResearchFiles(projectRoot: string): ResearchFile[] {
-  const researchDir = path.join(projectRoot, ".sherpa", "research");
-  if (!fs.existsSync(researchDir)) return [];
-
-  const files: ResearchFile[] = [];
-
-  // Scan category subdirectories
-  const entries = fs.readdirSync(researchDir, { withFileTypes: true });
-  for (const entry of entries) {
-    if (!entry.isDirectory()) {
-      // Top-level .md files (no category)
-      if (entry.name.endsWith(".md")) {
-        const absPath = path.join(researchDir, entry.name);
-        const raw = fs.readFileSync(absPath, "utf-8");
-        const { data, content } = matter(raw);
-        const title =
-          data.title ??
-          content.match(/^#\s+(.+)$/m)?.[1] ??
-          entry.name.replace(/\.md$/, "");
-        const date = data.date
-          ? String(data.date)
-          : entry.name.replace(/\.md$/, "");
-        const slug = entry.name.replace(/\.md$/, "");
-        files.push({
-          title,
-          date,
-          category: "",
-          slug,
-          relativePath: entry.name,
-        });
-      }
-      continue;
-    }
-
-    const category = entry.name;
-    const catDir = path.join(researchDir, category);
-    const catEntries = fs.readdirSync(catDir, { withFileTypes: true });
-
-    for (const catEntry of catEntries) {
-      if (!catEntry.isFile() || !catEntry.name.endsWith(".md")) continue;
-      const absPath = path.join(catDir, catEntry.name);
-      const raw = fs.readFileSync(absPath, "utf-8");
-      const { data, content } = matter(raw);
-      const title =
-        data.title ??
-        content.match(/^#\s+(.+)$/m)?.[1] ??
-        catEntry.name.replace(/\.md$/, "");
-      const date = data.date
-        ? String(data.date)
-        : catEntry.name.replace(/\.md$/, "");
-      const slug = `${category}/${catEntry.name.replace(/\.md$/, "")}`;
-      files.push({
-        title,
-        date,
-        category,
-        slug,
-        relativePath: `${category}/${catEntry.name}`,
-      });
-    }
-  }
-
-  return files.sort((a, b) => b.date.localeCompare(a.date));
-}
 
 export default async function ProjectResearchPage({
   params,

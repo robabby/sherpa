@@ -35,6 +35,7 @@ export * from "./content"
 export * from "./context"
 export * from "./velocity"
 export * from "./deliverables"
+export * from "./research-files"
 export * from "./research-report"
 
 // Project registry
