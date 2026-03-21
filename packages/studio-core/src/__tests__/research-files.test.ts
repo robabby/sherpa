@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest"
 import * as fs from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
-import { scanResearchFiles, parseResearchState } from "../research-files"
+import { scanResearchFiles, parseResearchState, parseResearchPriorities } from "../research-files"
 
 let tmpDir: string
 
@@ -196,5 +196,32 @@ describe("parseResearchState", () => {
       text: "Analyze consulting market trends",
       completed: false,
     })
+  })
+})
+
+describe("parseResearchPriorities", () => {
+  it("returns null when PRIORITIES.md does not exist", () => {
+    expect(parseResearchPriorities(tmpDir)).toBeNull()
+  })
+
+  it("parses narrative, priorities, and focus areas", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "PRIORITIES.md"),
+      "## The Narrative\n\nBuilding the platform while landing first clients.\n\n## Current Priorities\n\n1. Ship Studio v1\n2. Close first consulting engagement\n3. Build content pipeline\n\n## What Research Should Focus On\n\n1. Competitor pricing models\n2. Job market for AI roles\n",
+    )
+    const priorities = parseResearchPriorities(tmpDir)
+    expect(priorities).not.toBeNull()
+    expect(priorities!.narrative).toBe("Building the platform while landing first clients.")
+    expect(priorities!.priorities).toEqual([
+      "Ship Studio v1",
+      "Close first consulting engagement",
+      "Build content pipeline",
+    ])
+    expect(priorities!.focusAreas).toEqual([
+      "Competitor pricing models",
+      "Job market for AI roles",
+    ])
   })
 })

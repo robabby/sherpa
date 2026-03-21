@@ -132,3 +132,31 @@ export function parseResearchState(projectRoot: string): ResearchState | null {
     return null
   }
 }
+
+export interface ResearchPriorities {
+  narrative: string | null
+  priorities: string[]
+  focusAreas: string[]
+}
+
+export function parseResearchPriorities(projectRoot: string): ResearchPriorities | null {
+  const filePath = path.join(projectRoot, ".sherpa", "research", "PRIORITIES.md")
+  if (!fs.existsSync(filePath)) return null
+
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8")
+
+    const narrative = extractSection(raw, "The Narrative")?.trim() ?? null
+
+    const prioritiesSection = extractSection(raw, "Current Priorities")
+    const priorities = prioritiesSection ? extractNumberedItems(prioritiesSection) : []
+
+    const focusSection = extractSection(raw, "What Research Should Focus On")
+    const focusAreas = focusSection ? extractNumberedItems(focusSection) : []
+
+    return { narrative, priorities, focusAreas }
+  } catch {
+    console.warn(`[sherpa] Failed to parse PRIORITIES.md: ${filePath}`)
+    return null
+  }
+}
