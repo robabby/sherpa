@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { getProject, scanResearchFiles } from "@/lib/studio";
 import type { ResearchFile } from "@/lib/studio";
+import { RefreshOnFocus } from "@/components/refresh-on-focus";
 
 export const metadata: Metadata = {
   title: "Research | Studio",
@@ -32,6 +33,7 @@ export default async function ProjectResearchPage({
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
+      <RefreshOnFocus />
       <h1 className="font-display text-2xl text-foreground mb-6">Research</h1>
 
       {files.length === 0 ? (
