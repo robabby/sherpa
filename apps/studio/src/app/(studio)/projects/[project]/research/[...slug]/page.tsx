@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 
+import { DocRenderer } from "@/components/studio/doc-renderer";
 import { getProject } from "@/lib/studio";
 
 export const metadata: Metadata = {
@@ -50,12 +51,7 @@ export default async function ResearchDetailPage({
           </p>
         )}
       </div>
-      <article className="prose prose-invert prose-sm max-w-none">
-        {/* Render as pre-formatted text for now — markdown renderer can be added later */}
-        <div className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed">
-          {body}
-        </div>
-      </article>
+      <DocRenderer content={body} />
     </div>
   );
 }
