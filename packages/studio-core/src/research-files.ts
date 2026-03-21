@@ -8,6 +8,8 @@ export interface ResearchFile {
   category: string
   slug: string
   relativePath: string
+  summary?: string
+  trigger?: string
 }
 
 function formatDate(value: unknown): string | undefined {
@@ -27,7 +29,9 @@ function parseResearchFile(absPath: string, fileName: string, category: string):
     const date = formatDate(data.date) ?? fileName.replace(/\.md$/, "")
     const slug = category ? `${category}/${fileName.replace(/\.md$/, "")}` : fileName.replace(/\.md$/, "")
     const relativePath = category ? `${category}/${fileName}` : fileName
-    return { title, date, category, slug, relativePath }
+    const summary = typeof data.summary === "string" ? data.summary.trim() : undefined
+    const trigger = typeof data.trigger === "string" ? data.trigger.trim() : undefined
+    return { title, date, category, slug, relativePath, summary, trigger }
   } catch {
     console.warn(`[sherpa] Skipping research file with invalid frontmatter: ${absPath}`)
     return null

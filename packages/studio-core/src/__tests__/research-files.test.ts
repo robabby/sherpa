@@ -98,4 +98,31 @@ describe("scanResearchFiles", () => {
     expect(files).toHaveLength(1)
     expect(files[0]!.title).toBe("Real Research")
   })
+
+  it("extracts summary and trigger from frontmatter", () => {
+    const catDir = path.join(tmpDir, ".sherpa", "research", "heartbeat")
+    fs.mkdirSync(catDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(catDir, "2026-03-21-1030-test-topic.md"),
+      "---\ntitle: Test Topic\ndate: 2026-03-21\ncategory: heartbeat\ntrigger: >\n  priority queue item\nsummary: >\n  Found three key insights about the topic.\n---\n# Test Topic\nContent.",
+    )
+    const files = scanResearchFiles(tmpDir)
+    expect(files).toHaveLength(1)
+    expect(files[0]).toMatchObject({
+      summary: "Found three key insights about the topic.",
+      trigger: "priority queue item",
+    })
+  })
+
+  it("returns undefined summary and trigger when not in frontmatter", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "plain.md"),
+      "---\ntitle: Plain\ndate: 2026-03-21\n---\nContent.",
+    )
+    const files = scanResearchFiles(tmpDir)
+    expect(files[0]!.summary).toBeUndefined()
+    expect(files[0]!.trigger).toBeUndefined()
+  })
 })
