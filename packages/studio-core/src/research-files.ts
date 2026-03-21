@@ -160,3 +160,66 @@ export function parseResearchPriorities(projectRoot: string): ResearchPriorities
     return null
   }
 }
+
+export type HeartbeatState = "active" | "pending" | "offline"
+
+export interface HeartbeatStatus {
+  status: HeartbeatState
+  minutesUntilNext: number | null
+  heartbeatCountToday: number
+  lastUpdated: string | null
+  message: string
+}
+
+function getPacificTime(date: Date): { hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(date)
+  const get = (type: string) =>
+    parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10)
+  return { hour: get("hour") % 24, minute: get("minute") }
+}
+
+export function getHeartbeatStatus(
+  lastUpdated: string | null,
+  heartbeatCountToday: number,
+  now: Date = new Date(),
+): HeartbeatStatus {
+  const { hour, minute } = getPacificTime(now)
+  const isActiveHours = hour >= 8 && hour < 23
+
+  if (!isActiveHours) {
+    return {
+      status: "offline",
+      minutesUntilNext: null,
+      heartbeatCountToday,
+      lastUpdated,
+      message: "Heartbeats resume at 8:00 AM PT",
+    }
+  }
+
+  if (lastUpdated) {
+    const elapsed = now.getTime() - new Date(lastUpdated).getTime()
+    if (elapsed < 35 * 60 * 1000) {
+      return {
+        status: "active",
+        minutesUntilNext: null,
+        heartbeatCountToday,
+        lastUpdated,
+        message: "Research active",
+      }
+    }
+  }
+
+  const minutesUntilNext = 30 - (minute % 30)
+  return {
+    status: "pending",
+    minutesUntilNext,
+    heartbeatCountToday,
+    lastUpdated,
+    message: `Next heartbeat in ~${minutesUntilNext}m`,
+  }
+}

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest"
 import * as fs from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
-import { scanResearchFiles, parseResearchState, parseResearchPriorities } from "../research-files"
+import { scanResearchFiles, parseResearchState, parseResearchPriorities, getHeartbeatStatus } from "../research-files"
 
 let tmpDir: string
 
@@ -223,5 +223,50 @@ describe("parseResearchPriorities", () => {
       "Competitor pricing models",
       "Job market for AI roles",
     ])
+  })
+})
+
+describe("getHeartbeatStatus", () => {
+  it("returns active when last updated within 35 minutes", () => {
+    const now = new Date("2026-03-21T15:00:00-07:00")
+    const lastUpdated = "2026-03-21T14:30:00-07:00"
+    const status = getHeartbeatStatus(lastUpdated, 0, now)
+    expect(status.status).toBe("active")
+  })
+
+  it("returns pending with next-heartbeat time during active hours", () => {
+    const now = new Date("2026-03-21T15:00:00-07:00")
+    const lastUpdated = "2026-03-21T14:00:00-07:00"
+    const status = getHeartbeatStatus(lastUpdated, 0, now)
+    expect(status.status).toBe("pending")
+    expect(status.minutesUntilNext).toBeGreaterThan(0)
+    expect(status.minutesUntilNext).toBeLessThanOrEqual(30)
+  })
+
+  it("returns offline outside active hours", () => {
+    const now = new Date("2026-03-21T23:30:00-07:00")
+    const lastUpdated = "2026-03-21T22:00:00-07:00"
+    const status = getHeartbeatStatus(lastUpdated, 0, now)
+    expect(status.status).toBe("offline")
+  })
+
+  it("returns offline at exactly 23:00 PT (exclusive cutoff)", () => {
+    const now = new Date("2026-03-21T23:00:00-07:00")
+    const lastUpdated = "2026-03-21T22:55:00-07:00"
+    const status = getHeartbeatStatus(lastUpdated, 0, now)
+    expect(status.status).toBe("offline")
+  })
+
+  it("includes today's heartbeat count", () => {
+    const now = new Date("2026-03-21T15:00:00-07:00")
+    const lastUpdated = "2026-03-21T14:30:00-07:00"
+    const status = getHeartbeatStatus(lastUpdated, 4, now)
+    expect(status.heartbeatCountToday).toBe(4)
+  })
+
+  it("returns pending with null lastUpdated during active hours", () => {
+    const now = new Date("2026-03-21T15:00:00-07:00")
+    const status = getHeartbeatStatus(null, 0, now)
+    expect(status.status).toBe("pending")
   })
 })
