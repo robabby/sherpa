@@ -16,6 +16,24 @@ function formatDate(value: unknown): string | undefined {
   return String(value)
 }
 
+function parseResearchFile(absPath: string, fileName: string, category: string): ResearchFile | null {
+  try {
+    const raw = fs.readFileSync(absPath, "utf-8")
+    const { data, content } = matter(raw)
+    const title =
+      data.title ??
+      content.match(/^#\s+(.+)$/m)?.[1] ??
+      fileName.replace(/\.md$/, "")
+    const date = formatDate(data.date) ?? fileName.replace(/\.md$/, "")
+    const slug = category ? `${category}/${fileName.replace(/\.md$/, "")}` : fileName.replace(/\.md$/, "")
+    const relativePath = category ? `${category}/${fileName}` : fileName
+    return { title, date, category, slug, relativePath }
+  } catch {
+    console.warn(`[sherpa] Skipping research file with invalid frontmatter: ${absPath}`)
+    return null
+  }
+}
+
 export function scanResearchFiles(projectRoot: string): ResearchFile[] {
   const researchDir = path.join(projectRoot, ".sherpa", "research")
   if (!fs.existsSync(researchDir)) return []
@@ -26,16 +44,8 @@ export function scanResearchFiles(projectRoot: string): ResearchFile[] {
   for (const entry of entries) {
     if (!entry.isDirectory()) {
       if (entry.name.endsWith(".md")) {
-        const absPath = path.join(researchDir, entry.name)
-        const raw = fs.readFileSync(absPath, "utf-8")
-        const { data, content } = matter(raw)
-        const title =
-          data.title ??
-          content.match(/^#\s+(.+)$/m)?.[1] ??
-          entry.name.replace(/\.md$/, "")
-        const date = formatDate(data.date) ?? entry.name.replace(/\.md$/, "")
-        const slug = entry.name.replace(/\.md$/, "")
-        files.push({ title, date, category: "", slug, relativePath: entry.name })
+        const file = parseResearchFile(path.join(researchDir, entry.name), entry.name, "")
+        if (file) files.push(file)
       }
       continue
     }
@@ -46,22 +56,8 @@ export function scanResearchFiles(projectRoot: string): ResearchFile[] {
 
     for (const catEntry of catEntries) {
       if (!catEntry.isFile() || !catEntry.name.endsWith(".md")) continue
-      const absPath = path.join(catDir, catEntry.name)
-      const raw = fs.readFileSync(absPath, "utf-8")
-      const { data, content } = matter(raw)
-      const title =
-        data.title ??
-        content.match(/^#\s+(.+)$/m)?.[1] ??
-        catEntry.name.replace(/\.md$/, "")
-      const date = formatDate(data.date) ?? catEntry.name.replace(/\.md$/, "")
-      const slug = `${category}/${catEntry.name.replace(/\.md$/, "")}`
-      files.push({
-        title,
-        date,
-        category,
-        slug,
-        relativePath: `${category}/${catEntry.name}`,
-      })
+      const file = parseResearchFile(path.join(catDir, catEntry.name), catEntry.name, category)
+      if (file) files.push(file)
     }
   }
 
