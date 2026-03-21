@@ -3,21 +3,23 @@ doc-type: architecture
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-19
-last-verified: 2026-03-19
+last-updated: 2026-03-21
+last-verified: 2026-03-21
 source-initiatives:
   - studio-ux-patterns
   - studio-agent-missions
   - agent-narrative-streaming
   - studio-production-auth
+  - multi-project-studio
+  - studio-research-dashboard
 ---
 
-> **AI-updated** 2026-03-19 · Awaiting human review
-> Sources: studio-ux-patterns, studio-agent-missions, agent-narrative-streaming, studio-production-auth
+> **AI-updated** 2026-03-21 · Awaiting human review
+> Sources: studio-ux-patterns, studio-agent-missions, agent-narrative-streaming, studio-production-auth, multi-project-studio, studio-research-dashboard
 
 # Studio Application
 
-Next.js 16 application that visualizes agentic workflows. Four-package architecture: studio-core (domain logic), studio-ui (110+ React components), studio-mcp (MCP server), and studio (umbrella with Next.js integration). Production deployment at `https://studio.sherpa.solar` on Hetzner VPS, auth-gated via Better Auth (ADR 0012). Runs against Sherpa's own governance data with co-located MCP server and coordination databases.
+Next.js 16 application that serves as the centralized governance dashboard for multiple projects, following the Vercel model: Studio owns auth and viewer UI, projects own their data via `.sherpa/` dotfolders. Four-package architecture: studio-core (domain logic), studio-ui (110+ React components), studio-mcp (MCP server), and studio (umbrella with Next.js integration). Production deployment at `https://studio.sherpa.solar` on Hetzner VPS, auth-gated via Better Auth (ADR 0012). Currently federates three projects: Sherpa, WavePoint, and robabby.
 
 ## Package Architecture
 
@@ -47,15 +49,33 @@ User menu in sidebar footer shows avatar + email + sign-out. No self-registratio
 
 **Local dev:** `pnpm dev` on localhost:3000. Auth env vars in root `.env.local`.
 
+## Multi-Project Federation
+
+Studio federates multiple projects via a registry in `sherpa.json`. Each registered project has a `.sherpa/` dotfolder containing its governance data. The project registry (`packages/studio-core/src/projects.ts`) initializes on config load, resolving each project's own `sherpa.json` or `.sherpa/config.json` into a `ResolvedProject` with its own `SherpaConfig` and `ProjectContext`.
+
+All domain functions accept an explicit `ProjectContext` object (ADR 0015) rather than relying on module-level globals. This design was driven by stress-test finding A1 which identified race conditions in the original optional-parameter approach.
+
+**Project switcher** — `Select` dropdown in the sidebar header (Vercel pattern, ADR design D5). Changing selection triggers client-side navigation to `/projects/{slug}/{current-section}`. Nav hrefs auto-prefix with the active project slug.
+
+**Path resolution** — `projects[].root` uses `${ENV_VAR}` interpolation in `sherpa.json` to resolve differently on local dev vs VPS. `loadJsonConfig()` in `packages/studio-core/src/config/load-json.ts` handles interpolation before JSON parsing.
+
+**Research dashboard** — Operational dashboard for the 24/7 autonomous research system. Server component loads all data via `await connection()` (dynamic rendering), passes to a client `ResearchDashboard` with URL-persisted view tabs (`?view=stream|timeline|table`). Three data sources: `scanResearchFiles()` reads research files from `.sherpa/research/`, `parseResearchState()` parses `RESEARCH_STATE.md` (dangling threads, queue, coverage map), `parseResearchPriorities()` parses `PRIORITIES.md` (narrative, priorities). Heartbeat indicator shows live status of Luna's 30-minute adaptive research cycles using `Intl.DateTimeFormat` with `America/Los_Angeles` timezone. Auto-refreshes every 5 minutes + on tab focus.
+
 ## Route Structure
 
-14 top-level sections in `apps/studio/src/app/(studio)/`:
+15 top-level sections in `apps/studio/src/app/(studio)/`, plus project-scoped routes:
 
 | Route | Purpose | Layout Pattern |
 |-------|---------|---------------|
 | `/` | Hub dashboard | Grid panels (operational pulse, tasks, activity, workforce) |
-| `/process` | Initiative governance | Two-pane workspace (list + detail with tabs) |
-| `/tasks` | Agent missions | Two-pane workspace (mission list + detail with events) |
+| `/projects` | Project listing | Grid of project cards |
+| `/projects/[project]/process` | Project-scoped initiatives | Two-pane workspace |
+| `/projects/[project]/tasks` | Project-scoped tasks | Two-pane workspace |
+| `/projects/[project]/research` | Research dashboard | Three-view operational dashboard (stream, timeline, table) |
+| `/projects/[project]/research/[...slug]` | Research detail | Frontmatter + markdown body |
+| `/process` | Initiative governance | Redirects to `/projects/{primary}/process` |
+| `/tasks` | Agent missions | Redirects to `/projects/{primary}/tasks` |
+| `/research` | Research | Redirects to `/projects/{primary}/research` |
 | `/dispatch` | Task creation/dispatch | Three-panel (backlog, assignments, workforce) |
 | `/workflow` | Process diagram | Mermaid visualization |
 | `/activity` | Portfolio timeline | Chronological grouped by date |
@@ -66,7 +86,8 @@ User menu in sidebar footer shows avatar + email + sign-out. No self-registratio
 | `/sessions` | Token/cost tracking | Metrics tables |
 | `/mcp` | MCP server dashboard | Tool list, health |
 | `/docs` | Documentation | Tree nav + markdown renderer |
-| `/research/[slug]` | Research reports | Server-rendered report data |
+
+Legacy unscoped routes (`/process`, `/tasks`, `/research`, etc.) redirect to the primary project via middleware.
 
 ## Component Patterns
 
@@ -140,7 +161,7 @@ Two-level layout with route group separation:
 
 ## Current State
 
-**Implemented:** 14 route sections, 110+ components, workspace pattern, hub dashboard, command palette, skeleton loading, empty states, tab status, URL filters, mission control, SSE event streaming.
+**Implemented:** 15 route sections + project-scoped routes, 110+ components, multi-project federation with 3 projects (Sherpa, WavePoint, robabby), workspace pattern, hub dashboard, command palette (cross-project search), skeleton loading, empty states, tab status, URL filters, mission control, SSE event streaming, research viewer, project switcher.
 
 **In progress:** studio-state-machine (governance view models), studio-dashboard-sidenav (layout), design-system (component library formalization), studio-process-playbook-ui (process visualization).
 
@@ -148,10 +169,13 @@ Two-level layout with route group separation:
 
 - [Execution Pipeline](../execution-pipeline/index.md) — Studio visualizes dispatch, missions, and events
 - [Governance Engine](../governance-engine/index.md) — Studio renders initiative lifecycle and proposals
-- [Config-as-Code](../config-as-code/index.md) — `withSherpa()` wraps Next.js config
+- [Config-as-Code](../config-as-code/index.md) — `sherpa.json` config, project registry, env var interpolation
 
 ## Decisions
 
 - [0005 — Mission control over table board](../../decisions/0005-mission-control-over-table-board.md)
 - [0006 — SSE streaming for agent events](../../decisions/0006-sse-streaming-for-agent-events.md)
 - [0012 — Better Auth over Supabase Auth](../../decisions/0012-better-auth-over-supabase.md)
+- [0013 — sherpa.json as canonical config format](../../decisions/0013-sherpa-json-canonical-config.md)
+- [0014 — Three-directory model](../../decisions/0014-three-directory-model.md)
+- [0015 — ProjectContext explicit parameter pattern](../../decisions/0015-project-context-explicit-parameter.md)

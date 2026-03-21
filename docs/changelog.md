@@ -4,7 +4,7 @@ maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
 last-updated: 2026-03-21
-last-verified: 2026-03-20
+last-verified: 2026-03-21
 source-initiatives:
   - parallel-workflow-governance
   - dispatch-center
@@ -22,6 +22,7 @@ source-initiatives:
   - multi-project-studio
   - research-markdown-renderer
   - studio-zero-downtime-deploy
+  - studio-research-dashboard
 ---
 
 > **AI-updated** 2026-03-21 · Awaiting human review
@@ -29,6 +30,22 @@ source-initiatives:
 # Changelog
 
 Reverse-chronological record of integrated initiatives and their system impact.
+
+## 2026-03-21 — Studio Research Dashboard
+
+Redesigned the research page from a flat file listing into an operational dashboard for the 24/7 autonomous research system. Three view modes (stream, timeline, table), heartbeat activity indicator with pulsing status dot, priorities panel from `PRIORITIES.md`, and research state panel (dangling threads with severity, queue with completion status, coverage map) from `RESEARCH_STATE.md`. Fixed `scanResearchFiles()` to exclude operational files at the `.sherpa/research/` root.
+
+**Initiative:** [studio-research-dashboard](initiatives/studio-research-dashboard/proposal.md)
+**Pillar:** Studio Application
+**Key changes:**
+- `packages/studio-core/src/research-files.ts` — extended `ResearchFile` with `summary`, `trigger`, `time` fields; added `parseResearchState()`, `parseResearchPriorities()`, `getHeartbeatStatus()`, `countTodayHeartbeats()`; fixed ALL_CAPS filename filter for operational files
+- 8 new client components in `apps/studio/src/components/studio/`: dashboard orchestrator, heartbeat indicator, priorities panel, state panel, stream/timeline/table views
+- `AutoRefreshInterval` component — 5-minute periodic `router.refresh()` complement to `RefreshOnFocus`
+- Research page rewritten as server component with `await connection()` for dynamic rendering, `Suspense` boundary for `useSearchParams`
+- URL-persisted view state (`?view=stream|timeline|table`), collapsible operational panels, timeline sort toggle
+- Zero new dependencies — composes existing `markdown.ts` utilities, native `Intl.DateTimeFormat`, Tailwind `animate-ping`
+- 23 unit tests, PR #17 (15 commits, 11 files, +944/-49 lines), 1 session
+- Stress test found and fixed load-bearing bug: operational files appearing as malformed research entries
 
 ## 2026-03-21 — Blue-Green Deploy Auth Fix
 
