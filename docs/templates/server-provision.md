@@ -193,6 +193,42 @@ chown -R 1000:1000 /mnt/sherpa-data/data/openclaw
 docker compose up -d openclaw-gateway
 ```
 
+### Update
+
+Deployment customizations (bind mounts, env vars, restart policy) live in `docker-compose.override.yml`, not in `docker-compose.yml`. Docker Compose merges the override automatically, and the override is already in `.gitignore` — so `git pull` never conflicts.
+
+```bash
+cd /opt/openclaw
+git pull                    # Update compose file, scripts, etc.
+docker compose pull         # Pull new :latest image from ghcr.io
+docker compose up -d        # Recreate containers with new image
+```
+
+If `docker compose up -d` shows "Running" instead of "Recreated", force it:
+
+```bash
+docker compose up -d --force-recreate
+```
+
+**Local client (macOS):**
+
+```bash
+npm install -g openclaw@latest
+```
+
+**What lives in `docker-compose.override.yml`:**
+
+| Customization | Why |
+|---------------|-----|
+| `extra_hosts` | Host-gateway mapping for container→host access |
+| `GH_CONFIG_DIR`, `GIT_SSH_COMMAND`, `GIT_CONFIG_GLOBAL`, `NETRC` | Luna's git/GitHub identity |
+| `SHERPA_STUDIO_URL`, `SHERPA_MCP_URL`, `WAVEPOINT_MCP_URL` | Host service endpoints via Docker gateway IP |
+| Repo bind mounts (`/root/sherpa`, `/root/wavepoint`, `/root/robabby`) | Workspace repos |
+| `gh` CLI + config bind mounts | GitHub CLI access inside container |
+| `restart: always` | Survive reboots (upstream default is `unless-stopped`) |
+
+Both services (`openclaw-gateway` and `openclaw-cli`) carry the same env var and volume overrides.
+
 ### Tailscale Serve (TLS for Gateway)
 
 Expose the gateway over the tailnet with automatic Let's Encrypt TLS:
@@ -228,6 +264,7 @@ docker compose run --rm openclaw-cli devices approve <request-id>
 - **Never build from source on 4GB VPS** — the build process OOMs and crashes the server. Always pull the prebuilt image from `ghcr.io/openclaw/openclaw:latest`.
 - **Config file ownership matters** — container runs as uid 1000 (node), so `chown -R 1000:1000` the config directory.
 - **`docker-setup.sh` ignores `OPENCLAW_IMAGE` when repo is cloned** — it builds from source regardless. Pull + tag + docker compose up is the reliable path.
+- **Never edit `docker-compose.yml` directly** — put deployment customizations in `docker-compose.override.yml` (gitignored). Otherwise every `git pull` produces merge conflicts that require manual stash/resolve.
 - **Stale sessions carry local paths** — if a local client connects to a remote gateway, session files may cache Mac-local paths (`/Users/...`, `/opt/homebrew/...`). Fix: clear `agents/main/sessions/*.jsonl` and restart the gateway.
 
 ### Client Configuration (Remote Gateway)
