@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: integrated
 initiative: studio-zero-downtime-deploy
 created: 2026-03-19
 updated: '2026-03-20'

@@ -3,8 +3,8 @@ doc-type: changelog
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-19
-last-verified: 2026-03-19
+last-updated: 2026-03-21
+last-verified: 2026-03-20
 source-initiatives:
   - parallel-workflow-governance
   - dispatch-center
@@ -19,13 +19,70 @@ source-initiatives:
   - mcp-initiative-governance
   - vps-remote-compute
   - studio-production-auth
+  - multi-project-studio
+  - research-markdown-renderer
+  - studio-zero-downtime-deploy
 ---
 
-> **AI-updated** 2026-03-19 · Awaiting human review
+> **AI-updated** 2026-03-21 · Awaiting human review
 
 # Changelog
 
 Reverse-chronological record of integrated initiatives and their system impact.
+
+## 2026-03-21 — Studio Zero-Downtime Deploy
+
+Studio deploys now use blue-green slot swapping on the Hetzner VPS — zero dropped requests during deploys. Two standalone Next.js copies alternate at `/opt/sherpa/blue/` (port 3000) and `/opt/sherpa/green/` (port 3001). The deploy script builds, copies to the standby slot, health-checks, then atomically swaps the Caddy upstream via a snippet file and graceful reload. On health-check failure, the old instance keeps serving untouched.
+
+**Initiative:** [studio-zero-downtime-deploy](initiatives/studio-zero-downtime-deploy/proposal.md)
+**Pillar:** Execution Pipeline
+**Key changes:**
+- `output: "standalone"` in `apps/studio/next.config.ts` — self-contained deploy artifacts without shared `.next/` directory
+- `scripts/deploy.sh` — blue-green orchestrator with `--skip-build` and `--rollback` modes
+- `sherpa-studio@.service` systemd template parameterized by slot name
+- Caddy upstream imported from `/opt/sherpa/studio-upstream.caddy` (deploy script rewrites on swap)
+- `sherpa-sync.sh` updated to call `deploy.sh` instead of simple git pull for sherpa
+- Tailscale serve on port 3000 removed (was causing EADDRINUSE); Studio binds `127.0.0.1` only
+- `docs/templates/server-provision.md` updated with full blue-green setup section
+- 2 sessions (estimated 2)
+
+## 2026-03-20 — Research Markdown Renderer
+
+Research detail page now renders markdown properly instead of displaying plain text. Swapped `whitespace-pre-wrap` div for the existing `DocRenderer` component — headings, bold, lists, links, code blocks, and tables all render in Luna's overnight research reports.
+
+**Initiative:** [research-markdown-renderer](initiatives/research-markdown-renderer/proposal.md)
+**Pillar:** Studio Application
+**Key changes:**
+- Replaced plain-text rendering with `DocRenderer` in the research detail page (`/projects/{slug}/research/{category}/{date}`)
+- Zero new dependencies — reused existing `react-markdown` + `remark-gfm` infrastructure and `DocRenderer` component already used on 5 other pages
+
+## 2026-03-20 — Multi-Project Studio
+
+Extended Studio from a single-project tool to a multi-project hub following the Vercel model: Studio is the centralized governance dashboard, projects are data sources with `.sherpa/` dotfolders. Three projects now federated (Sherpa, WavePoint, robabby) with end-to-end research pipeline verified — Luna writes overnight research to `.sherpa/research/`, Studio renders it at `/projects/{slug}/research/{category}/{date}`.
+
+**Initiative:** [multi-project-studio](initiatives/multi-project-studio/proposal.md)
+**Pillar:** Studio Application, Config-as-Code
+**Key changes:**
+- `sherpa.json` as canonical config format (ADR 0013) with `${ENV_VAR}` interpolation for cross-environment path resolution
+- `.sherpa/` dotfolder convention with standard schema: initiatives, tasks, research, rules, skills, agents, db
+- Three-directory model (ADR 0014): `.sherpa/` (tool data) + `.claude/` (agent config) + `docs/` (human prose)
+- `ProjectContext` explicit parameter pattern (ADR 0015) replacing module-level globals — eliminates race conditions in multi-project Server Component rendering
+- Project registry (`packages/studio-core/src/projects.ts`) with `initProjectRegistry()`, `getProject()`, `getProjectContext()`, `getAllProjects()`
+- `loadJsonConfig()` with config discovery (`sherpa.json` → `.sherpa/config.json`) and env var interpolation
+- `scaffoldDotfolder()` utility for project onboarding
+- Project-scoped routes at `/projects/[project]/{process,tasks,research}`
+- `ProjectSwitcher` component in sidebar header (Vercel pattern)
+- Cross-project command palette search with project badges
+- Research viewer (index + detail pages) scanning `.sherpa/research/` for markdown with YAML frontmatter
+- Legacy route redirects via middleware (`/process` → `/projects/{primary}/process`)
+- Breadcrumb project context in `StudioShellHeader`
+- Research nav link (FlaskConical icon) in sidebar Knowledge group
+- WavePoint and robabby registered with `.sherpa/config.json` in each repo
+- VPS deployed with `SHERPA_PROJECTS_DIR=/root` in `.env.production`
+- Luna's overnight cron updated to write to `.sherpa/research/` with auto-PR workflow
+- 2 research iterations, 12-assumption stress test (1 refuted → redesign), 5 architecture decisions
+- PRs: #13 (infrastructure, 23 commits, 44 files), #14 (activation), wavepoint #491, robabby #59-60
+- 8 sessions (estimated 4-6, revised to 5-7 after stress test)
 
 ## 2026-03-19 — Studio Production Auth
 
