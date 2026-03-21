@@ -223,3 +223,15 @@ export function getHeartbeatStatus(
     message: `Next heartbeat in ~${minutesUntilNext}m`,
   }
 }
+
+export function countTodayHeartbeats(projectRoot: string, todayDate: string): number {
+  const hbDir = path.join(projectRoot, ".sherpa", "research", "heartbeat")
+  if (!fs.existsSync(hbDir)) return 0
+
+  try {
+    const entries = fs.readdirSync(hbDir)
+    return entries.filter((name) => name.startsWith(todayDate) && name.endsWith(".md")).length
+  } catch {
+    return 0
+  }
+}

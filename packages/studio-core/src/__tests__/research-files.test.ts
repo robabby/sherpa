@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest"
 import * as fs from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
-import { scanResearchFiles, parseResearchState, parseResearchPriorities, getHeartbeatStatus } from "../research-files"
+import { scanResearchFiles, parseResearchState, parseResearchPriorities, getHeartbeatStatus, countTodayHeartbeats } from "../research-files"
 
 let tmpDir: string
 
@@ -268,5 +268,20 @@ describe("getHeartbeatStatus", () => {
     const now = new Date("2026-03-21T15:00:00-07:00")
     const status = getHeartbeatStatus(null, 0, now)
     expect(status.status).toBe("pending")
+  })
+})
+
+describe("countTodayHeartbeats", () => {
+  it("returns 0 when heartbeat directory does not exist", () => {
+    expect(countTodayHeartbeats(tmpDir, "2026-03-21")).toBe(0)
+  })
+
+  it("counts files matching today's date prefix", () => {
+    const hbDir = path.join(tmpDir, ".sherpa", "research", "heartbeat")
+    fs.mkdirSync(hbDir, { recursive: true })
+    fs.writeFileSync(path.join(hbDir, "2026-03-21-1030-topic-a.md"), "---\ntitle: A\n---\n")
+    fs.writeFileSync(path.join(hbDir, "2026-03-21-1400-topic-b.md"), "---\ntitle: B\n---\n")
+    fs.writeFileSync(path.join(hbDir, "2026-03-20-0900-old.md"), "---\ntitle: Old\n---\n")
+    expect(countTodayHeartbeats(tmpDir, "2026-03-21")).toBe(2)
   })
 })
