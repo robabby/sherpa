@@ -8,7 +8,9 @@ import type {
   ResearchPriorities,
   HeartbeatStatus,
 } from "@sherpa/studio-core"
+import { ChevronRight } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ResearchHeartbeatIndicator } from "./research-heartbeat-indicator"
 import { ResearchPrioritiesPanel } from "./research-priorities-panel"
 import { ResearchStatePanel } from "./research-state-panel"
@@ -57,10 +59,23 @@ export function ResearchDashboard({
       <ResearchHeartbeatIndicator status={heartbeat} />
 
       {priorities || state ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {priorities ? <ResearchPrioritiesPanel priorities={priorities} /> : null}
-          {state ? <ResearchStatePanel state={state} /> : null}
-        </div>
+        <Collapsible>
+          <CollapsibleTrigger className="group flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-card/30">
+            <ChevronRight className="shrink-0 transition-transform group-data-[state=open]:rotate-90" />
+            <span className="font-mono text-xs uppercase tracking-[0.15em]">
+              Research Operations
+            </span>
+            {state?.danglingThreads.some((t) => t.severity === "CRITICAL") ? (
+              <span className="size-1.5 rounded-full bg-destructive" />
+            ) : null}
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid gap-4 pt-2 lg:grid-cols-2">
+              {priorities ? <ResearchPrioritiesPanel priorities={priorities} /> : null}
+              {state ? <ResearchStatePanel state={state} /> : null}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       ) : null}
 
       <Tabs value={view} onValueChange={setView}>
