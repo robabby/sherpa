@@ -4,12 +4,13 @@ import type { SherpaUserConfig } from "./types"
 
 const CONFIG_FILES = ["sherpa.json", ".sherpa/config.json"] as const
 
-/** Interpolate ${ENV_VAR} references in a raw JSON string. */
+/** Interpolate ${ENV_VAR} references in a raw JSON string. Unset vars resolve to empty string with a warning. */
 function resolveEnvVars(raw: string): string {
   return raw.replace(/\$\{(\w+)\}/g, (match, name: string) => {
     const value = process.env[name]
     if (value === undefined) {
-      throw new Error(`Environment variable ${name} is not set (referenced in sherpa.json)`)
+      console.warn(`[sherpa] Environment variable ${name} is not set (referenced in sherpa.json)`)
+      return ""
     }
     return value
   })

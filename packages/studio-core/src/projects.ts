@@ -1,3 +1,4 @@
+import fs from "node:fs"
 import type { SherpaConfig, ProjectConfig, ProjectContext } from "./config/types"
 import { loadJsonConfig } from "./config/load-json"
 import { buildDefaults } from "./config/defaults"
@@ -34,16 +35,25 @@ export function initProjectRegistry(primaryConfig: SherpaConfig): void {
   })
 
   for (const project of primaryConfig.projects) {
-    const projectJson = loadJsonConfig(project.root)
-    const config = projectJson
-      ? buildDefaults({ ...projectJson, projectRoot: project.root })
-      : buildDefaults({ projectRoot: project.root })
+    if (!project.root || !fs.existsSync(project.root)) {
+      console.warn(`[sherpa] Skipping project "${project.slug}": root "${project.root}" does not exist`)
+      continue
+    }
 
-    _projects.set(project.slug, {
-      ...project,
-      config,
-      context: buildProjectContext(config),
-    })
+    try {
+      const projectJson = loadJsonConfig(project.root)
+      const config = projectJson
+        ? buildDefaults({ ...projectJson, projectRoot: project.root })
+        : buildDefaults({ projectRoot: project.root })
+
+      _projects.set(project.slug, {
+        ...project,
+        config,
+        context: buildProjectContext(config),
+      })
+    } catch (err) {
+      console.warn(`[sherpa] Skipping project "${project.slug}": ${(err as Error).message}`)
+    }
   }
 }
 
