@@ -111,6 +111,7 @@ describe("scanResearchFiles", () => {
     expect(files[0]).toMatchObject({
       summary: "Found three key insights about the topic.",
       trigger: "priority queue item",
+      time: "10:30",
     })
   })
 
@@ -124,6 +125,7 @@ describe("scanResearchFiles", () => {
     const files = scanResearchFiles(tmpDir)
     expect(files[0]!.summary).toBeUndefined()
     expect(files[0]!.trigger).toBeUndefined()
+    expect(files[0]!.time).toBeUndefined()
   })
 })
 

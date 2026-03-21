@@ -19,6 +19,11 @@ export function ResearchTableView({ files, projectSlug }: ResearchTableViewProps
 
   const sorted = [...files].sort((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1
+    if (sortKey === "date") {
+      const aVal = `${a.date} ${a.time ?? ""}`
+      const bVal = `${b.date} ${b.time ?? ""}`
+      return aVal.localeCompare(bVal) * dir
+    }
     const aVal = a[sortKey] ?? ""
     const bVal = b[sortKey] ?? ""
     return aVal.localeCompare(bVal) * dir
@@ -65,7 +70,12 @@ export function ResearchTableView({ files, projectSlug }: ResearchTableViewProps
         <tbody>
           {sorted.map((file) => (
             <tr key={file.slug} className="border-b border-border/10">
-              <td className="py-2 font-mono text-xs">{file.date}</td>
+              <td className="py-2 font-mono text-xs">
+                {file.date}
+                {file.time ? (
+                  <span className="text-muted-foreground/50"> {file.time}</span>
+                ) : null}
+              </td>
               <td className="py-2">
                 {file.category ? (
                   <Badge variant="outline">{file.category}</Badge>

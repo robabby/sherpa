@@ -20,6 +20,9 @@ export function ResearchTimelineView({ files, projectSlug }: ResearchTimelineVie
         >
           <span className="shrink-0 pt-0.5 font-mono text-xs text-muted-foreground">
             {file.date}
+            {file.time ? (
+              <span className="text-muted-foreground/50"> {file.time}</span>
+            ) : null}
           </span>
           {file.category ? (
             <Badge variant="outline" className="shrink-0 mt-px">

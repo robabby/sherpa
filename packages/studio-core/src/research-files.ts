@@ -6,6 +6,7 @@ import { extractSection, parseMarkdownTable, extractNumberedItems } from "./mark
 export interface ResearchFile {
   title: string
   date: string
+  time?: string
   category: string
   slug: string
   relativePath: string
@@ -32,7 +33,10 @@ function parseResearchFile(absPath: string, fileName: string, category: string):
     const relativePath = category ? `${category}/${fileName}` : fileName
     const summary = typeof data.summary === "string" ? data.summary.trim() : undefined
     const trigger = typeof data.trigger === "string" ? data.trigger.trim() : undefined
-    return { title, date, category, slug, relativePath, summary, trigger }
+    // Extract time from heartbeat-style filenames: YYYY-MM-DD-HHmm-slug.md
+    const timeMatch = fileName.match(/^\d{4}-\d{2}-\d{2}-(\d{2})(\d{2})-/)
+    const time = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : undefined
+    return { title, date, time, category, slug, relativePath, summary, trigger }
   } catch {
     console.warn(`[sherpa] Skipping research file with invalid frontmatter: ${absPath}`)
     return null
