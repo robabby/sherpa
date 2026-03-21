@@ -1,69 +1,94 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, MessageCircle } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { ScrollReveal } from "@/components/motion/scroll-reveal"
 
 export const metadata: Metadata = {
   title: "Framework",
   description:
-    "An open-source behavioral governance framework for agentic workflows. Agent definitions, filesystem governance, executable conventions.",
+    "Sherpa Studio: a governance framework for agentic workflows. Multi-project federation, behavioral agents, dispatch pipelines, semantic knowledge, and initiative lifecycle management.",
 }
 
 const pillars = [
   {
     title: "Behavioral Agent System",
     description:
-      "Role definitions with behavioral constraints, not identity claims. Research-validated approach to agent governance.",
+      "30 agent roles defined through behavioral constraints — disposition, quality bar, fail triggers, domain scope. Not identity claims. Research-validated against Anthropic and academic findings. 8 task types route work to eligible roles automatically.",
   },
   {
     title: "Governance Engine",
     description:
-      "Initiative lifecycle from proposal through implementation. Directoturtle convention, integration review, quality gates.",
+      "72 initiatives tracked from proposal through integration with directoturtle directory structure. Dependencies, genealogy, and cross-initiative intelligence flows. External agents can propose and approve work via 7 MCP governance tools with policy-gated lifecycle transitions.",
   },
   {
     title: "Execution Pipeline",
     description:
-      "Planner/Worker/Judge dispatch pattern. Task boards, MCP server integration, structured handoffs.",
+      "9 dispatch backends — 5 CLI, 3 API, 1 remote gateway. Task-type routing with overnight restrictions. Authority leases with monotonic fencing tokens for multi-agent coordination. Real-time agent narrative streaming for mission visibility.",
   },
   {
     title: "Studio Application",
     description:
-      "Visualization of agentic workflows. Initiative trees, task boards, velocity tracking, morning review dashboard.",
+      "18 routes, 118 React components. Multi-project federation — one Studio instance governs multiple codebases. Task boards, initiative trees, workforce management, workflow canvas, research dashboards, and mission control. Zero-downtime blue-green deploys.",
   },
   {
     title: "Executable Conventions",
     description:
-      "Skills, rules, and CLAUDE.md templates that encode best practices as code — not documentation that drifts.",
+      "17 skills with full step-by-step protocols — recursive research, integration review, stress-testing, design, task planning. 9 rules auto-loaded by glob pattern. Self-documenting system with provenance tracking and staleness detection across every maintained document.",
   },
   {
     title: "Config-as-Code",
     description:
-      "sherpa.config.ts with defineConfig(). Vocabulary, theming, plugins. Your governance configuration lives with your code.",
+      "sherpa.json as canonical config with environment variable interpolation. Three-directory model: .sherpa/ (tool state), .claude/ (agent config), docs/ (human prose). 9 config domains including dispatch routing, knowledge backends, governance policy, and vocabulary. Type-safe with JSON schema and plugin architecture.",
   },
   {
     title: "Convention Sync CLI",
     description:
-      "sherpa init, sherpa sync. Provenance tracking ensures conventions stay current across projects.",
+      "sherpa init scaffolds governance structure into any project. sherpa sync keeps conventions current across codebases. Provenance frontmatter tracks authorship, review state, and verification date for every maintained document.",
+  },
+]
+
+const infrastructure = [
+  {
+    title: "Multi-Project Federation",
+    description:
+      "Project registry with cross-project data merging. Aggregate views across task boards, research feeds, and initiative trees. One governance substrate, many codebases.",
+  },
+  {
+    title: "Semantic Knowledge Engine",
+    description:
+      "Pluggable backend architecture with zero-dependency algorithmic default. TF-IDF indexing, extractive summaries, agglomerative clustering. Queryable search over governance artifacts via MCP.",
+  },
+  {
+    title: "SQLite State Layer",
+    description:
+      "Three embedded databases — coordination (authority leases, sessions), events (audit trail), knowledge (semantic index). Markdown stays canonical; SQLite provides derived queryable state. WAL mode for concurrent read safety.",
+  },
+  {
+    title: "MCP Coordination",
+    description:
+      "HTTP Streamable transport replacing stdio. Multi-client session manager with authority enforcement. Fencing tokens prevent concurrent mutation. TTL reaper for expired leases. Governance scoped to autonomous agents — never constrains human+AI sessions.",
   },
 ]
 
 const packages = [
   {
     name: "@sherpa/studio-core",
-    description: "Domain logic, types, schemas, lifecycle engine",
+    description:
+      "Domain logic, config schema, lifecycle engine, dispatch routing, knowledge backend interface",
   },
   {
     name: "@sherpa/studio-ui",
-    description: "91+ React components for governance visualization",
+    description: "118 React components for governance visualization",
   },
   {
     name: "@sherpa/studio-mcp",
-    description: "MCP server for AI agent integration",
+    description:
+      "MCP server with authority leases, session management, and initiative governance tools",
   },
   {
     name: "@sherpa/studio-cli",
-    description: "Convention sync and project scaffolding",
+    description: "Convention scaffolding, sync, and provenance tracking",
   },
 ]
 
@@ -76,9 +101,11 @@ export default function FrameworkPage() {
             The framework
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            An open-source toolkit for running Human+AI collaborative workflows.
-            Behavioral agent definitions, filesystem-based governance, and
-            AI-native process conventions that travel with your code.
+            A governance framework for agentic workflows. Multi-project
+            federation, behavioral agent definitions, a 9-backend dispatch
+            pipeline, semantic knowledge indexing, and an initiative lifecycle
+            with MCP-exposed governance — infrastructure that lives in your
+            codebase and versions with git.
           </p>
         </ScrollReveal>
 
@@ -88,8 +115,8 @@ export default function FrameworkPage() {
               Seven pillars
             </h2>
             <p className="mt-3 text-muted-foreground">
-              The framework is organized around seven core systems. Each can be
-              adopted independently, but they work best together.
+              Each pillar is a working system with real data behind it — not a
+              roadmap item.
             </p>
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
               {pillars.map((pillar) => (
@@ -107,10 +134,35 @@ export default function FrameworkPage() {
           </div>
         </ScrollReveal>
 
+        <ScrollReveal delay={0.15}>
+          <div className="mt-16">
+            <h2 className="font-heading text-2xl tracking-tight">
+              Cross-cutting infrastructure
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Capabilities that span multiple pillars and make the framework
+              more than conventions in a filesystem.
+            </p>
+            <div className="mt-8 grid gap-6 sm:grid-cols-2">
+              {infrastructure.map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-lg border border-border/60 bg-card p-5"
+                >
+                  <h3 className="text-sm font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </ScrollReveal>
+
         <ScrollReveal delay={0.2}>
           <div className="mt-16">
             <h2 className="font-heading text-2xl tracking-tight">Packages</h2>
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 flex flex-col gap-4">
               {packages.map((pkg) => (
                 <div key={pkg.name} className="flex items-baseline gap-4">
                   <code className="shrink-0 text-sm font-medium text-primary">
@@ -125,32 +177,28 @@ export default function FrameworkPage() {
           </div>
         </ScrollReveal>
 
-        <ScrollReveal delay={0.3}>
+        <ScrollReveal delay={0.25}>
           <div className="mt-16 rounded-xl border border-border/60 bg-card p-8">
             <h2 className="font-heading text-xl tracking-tight">
-              Built by practitioners
+              Built by a practitioner
             </h2>
             <p className="mt-3 text-muted-foreground">
-              This framework emerged from real consulting work — building
-              agentic workflows and discovering that the governance tooling
-              didn&apos;t exist. We use it on every engagement. It improves
-              because we use it. The consulting improves because we improve it.
+              This framework emerged from building agentic workflows and
+              discovering that the governance infrastructure didn&apos;t exist.
+              Every convention, every skill, every agent role was built because
+              it was needed. The system governs its own development — the same
+              initiative lifecycle, the same dispatch pipeline, the same
+              behavioral constraints you&apos;d adopt.
             </p>
           </div>
         </ScrollReveal>
 
-        <ScrollReveal delay={0.4}>
-          <div className="mt-12 flex flex-col items-start gap-4 sm:flex-row">
+        <ScrollReveal delay={0.3}>
+          <div className="mt-12">
             <Link href="/framework/docs">
-              <Button variant="outline" size="lg">
-                Getting started
-                <ArrowRight data-icon="inline-end" />
-              </Button>
-            </Link>
-            <Link href="/contact">
               <Button size="lg">
-                Talk to a Guide
-                <MessageCircle data-icon="inline-end" />
+                Documentation
+                <ArrowRight data-icon="inline-end" />
               </Button>
             </Link>
           </div>

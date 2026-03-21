@@ -1,28 +1,29 @@
 import Link from "next/link"
 import { ScrollReveal } from "@/components/motion/scroll-reveal"
 
-export function WhatWeDoSection() {
+export function WhatWeBuiltSection() {
   return (
     <section className="px-6 py-20 md:py-28">
       <div className="mx-auto max-w-2xl">
         <ScrollReveal>
-          <p className="text-lg leading-relaxed text-muted-foreground md:text-xl">
-            Sherpa is a governance framework for agentic workflows — behavioral
-            agent definitions, filesystem-based process conventions, and quality
-            guardrails that travel with your code. We built it for our own
-            consulting work, open-sourced it, and now help teams adopt it.{" "}
+          <h2 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            The framework
+          </h2>
+          <p className="mt-6 text-lg leading-relaxed text-muted-foreground md:text-xl">
+            Sherpa Studio is a governance framework for agentic workflows.
+            Behavioral agent definitions. A skills engine. A dispatch pipeline
+            with nine backends. An initiative lifecycle that takes ideas from
+            proposal to integration with review at every step.
+          </p>
+          <p className="mt-5 text-lg leading-relaxed text-muted-foreground md:text-xl">
+            It lives in your codebase, versions with git, and works with any AI
+            development environment. The kind of infrastructure that doesn&apos;t
+            exist until someone builds it.{" "}
             <Link
               href="/framework"
               className="text-foreground underline underline-offset-4 transition-colors hover:text-primary"
             >
-              Explore the framework
-            </Link>{" "}
-            or{" "}
-            <Link
-              href="/contact"
-              className="text-foreground underline underline-offset-4 transition-colors hover:text-primary"
-            >
-              talk to us
+              See the framework
             </Link>
             .
           </p>

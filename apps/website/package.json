@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "velite dev &  next dev --turbo -p 3001",
+    "dev": "velite dev &  next dev --turbo",
     "build": "velite build && next build",
     "start": "next start",
     "check": "tsc --noEmit"
@@ -23,7 +23,6 @@
     "next": "16.1.1",
     "next-themes": "^0.4.6",
     "react": "19.2.3",
-    "react-calendly": "^4.4.0",
     "react-dom": "19.2.3",
     "resend": "^6.9.3",
     "tailwind-merge": "^3.5.0",

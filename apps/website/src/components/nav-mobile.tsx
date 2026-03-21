@@ -47,11 +47,6 @@ export function NavMobile() {
               </Link>
             )
           })}
-          <div className="mt-4 border-t border-border pt-4">
-            <Link href="/contact" onClick={() => setOpen(false)}>
-              <Button className="w-full">Talk to a Guide</Button>
-            </Link>
-          </div>
         </nav>
       </SheetContent>
     </Sheet>

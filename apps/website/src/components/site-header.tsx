@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { NavDesktop } from "@/components/nav-desktop"
 import { NavMobile } from "@/components/nav-mobile"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -14,9 +13,6 @@ export function SiteHeader() {
         <NavDesktop />
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link href="/contact" className="hidden md:block">
-            <Button size="sm">Talk to a Guide</Button>
-          </Link>
           <NavMobile />
         </div>
       </div>

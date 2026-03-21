@@ -31,11 +31,11 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Sherpa — Behavioral Governance for Agentic Workflows",
+    default: "Sherpa — Governance Framework for Agentic Workflows",
     template: "%s | Sherpa",
   },
   description:
-    "Behavioral governance for agentic workflows — and the guides who know how to use it.",
+    "An open-source governance framework for agentic workflows. Behavioral conventions, dispatch pipelines, and quality gates that live in your codebase.",
   metadataBase: new URL("https://sherpa.solar"),
 }
 

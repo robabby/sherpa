@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sherpa — Portfolio/Proof-of-Methodology Prototype</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --radius: 0.625rem;
+      --background: #fafaf8;
+      --foreground: #1a1a1e;
+      --card: #ffffff;
+      --card-foreground: #1a1a1e;
+      --primary: #d4a574;
+      --primary-foreground: #1a1a1e;
+      --secondary: #f5f0e8;
+      --secondary-foreground: #1a1a1e;
+      --muted: #f0ede6;
+      --muted-foreground: #71665a;
+      --accent: #f5f0e8;
+      --accent-foreground: #1a1a1e;
+      --border: #e4e0d8;
+      --ring: #d4a574;
+    }
+    .dark {
+      --background: #08080a;
+      --foreground: #e8e4e0;
+      --card: #0a0a0c;
+      --card-foreground: #e8e4e0;
+      --primary: #d4a574;
+      --primary-foreground: #1a1a1e;
+      --secondary: #1a1a1e;
+      --secondary-foreground: #e8e4e0;
+      --muted: #1a1a1e;
+      --muted-foreground: #9a8e80;
+      --accent: #1a1a1e;
+      --accent-foreground: #e8e4e0;
+      --border: #1e1e22;
+      --ring: #d4a574;
+    }
+
+    /* ── Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif; }
+    body {
+      background: var(--background);
+      color: var(--foreground);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Typography ── */
+    .font-heading { font-family: 'Fraunces', Georgia, serif; }
+    .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    .text-primary { color: var(--primary); }
+    .text-muted-foreground { color: var(--muted-foreground); }
+    .text-foreground { color: var(--foreground); }
+    .bg-background { background: var(--background); }
+    .bg-card { background: var(--card); }
+    .border-border { border-color: var(--border); }
+
+    /* ── Layout ── */
+    .container { max-width: 48rem; margin: 0 auto; padding: 0 1.5rem; }
+    .container-wide { max-width: 72rem; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ── Header ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+      background: color-mix(in srgb, var(--background) 80%, transparent);
+      backdrop-filter: blur(16px);
+    }
+    header .inner {
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      height: 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header .brand {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+      color: var(--foreground);
+      text-decoration: none;
+    }
+    header nav { display: flex; gap: 2rem; align-items: center; }
+    header nav a {
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    header nav a:hover { color: var(--foreground); }
+    .header-right { display: flex; align-items: center; gap: 0.5rem; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .btn-default {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border-color: var(--primary);
+    }
+    .btn-default:hover { opacity: 0.9; }
+    .btn-outline {
+      background: transparent;
+      color: var(--foreground);
+      border-color: var(--border);
+    }
+    .btn-outline:hover { background: var(--accent); }
+    .btn-sm { padding: 0.375rem 0.875rem; font-size: 0.8125rem; }
+    .btn-lg { padding: 0.75rem 1.5rem; font-size: 0.9375rem; }
+    .btn svg { width: 1em; height: 1em; }
+
+    /* ── Theme toggle ── */
+    .theme-toggle {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.375rem;
+      cursor: pointer;
+      color: var(--muted-foreground);
+      display: flex;
+      align-items: center;
+    }
+    .theme-toggle:hover { color: var(--foreground); }
+    .theme-toggle svg { width: 1rem; height: 1rem; }
+    .dark .icon-sun { display: inline; }
+    .dark .icon-moon { display: none; }
+    :root:not(.dark) .icon-sun { display: none; }
+    :root:not(.dark) .icon-moon { display: inline; }
+
+    /* ── Sections ── */
+    section { padding: 5rem 1.5rem; }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 7rem 1.5rem 6rem;
+      text-align: center;
+      overflow: hidden;
+    }
+    .hero h1 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: clamp(2.25rem, 5vw, 4.5rem);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .hero .subtitle {
+      margin-top: 1.5rem;
+      max-width: 36rem;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 1.125rem;
+      color: var(--muted-foreground);
+    }
+    .hero .ctas {
+      margin-top: 2.5rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── What We Built ── */
+    .what-we-built .eyebrow {
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted-foreground);
+      margin-bottom: 1.5rem;
+    }
+    .what-we-built p {
+      font-size: 1.125rem;
+      line-height: 1.7;
+      color: var(--muted-foreground);
+    }
+    .what-we-built p + p { margin-top: 1.25rem; }
+    .what-we-built a.inline-link {
+      color: var(--foreground);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      transition: color 0.15s;
+    }
+    .what-we-built a.inline-link:hover { color: var(--primary); }
+
+    /* ── Proof ── */
+    .proof h2 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+    .proof p {
+      color: var(--muted-foreground);
+      margin-top: 1rem;
+    }
+    .proof p + p { margin-top: 1rem; }
+
+    /* ── Commitment ── */
+    .commitment {
+      border-top: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+    }
+    .commitment .blockquote {
+      border-left: 2px solid var(--primary);
+      padding-left: 1.5rem;
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.375rem;
+      letter-spacing: -0.01em;
+      line-height: 1.4;
+      color: var(--foreground);
+      margin-bottom: 1.5rem;
+    }
+    .commitment p { color: var(--muted-foreground); }
+    .commitment p + p { margin-top: 1rem; }
+    .commitment .ctas {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+    }
+    footer .inner {
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+    footer .grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 2rem;
+    }
+    footer .brand-col .name {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.125rem;
+      letter-spacing: -0.02em;
+    }
+    footer .brand-col .tagline {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+    }
+    footer h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    footer ul { list-style: none; margin-top: 0.75rem; }
+    footer ul li + li { margin-top: 0.5rem; }
+    footer ul a {
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    footer ul a:hover { color: var(--foreground); }
+    footer .copyright {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+    }
+
+    /* ── Animations (CSS simulation of fadeUp + ScrollReveal) ── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(24px);
+      animation: fadeUp 0.6s cubic-bezier(0, 0, 0.2, 1) forwards;
+    }
+    .fade-up-1 { animation-delay: 0s; }
+    .fade-up-2 { animation-delay: 0.12s; }
+    .fade-up-3 { animation-delay: 0.24s; }
+
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+    .scroll-reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      header nav { display: none; }
+      footer .grid { grid-template-columns: 1fr 1fr; }
+      .hero { padding: 5rem 1.5rem 4rem; }
+      section { padding: 3.5rem 1.5rem; }
+    }
+
+    /* ── Reduced motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      .fade-up, .scroll-reveal {
+        animation: none !important;
+        transition: none !important;
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header>
+    <div class="inner">
+      <a href="#" class="brand">Sherpa</a>
+      <nav>
+        <a href="#framework">Framework</a>
+        <a href="#work">Work</a>
+        <a href="#learn">Learn</a>
+        <a href="#about">About</a>
+      </nav>
+      <div class="header-right">
+        <button class="theme-toggle" onclick="document.documentElement.classList.toggle('dark')" aria-label="Toggle theme">
+          <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <a href="#contact" class="btn btn-default btn-sm" style="display:none" id="header-cta">Talk to us</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════ HERO ═══════════════ -->
+  <section class="hero">
+    <div class="container">
+      <h1 class="fade-up fade-up-1">
+        Work as we know it is changing.<br>
+        <span class="text-primary">What we build next matters.</span>
+      </h1>
+      <p class="subtitle fade-up fade-up-2">
+        We saw it coming &mdash; not as prophecy, but as pattern recognition. So we built a governance framework for agentic workflows and open-sourced it.
+      </p>
+      <div class="ctas fade-up fade-up-3">
+        <a href="#framework" class="btn btn-outline btn-lg">
+          See the framework
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="#contact" class="btn btn-default btn-lg">
+          Talk to us
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ WHAT WE BUILT ═══════════════ -->
+  <section class="what-we-built">
+    <div class="container" style="max-width: 42rem;">
+      <div class="scroll-reveal">
+        <p class="eyebrow">The framework</p>
+        <p>
+          Sherpa Studio is a governance framework for agentic workflows.
+          Behavioral agent definitions. A skills engine. A dispatch pipeline
+          with nine backends. An initiative lifecycle that takes ideas from
+          proposal to integration with review at every step.
+        </p>
+        <p>
+          It lives in your codebase, versions with git, and works with any
+          AI development environment. The kind of infrastructure that doesn't
+          exist until someone builds it.
+          <a href="#framework" class="inline-link">See the framework</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ THE PROOF ═══════════════ -->
+  <section class="proof">
+    <div class="container" style="max-width: 42rem;">
+      <div class="scroll-reveal">
+        <h2 class="font-heading">Built for our own work. Shared because it should be.</h2>
+        <p>
+          Sherpa governs its own development. The conventions, skills, and
+          initiative lifecycle aren't documentation &mdash; they're the
+          production system. When something ships, it goes through the same
+          governance pipeline we open-source.
+        </p>
+        <p>
+          That's the proof. Not a deck. Not a demo. The system running on
+          itself, in the open.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ COMMITMENT + CTA ═══════════════ -->
+  <section class="commitment">
+    <div class="container" style="max-width: 42rem; text-align: center;">
+      <div class="scroll-reveal">
+        <div class="blockquote" style="text-align: left; max-width: 32rem; margin: 0 auto 2rem;">
+          &ldquo;Create opportunity just as much as we automate it.&rdquo;
+        </div>
+        <p>
+          Almost every agentic system will change how many people a team
+          needs. We know that. We build governance that accounts for
+          people &mdash; not just efficiency.
+        </p>
+        <p>
+          The framework is open source. If you'd like a guide, we consult too.
+        </p>
+        <div class="ctas">
+          <a href="#framework" class="btn btn-outline btn-lg">
+            See the framework
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#contact" class="btn btn-default btn-lg">
+            Talk to us
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <footer>
+    <div class="inner">
+      <div class="grid">
+        <div class="brand-col">
+          <div class="name">Sherpa</div>
+          <p class="tagline">An open-source governance framework for agentic workflows.</p>
+        </div>
+        <div>
+          <h3>Framework</h3>
+          <ul>
+            <li><a href="#framework">Overview</a></li>
+            <li><a href="#docs">Documentation</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Resources</h3>
+          <ul>
+            <li><a href="#learn">Blog</a></li>
+            <li><a href="#work">Case Studies</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Company</h3>
+          <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#consulting">Consulting</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="copyright">
+        &copy; 2026 Sherpa. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ═══════════════ SCRIPTS ═══════════════ -->
+  <script>
+    // ScrollReveal simulation
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: '-80px' }
+    );
+    document.querySelectorAll('.scroll-reveal').forEach((el) => observer.observe(el));
+
+    // Show header CTA after scroll
+    const headerCta = document.getElementById('header-cta');
+    if (headerCta && window.innerWidth >= 768) {
+      headerCta.style.display = 'inline-flex';
+    }
+  </script>
+
+</body>
+</html>

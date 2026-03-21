@@ -7,22 +7,19 @@ const footerLinks = [
     links: [
       { title: "Overview", href: "/framework" },
       { title: "Documentation", href: "/framework/docs" },
-      { title: "GitHub", href: "https://github.com/sherpa-consulting" },
     ],
   },
   {
-    title: "Consulting",
+    title: "Resources",
     links: [
-      { title: "Services", href: "/consulting" },
-      { title: "Our Approach", href: "/consulting/approach" },
-      { title: "Case Studies", href: "/work" },
+      { title: "Blog", href: "/learn" },
     ],
   },
   {
     title: "Company",
     links: [
       { title: "About", href: "/about" },
-      { title: "Learn", href: "/learn" },
+      { title: "Consulting", href: "/consulting" },
       { title: "Contact", href: "/contact" },
     ],
   },
@@ -39,7 +36,7 @@ export function SiteFooter() {
               Sherpa
             </Link>
             <p className="mt-2 text-sm text-muted-foreground">
-              Behavioral governance for agentic workflows.
+              An open-source governance framework for agentic workflows.
             </p>
           </div>
           {footerLinks.map((group) => (
@@ -62,8 +59,7 @@ export function SiteFooter() {
         </div>
         <div className="mt-10 border-t border-border/40 pt-6">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Sherpa Consulting. All rights
-            reserved.
+            &copy; {new Date().getFullYear()} Sherpa. All rights reserved.
           </p>
         </div>
       </div>
