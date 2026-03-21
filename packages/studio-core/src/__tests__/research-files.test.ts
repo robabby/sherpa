@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest"
 import * as fs from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
-import { scanResearchFiles } from "../research-files"
+import { scanResearchFiles, parseResearchState, parseResearchPriorities, getHeartbeatStatus, countTodayHeartbeats } from "../research-files"
 
 let tmpDir: string
 
@@ -77,5 +77,211 @@ describe("scanResearchFiles", () => {
     )
     const files = scanResearchFiles(tmpDir)
     expect(files[0]!.title).toBe("My Heading")
+  })
+
+  it("excludes operational files (ALL_CAPS names) at root level", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "RESEARCH_STATE.md"),
+      "## Last Updated\n\n2026-03-21T14:30:00-07:00\n",
+    )
+    fs.writeFileSync(
+      path.join(researchDir, "PRIORITIES.md"),
+      "## Current Priorities\n\n1. Ship Studio\n",
+    )
+    fs.writeFileSync(
+      path.join(researchDir, "2026-03-21.md"),
+      "---\ntitle: Real Research\ndate: 2026-03-21\n---\nContent.",
+    )
+    const files = scanResearchFiles(tmpDir)
+    expect(files).toHaveLength(1)
+    expect(files[0]!.title).toBe("Real Research")
+  })
+
+  it("extracts summary and trigger from frontmatter", () => {
+    const catDir = path.join(tmpDir, ".sherpa", "research", "heartbeat")
+    fs.mkdirSync(catDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(catDir, "2026-03-21-1030-test-topic.md"),
+      "---\ntitle: Test Topic\ndate: 2026-03-21\ncategory: heartbeat\ntrigger: >\n  priority queue item\nsummary: >\n  Found three key insights about the topic.\n---\n# Test Topic\nContent.",
+    )
+    const files = scanResearchFiles(tmpDir)
+    expect(files).toHaveLength(1)
+    expect(files[0]).toMatchObject({
+      summary: "Found three key insights about the topic.",
+      trigger: "priority queue item",
+    })
+  })
+
+  it("returns undefined summary and trigger when not in frontmatter", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "plain.md"),
+      "---\ntitle: Plain\ndate: 2026-03-21\n---\nContent.",
+    )
+    const files = scanResearchFiles(tmpDir)
+    expect(files[0]!.summary).toBeUndefined()
+    expect(files[0]!.trigger).toBeUndefined()
+  })
+})
+
+describe("parseResearchState", () => {
+  it("returns null when RESEARCH_STATE.md does not exist", () => {
+    expect(parseResearchState(tmpDir)).toBeNull()
+  })
+
+  it("parses last updated timestamp", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "RESEARCH_STATE.md"),
+      "## Last Updated\n\n2026-03-21T14:30:00-07:00\n\n## Coverage Map\n\n| Stream | Last Run | Findings |\n|---|---|---|\n| job-market | 2026-03-21 | Strong demand |\n\n## Dangling Threads\n\n1. CRITICAL: API rate limits hitting ceiling\n2. Monitor competitor pricing changes\n\n## Research Queue\n\n1. ~~Deep dive on Stripe~~ ✅\n2. Analyze consulting market trends\n3. ~~Review network contacts~~ ✅\n",
+    )
+    const state = parseResearchState(tmpDir)
+    expect(state).not.toBeNull()
+    expect(state!.lastUpdated).toBe("2026-03-21T14:30:00-07:00")
+  })
+
+  it("parses coverage map table", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "RESEARCH_STATE.md"),
+      "## Last Updated\n\n2026-03-21T14:30:00-07:00\n\n## Coverage Map\n\n| Stream | Last Run | Findings |\n|---|---|---|\n| job-market | 2026-03-21 | Strong demand |\n| competitive | 2026-03-20 | New entrants |\n",
+    )
+    const state = parseResearchState(tmpDir)
+    expect(state!.coverageMap).toHaveLength(2)
+    expect(state!.coverageMap[0]).toEqual({
+      stream: "job-market",
+      lastRun: "2026-03-21",
+      findings: "Strong demand",
+    })
+  })
+
+  it("parses dangling threads with severity", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "RESEARCH_STATE.md"),
+      "## Last Updated\n\n2026-03-21T14:30:00-07:00\n\n## Dangling Threads\n\n1. CRITICAL: API rate limits hitting ceiling\n2. Monitor competitor pricing changes\n",
+    )
+    const state = parseResearchState(tmpDir)
+    expect(state!.danglingThreads).toHaveLength(2)
+    expect(state!.danglingThreads[0]).toEqual({
+      text: "CRITICAL: API rate limits hitting ceiling",
+      severity: "CRITICAL",
+    })
+    expect(state!.danglingThreads[1]).toEqual({
+      text: "Monitor competitor pricing changes",
+      severity: null,
+    })
+  })
+
+  it("parses research queue with completion status", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "RESEARCH_STATE.md"),
+      "## Last Updated\n\n2026-03-21T14:30:00-07:00\n\n## Research Queue\n\n1. ~~Deep dive on Stripe~~ ✅\n2. Analyze consulting market trends\n",
+    )
+    const state = parseResearchState(tmpDir)
+    expect(state!.researchQueue).toHaveLength(2)
+    expect(state!.researchQueue[0]).toEqual({
+      text: "Deep dive on Stripe",
+      completed: true,
+    })
+    expect(state!.researchQueue[1]).toEqual({
+      text: "Analyze consulting market trends",
+      completed: false,
+    })
+  })
+})
+
+describe("parseResearchPriorities", () => {
+  it("returns null when PRIORITIES.md does not exist", () => {
+    expect(parseResearchPriorities(tmpDir)).toBeNull()
+  })
+
+  it("parses narrative, priorities, and focus areas", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "PRIORITIES.md"),
+      "## The Narrative\n\nBuilding the platform while landing first clients.\n\n## Current Priorities\n\n1. Ship Studio v1\n2. Close first consulting engagement\n3. Build content pipeline\n\n## What Research Should Focus On\n\n1. Competitor pricing models\n2. Job market for AI roles\n",
+    )
+    const priorities = parseResearchPriorities(tmpDir)
+    expect(priorities).not.toBeNull()
+    expect(priorities!.narrative).toBe("Building the platform while landing first clients.")
+    expect(priorities!.priorities).toEqual([
+      "Ship Studio v1",
+      "Close first consulting engagement",
+      "Build content pipeline",
+    ])
+    expect(priorities!.focusAreas).toEqual([
+      "Competitor pricing models",
+      "Job market for AI roles",
+    ])
+  })
+})
+
+describe("getHeartbeatStatus", () => {
+  it("returns active when last updated within 35 minutes", () => {
+    const now = new Date("2026-03-21T15:00:00-07:00")
+    const lastUpdated = "2026-03-21T14:30:00-07:00"
+    const status = getHeartbeatStatus(lastUpdated, 0, now)
+    expect(status.status).toBe("active")
+  })
+
+  it("returns pending with next-heartbeat time during active hours", () => {
+    const now = new Date("2026-03-21T15:00:00-07:00")
+    const lastUpdated = "2026-03-21T14:00:00-07:00"
+    const status = getHeartbeatStatus(lastUpdated, 0, now)
+    expect(status.status).toBe("pending")
+    expect(status.minutesUntilNext).toBeGreaterThan(0)
+    expect(status.minutesUntilNext).toBeLessThanOrEqual(30)
+  })
+
+  it("returns offline outside active hours", () => {
+    const now = new Date("2026-03-21T23:30:00-07:00")
+    const lastUpdated = "2026-03-21T22:00:00-07:00"
+    const status = getHeartbeatStatus(lastUpdated, 0, now)
+    expect(status.status).toBe("offline")
+  })
+
+  it("returns offline at exactly 23:00 PT (exclusive cutoff)", () => {
+    const now = new Date("2026-03-21T23:00:00-07:00")
+    const lastUpdated = "2026-03-21T22:55:00-07:00"
+    const status = getHeartbeatStatus(lastUpdated, 0, now)
+    expect(status.status).toBe("offline")
+  })
+
+  it("includes today's heartbeat count", () => {
+    const now = new Date("2026-03-21T15:00:00-07:00")
+    const lastUpdated = "2026-03-21T14:30:00-07:00"
+    const status = getHeartbeatStatus(lastUpdated, 4, now)
+    expect(status.heartbeatCountToday).toBe(4)
+  })
+
+  it("returns pending with null lastUpdated during active hours", () => {
+    const now = new Date("2026-03-21T15:00:00-07:00")
+    const status = getHeartbeatStatus(null, 0, now)
+    expect(status.status).toBe("pending")
+  })
+})
+
+describe("countTodayHeartbeats", () => {
+  it("returns 0 when heartbeat directory does not exist", () => {
+    expect(countTodayHeartbeats(tmpDir, "2026-03-21")).toBe(0)
+  })
+
+  it("counts files matching today's date prefix", () => {
+    const hbDir = path.join(tmpDir, ".sherpa", "research", "heartbeat")
+    fs.mkdirSync(hbDir, { recursive: true })
+    fs.writeFileSync(path.join(hbDir, "2026-03-21-1030-topic-a.md"), "---\ntitle: A\n---\n")
+    fs.writeFileSync(path.join(hbDir, "2026-03-21-1400-topic-b.md"), "---\ntitle: B\n---\n")
+    fs.writeFileSync(path.join(hbDir, "2026-03-20-0900-old.md"), "---\ntitle: Old\n---\n")
+    expect(countTodayHeartbeats(tmpDir, "2026-03-21")).toBe(2)
   })
 })
