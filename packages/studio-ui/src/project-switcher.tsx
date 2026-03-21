@@ -22,16 +22,26 @@ export function ProjectSwitcher({ projects, activeProject }: ProjectSwitcherProp
   if (projects.length <= 1) return null
 
   function handleChange(slug: string) {
-    // Preserve current section when switching projects
-    // e.g. /projects/sherpa/process → /projects/wavepoint/process
+    // Determine the current top-level section from the URL.
+    // Project-scoped: /projects/{slug}/{section}[/...]  → section from 3rd segment
+    // Aggregate:      /projects/{section}[/...]         → section from 2nd segment
+    let section = "process"
+
+    if (activeProject) {
+      // On a project-scoped route
+      const match = pathname.match(/^\/projects\/[^/]+\/([^/]+)/)
+      if (match?.[1]) section = match[1]
+    } else {
+      // On an aggregate route or the projects landing
+      const match = pathname.match(/^\/projects\/([^/]+)/)
+      if (match?.[1]) section = match[1]
+    }
+
     if (slug === "__all__") {
-      router.push("/projects")
+      router.push(`/projects/${section}`)
       return
     }
 
-    // Extract current section from pathname
-    const match = pathname.match(/^\/projects\/[^/]+\/(.+)$/)
-    const section = match?.[1] ?? "process"
     router.push(`/projects/${slug}/${section}`)
   }
 
