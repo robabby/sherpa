@@ -1,6 +1,7 @@
 import fs from "fs"
 import path from "path"
 import matter from "gray-matter"
+import { extractSection, parseMarkdownTable, extractNumberedItems } from "./markdown"
 
 export interface ResearchFile {
   title: string
@@ -66,4 +67,68 @@ export function scanResearchFiles(projectRoot: string): ResearchFile[] {
   }
 
   return files.sort((a, b) => b.date.localeCompare(a.date))
+}
+
+export interface CoverageEntry {
+  stream: string
+  lastRun: string
+  findings: string
+}
+
+export interface DanglingThread {
+  text: string
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | null
+}
+
+export interface QueueItem {
+  text: string
+  completed: boolean
+}
+
+export interface ResearchState {
+  lastUpdated: string | null
+  coverageMap: CoverageEntry[]
+  danglingThreads: DanglingThread[]
+  researchQueue: QueueItem[]
+}
+
+export function parseResearchState(projectRoot: string): ResearchState | null {
+  const filePath = path.join(projectRoot, ".sherpa", "research", "RESEARCH_STATE.md")
+  if (!fs.existsSync(filePath)) return null
+
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8")
+
+    const lastUpdatedSection = extractSection(raw, "Last Updated")
+    const lastUpdated = lastUpdatedSection?.trim() ?? null
+
+    const coverageSection = extractSection(raw, "Coverage Map")
+    const coverageRows = coverageSection ? parseMarkdownTable(coverageSection) : []
+    const coverageMap: CoverageEntry[] = coverageRows.map(
+      ([stream = "", lastRun = "", findings = ""]) => ({ stream, lastRun, findings })
+    )
+
+    const threadsSection = extractSection(raw, "Dangling Threads")
+    const threadItems = threadsSection ? extractNumberedItems(threadsSection) : []
+    const danglingThreads: DanglingThread[] = threadItems.map((text) => ({
+      text,
+      severity: /CRITICAL/i.test(text) ? "CRITICAL"
+        : /HIGH/i.test(text) ? "HIGH"
+        : /MEDIUM/i.test(text) ? "MEDIUM"
+        : /LOW/i.test(text) ? "LOW"
+        : null,
+    }))
+
+    const queueSection = extractSection(raw, "Research Queue")
+    const queueItems = queueSection ? extractNumberedItems(queueSection) : []
+    const researchQueue: QueueItem[] = queueItems.map((text) => ({
+      text: text.replace(/~~(.+?)~~/g, "$1").replace(/✅/g, "").trim(),
+      completed: /✅/.test(text) || /~~.+~~/.test(text),
+    }))
+
+    return { lastUpdated, coverageMap, danglingThreads, researchQueue }
+  } catch {
+    console.warn(`[sherpa] Failed to parse RESEARCH_STATE.md: ${filePath}`)
+    return null
+  }
 }

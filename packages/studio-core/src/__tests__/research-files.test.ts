@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest"
 import * as fs from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
-import { scanResearchFiles } from "../research-files"
+import { scanResearchFiles, parseResearchState } from "../research-files"
 
 let tmpDir: string
 
@@ -124,5 +124,77 @@ describe("scanResearchFiles", () => {
     const files = scanResearchFiles(tmpDir)
     expect(files[0]!.summary).toBeUndefined()
     expect(files[0]!.trigger).toBeUndefined()
+  })
+})
+
+describe("parseResearchState", () => {
+  it("returns null when RESEARCH_STATE.md does not exist", () => {
+    expect(parseResearchState(tmpDir)).toBeNull()
+  })
+
+  it("parses last updated timestamp", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "RESEARCH_STATE.md"),
+      "## Last Updated\n\n2026-03-21T14:30:00-07:00\n\n## Coverage Map\n\n| Stream | Last Run | Findings |\n|---|---|---|\n| job-market | 2026-03-21 | Strong demand |\n\n## Dangling Threads\n\n1. CRITICAL: API rate limits hitting ceiling\n2. Monitor competitor pricing changes\n\n## Research Queue\n\n1. ~~Deep dive on Stripe~~ ✅\n2. Analyze consulting market trends\n3. ~~Review network contacts~~ ✅\n",
+    )
+    const state = parseResearchState(tmpDir)
+    expect(state).not.toBeNull()
+    expect(state!.lastUpdated).toBe("2026-03-21T14:30:00-07:00")
+  })
+
+  it("parses coverage map table", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "RESEARCH_STATE.md"),
+      "## Last Updated\n\n2026-03-21T14:30:00-07:00\n\n## Coverage Map\n\n| Stream | Last Run | Findings |\n|---|---|---|\n| job-market | 2026-03-21 | Strong demand |\n| competitive | 2026-03-20 | New entrants |\n",
+    )
+    const state = parseResearchState(tmpDir)
+    expect(state!.coverageMap).toHaveLength(2)
+    expect(state!.coverageMap[0]).toEqual({
+      stream: "job-market",
+      lastRun: "2026-03-21",
+      findings: "Strong demand",
+    })
+  })
+
+  it("parses dangling threads with severity", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "RESEARCH_STATE.md"),
+      "## Last Updated\n\n2026-03-21T14:30:00-07:00\n\n## Dangling Threads\n\n1. CRITICAL: API rate limits hitting ceiling\n2. Monitor competitor pricing changes\n",
+    )
+    const state = parseResearchState(tmpDir)
+    expect(state!.danglingThreads).toHaveLength(2)
+    expect(state!.danglingThreads[0]).toEqual({
+      text: "CRITICAL: API rate limits hitting ceiling",
+      severity: "CRITICAL",
+    })
+    expect(state!.danglingThreads[1]).toEqual({
+      text: "Monitor competitor pricing changes",
+      severity: null,
+    })
+  })
+
+  it("parses research queue with completion status", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "RESEARCH_STATE.md"),
+      "## Last Updated\n\n2026-03-21T14:30:00-07:00\n\n## Research Queue\n\n1. ~~Deep dive on Stripe~~ ✅\n2. Analyze consulting market trends\n",
+    )
+    const state = parseResearchState(tmpDir)
+    expect(state!.researchQueue).toHaveLength(2)
+    expect(state!.researchQueue[0]).toEqual({
+      text: "Deep dive on Stripe",
+      completed: true,
+    })
+    expect(state!.researchQueue[1]).toEqual({
+      text: "Analyze consulting market trends",
+      completed: false,
+    })
   })
 })
