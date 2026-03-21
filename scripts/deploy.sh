@@ -46,6 +46,7 @@ if [ "${1:-}" = "--rollback" ]; then
   done
 
   echo "reverse_proxy localhost:$STANDBY_PORT" > "$DEPLOY_DIR/studio-upstream.caddy"
+  chmod 644 "$DEPLOY_DIR/studio-upstream.caddy"
   systemctl reload caddy
   sleep 2
   systemctl stop "sherpa-studio@$ACTIVE" 2>/dev/null || true
@@ -115,6 +116,7 @@ done
 # Swap Caddy upstream
 log "Swapping Caddy upstream to port $STANDBY_PORT..."
 echo "reverse_proxy localhost:$STANDBY_PORT" > "$DEPLOY_DIR/studio-upstream.caddy"
+chmod 644 "$DEPLOY_DIR/studio-upstream.caddy"
 systemctl reload caddy
 
 # Brief pause for Caddy to drain connections on old upstream
