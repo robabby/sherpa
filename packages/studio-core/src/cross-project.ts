@@ -1,6 +1,8 @@
 import { getAllProjects } from "./projects"
 import { getInitiatives } from "./domain"
 import type { Initiative } from "./types"
+import { scanResearchFiles, type ResearchFile } from "./research-files"
+import { getTaskBoard, type TaskBoardEntry } from "./tasks"
 
 export interface CrossProjectInitiative {
   /** project/slug notation */
@@ -83,6 +85,58 @@ export function getAllInitiatives(): CrossProjectInitiative[] {
         projectSlug: project.slug,
         projectName: project.name,
         initiative: init,
+      })
+    }
+  }
+
+  return result
+}
+
+export interface CrossProjectResearchFile extends ResearchFile {
+  projectSlug: string
+  projectName: string
+}
+
+/**
+ * Get all research files across all projects, sorted by date descending.
+ */
+export function getAllResearchFiles(): CrossProjectResearchFile[] {
+  const projects = getAllProjects()
+  const result: CrossProjectResearchFile[] = []
+
+  for (const project of projects) {
+    const files = scanResearchFiles(project.root)
+    for (const file of files) {
+      result.push({
+        ...file,
+        projectSlug: project.slug,
+        projectName: project.name,
+      })
+    }
+  }
+
+  return result.sort((a, b) => b.date.localeCompare(a.date))
+}
+
+export interface CrossProjectTask extends TaskBoardEntry {
+  projectSlug: string
+  projectName: string
+}
+
+/**
+ * Get all tasks across all projects.
+ */
+export function getAllTasks(): CrossProjectTask[] {
+  const projects = getAllProjects()
+  const result: CrossProjectTask[] = []
+
+  for (const project of projects) {
+    const tasks = getTaskBoard({ projectRoot: project.root })
+    for (const task of tasks) {
+      result.push({
+        ...task,
+        projectSlug: project.slug,
+        projectName: project.name,
       })
     }
   }

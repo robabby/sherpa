@@ -106,11 +106,20 @@ export function StudioSidebar({ userMenu, projects }: StudioSidebarProps) {
   const pathname = usePathname();
 
   // Derive active project from the URL: /projects/[slug]/...
-  const projectMatch = pathname.match(/^\/projects\/([^/]+)/);
-  const activeProject = projectMatch?.[1] ?? null;
+  // Validate against the projects list to avoid misidentifying aggregate
+  // routes (e.g. /projects/research) as project slugs.
+  const projectMatch = pathname.match(/^\/projects\/([^/]+)/)
+  const matchedSlug = projectMatch?.[1] ?? null
+  const activeProject =
+    matchedSlug && projects?.some((p) => p.slug === matchedSlug)
+      ? matchedSlug
+      : null
 
-  // When a project is active, prefix all nav hrefs with /projects/{slug}
-  const hrefPrefix = activeProject ? `/projects/${activeProject}` : "";
+  // In aggregate mode, nav links point to /projects/{section}.
+  // In project mode, nav links point to /projects/{slug}/{section}.
+  const hrefPrefix = activeProject
+    ? `/projects/${activeProject}`
+    : "/projects"
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
