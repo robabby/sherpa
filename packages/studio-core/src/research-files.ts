@@ -43,7 +43,7 @@ export function scanResearchFiles(projectRoot: string): ResearchFile[] {
   const entries = fs.readdirSync(researchDir, { withFileTypes: true })
   for (const entry of entries) {
     if (!entry.isDirectory()) {
-      if (entry.name.endsWith(".md")) {
+      if (entry.name.endsWith(".md") && !/^[A-Z_]+\.md$/.test(entry.name)) {
         const file = parseResearchFile(path.join(researchDir, entry.name), entry.name, "")
         if (file) files.push(file)
       }

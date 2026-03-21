@@ -78,4 +78,24 @@ describe("scanResearchFiles", () => {
     const files = scanResearchFiles(tmpDir)
     expect(files[0]!.title).toBe("My Heading")
   })
+
+  it("excludes operational files (ALL_CAPS names) at root level", () => {
+    const researchDir = path.join(tmpDir, ".sherpa", "research")
+    fs.mkdirSync(researchDir, { recursive: true })
+    fs.writeFileSync(
+      path.join(researchDir, "RESEARCH_STATE.md"),
+      "## Last Updated\n\n2026-03-21T14:30:00-07:00\n",
+    )
+    fs.writeFileSync(
+      path.join(researchDir, "PRIORITIES.md"),
+      "## Current Priorities\n\n1. Ship Studio\n",
+    )
+    fs.writeFileSync(
+      path.join(researchDir, "2026-03-21.md"),
+      "---\ntitle: Real Research\ndate: 2026-03-21\n---\nContent.",
+    )
+    const files = scanResearchFiles(tmpDir)
+    expect(files).toHaveLength(1)
+    expect(files[0]!.title).toBe("Real Research")
+  })
 })
