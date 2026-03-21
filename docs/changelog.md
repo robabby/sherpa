@@ -30,6 +30,17 @@ source-initiatives:
 
 Reverse-chronological record of integrated initiatives and their system impact.
 
+## 2026-03-21 — Blue-Green Deploy Auth Fix
+
+Blue-green deploys were crashing on every authenticated route (`SqliteError: no such table: session`). The standalone build copies an empty `.sherpa/auth.db` into each slot, so Better Auth opened a 0-byte database instead of the real one at `/root/sherpa/.sherpa/auth.db`. Fix: set `SHERPA_PROJECT_ROOT=/root/sherpa` in `.env.production` so auth (and config) resolve paths against the source repo, not the slot copy. Also fixed `sherpa.config.ts` CWD detection (was hardcoded to `../../` from `apps/studio/`, broke when production CWD is the monorepo root) and made the project registry resilient to missing external projects.
+
+**Key changes:**
+- `SHERPA_PROJECT_ROOT=/root/sherpa` added to `.env.production` on VPS
+- `apps/studio/sherpa.config.ts` — detects monorepo root by checking for `sherpa.json` at CWD before going up
+- `packages/studio-core/src/projects.ts` — skips projects with missing roots instead of crashing
+- `packages/studio-core/src/config/load-json.ts` — warns on unset env vars instead of throwing
+- `docs/templates/server-provision.md` — documented `SHERPA_PROJECT_ROOT` requirement in deploy notes
+
 ## 2026-03-21 — Studio Zero-Downtime Deploy
 
 Studio deploys now use blue-green slot swapping on the Hetzner VPS — zero dropped requests during deploys. Two standalone Next.js copies alternate at `/opt/sherpa/blue/` (port 3000) and `/opt/sherpa/green/` (port 3001). The deploy script builds, copies to the standby slot, health-checks, then atomically swaps the Caddy upstream via a snippet file and graceful reload. On health-check failure, the old instance keeps serving untouched.

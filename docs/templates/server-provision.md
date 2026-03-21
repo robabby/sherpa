@@ -382,6 +382,7 @@ Caddy runs as uid 999 (`caddy` user). The deploy directory and upstream snippet 
 - **HOSTNAME=127.0.0.1** — Studio binds localhost only. Caddy handles external access. This prevents port conflicts with Tailscale or other services.
 - **MCP is not blue-green'd** — agent-facing, ~1s startup, simple restart after Studio swap is acceptable.
 - **Rollback** — starts the previous slot, swaps Caddy, stops current. The previous slot's files are untouched until the next deploy.
+- **SHERPA_PROJECT_ROOT=/root/sherpa** must be set in `.env.production`. The standalone build copies an empty `.sherpa/auth.db` into each slot. Without this env var, Better Auth resolves the database path relative to the slot directory (`/opt/sherpa/blue/.sherpa/auth.db` — 0 bytes) instead of the source repo (`/root/sherpa/.sherpa/auth.db` — the real database with tables and sessions). This also ensures `sherpa.config.ts` finds `sherpa.json` correctly regardless of CWD.
 
 ## CrowdSec (Intrusion Detection)
 
