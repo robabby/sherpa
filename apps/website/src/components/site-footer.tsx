@@ -10,12 +10,6 @@ const footerLinks = [
     ],
   },
   {
-    title: "Resources",
-    links: [
-      { title: "Blog", href: "/learn" },
-    ],
-  },
-  {
     title: "Company",
     links: [
       { title: "About", href: "/about" },
