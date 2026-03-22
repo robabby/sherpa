@@ -60,7 +60,11 @@ export default async function ProjectResearchPage({
       <RefreshOnFocus />
       <AutoRefreshInterval intervalMs={300_000} />
 
-      <h1 className="font-display text-2xl text-foreground mb-6">Research</h1>
+      <h1 className="font-display text-2xl mb-6">
+        <span className="bg-gradient-to-r from-foreground to-[var(--color-gold)] bg-clip-text text-transparent">
+          Research
+        </span>
+      </h1>
 
       {files.length === 0 && !state && !priorities ? (
         <div className="rounded-xl border border-border/50 bg-card/30 p-8 text-center">
@@ -77,6 +81,7 @@ export default async function ProjectResearchPage({
             priorities={priorities}
             heartbeat={heartbeat}
             projectSlug={slug}
+            nowISO={now.toISOString()}
           />
         </Suspense>
       )}
