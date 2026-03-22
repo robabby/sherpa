@@ -77,6 +77,7 @@ export default async function ProjectResearchPage({
             priorities={priorities}
             heartbeat={heartbeat}
             projectSlug={slug}
+            nowISO={now.toISOString()}
           />
         </Suspense>
       )}
