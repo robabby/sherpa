@@ -14,7 +14,13 @@ export * from "./workflow"
 // Self-contained modules
 export * from "./tasks"
 export * from "./task-events"
+export * from "./task-source"
 export * from "./mcp-dashboard"
+
+// Linear integration
+export * from "./linear-client"
+export * from "./linear-mapping"
+export * from "./linear-tasks"
 
 // Parsing
 export * from "./markdown"
