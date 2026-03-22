@@ -12,6 +12,7 @@ export interface ResearchFile {
   relativePath: string
   summary?: string
   trigger?: string
+  rating?: 1 | -1 | null
 }
 
 function formatDate(value: unknown): string | undefined {
@@ -33,10 +34,11 @@ function parseResearchFile(absPath: string, fileName: string, category: string):
     const relativePath = category ? `${category}/${fileName}` : fileName
     const summary = typeof data.summary === "string" ? data.summary.trim() : undefined
     const trigger = typeof data.trigger === "string" ? data.trigger.trim() : undefined
+    const rating = data.rating === 1 || data.rating === -1 ? (data.rating as 1 | -1) : null
     // Extract time from heartbeat-style filenames: YYYY-MM-DD-HHmm-slug.md
     const timeMatch = fileName.match(/^\d{4}-\d{2}-\d{2}-(\d{2})(\d{2})-/)
     const time = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : undefined
-    return { title, date, time, category, slug, relativePath, summary, trigger }
+    return { title, date, time, category, slug, relativePath, summary, trigger, rating }
   } catch {
     console.warn(`[sherpa] Skipping research file with invalid frontmatter: ${absPath}`)
     return null

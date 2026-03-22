@@ -93,6 +93,8 @@ export function ResearchTableView({ files, projectSlug }: ResearchTableViewProps
                   className="text-foreground transition-colors group-hover:text-[var(--color-gold)]"
                 >
                   {file.title}
+                  {file.rating === 1 ? <span className="ml-1.5 text-emerald-500 text-xs">+1</span> : null}
+                  {file.rating === -1 ? <span className="ml-1.5 text-red-400 text-xs">-1</span> : null}
                 </Link>
               </td>
               <td className="max-w-xs truncate px-4 py-2.5 text-muted-foreground">

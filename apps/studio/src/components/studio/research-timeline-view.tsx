@@ -66,7 +66,11 @@ export function ResearchTimelineView({ files, projectSlug }: ResearchTimelineVie
                 </span>
               ) : null}
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium text-foreground">{file.title}</span>
+                <span className="text-sm font-medium text-foreground">
+                  {file.title}
+                  {file.rating === 1 ? <span className="ml-1.5 text-emerald-500 text-xs">+1</span> : null}
+                  {file.rating === -1 ? <span className="ml-1.5 text-red-400 text-xs">-1</span> : null}
+                </span>
                 {file.summary ? (
                   <p className="line-clamp-2 text-xs text-muted-foreground">
                     {renderInlineMarkdown(file.summary)}
