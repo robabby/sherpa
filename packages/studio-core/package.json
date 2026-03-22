@@ -32,13 +32,15 @@
     "./db": "./src/db/index.ts",
     "./knowledge": "./src/knowledge/index.ts",
     "./workflow": "./src/workflow.ts",
-    "./initiative-ops": "./src/initiative-ops.ts"
+    "./initiative-ops": "./src/initiative-ops.ts",
+    "./linear-client": "./src/linear-client.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
+    "@linear/sdk": "^78.0.0",
     "better-sqlite3": "^12.8.0",
     "gray-matter": "^4.0.3",
     "ulid": "^3.0.2",
