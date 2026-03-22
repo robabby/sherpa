@@ -5,6 +5,7 @@ import path from "node:path";
 import matter from "gray-matter";
 
 import { DocRenderer } from "@/components/studio/doc-renderer";
+import { ResearchRating } from "@/components/studio/research-rating";
 import { getProject } from "@/lib/studio";
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ export default async function ResearchDetailPage({
     data.title ??
     content.match(/^#\s+(.+)$/m)?.[1] ??
     slugParts[slugParts.length - 1];
+  const rating = data.rating === 1 || data.rating === -1 ? (data.rating as 1 | -1) : null;
 
   // Strip leading H1 if present (we render our own)
   const body = content.replace(/^#\s+.+\n/, "").trim();
@@ -39,7 +41,14 @@ export default async function ResearchDetailPage({
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <div className="mb-6">
-        <h1 className="font-display text-2xl text-foreground">{title}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="font-display text-2xl text-foreground">{title}</h1>
+          <ResearchRating
+            projectSlug={projectSlug}
+            filePath={relativePath}
+            initialRating={rating}
+          />
+        </div>
         {data.date && (
           <p className="mt-1 font-mono text-xs text-muted-foreground">
             {String(data.date)}

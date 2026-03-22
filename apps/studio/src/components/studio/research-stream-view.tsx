@@ -70,7 +70,11 @@ export function ResearchStreamView({ grouped, projectSlug }: ResearchStreamViewP
                       href={`/projects/${projectSlug}/research/${file.slug}`}
                       className="flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-[var(--surface-hover)]"
                     >
-                      <span className="text-foreground">{file.title}</span>
+                      <span className="text-foreground">
+                        {file.title}
+                        {file.rating === 1 ? <span className="ml-1.5 text-emerald-500 text-xs">+1</span> : null}
+                        {file.rating === -1 ? <span className="ml-1.5 text-red-400 text-xs">-1</span> : null}
+                      </span>
                       <span className="shrink-0 font-mono text-xs text-muted-foreground">
                         {file.date}
                       </span>
