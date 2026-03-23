@@ -74,7 +74,7 @@ export function registerAuthorityTools(
       role: z.string().optional().describe("Agent role for role-scoped view"),
     },
     async ({ agent_id, role }) => {
-      const dashboard = buildDashboard(db, projectRoot, { agentId: agent_id, role })
+      const dashboard = await buildDashboard(db, projectRoot, { agentId: agent_id, role })
       return { content: [{ type: "text" as const, text: JSON.stringify(dashboard, null, 2) }] }
     },
   )

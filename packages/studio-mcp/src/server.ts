@@ -89,97 +89,21 @@ function resolveOptions(opts?: StudioMcpOptions) {
 }
 
 // ---------------------------------------------------------------------------
-// Frontmatter helpers
+// Linear state helpers
 // ---------------------------------------------------------------------------
 
-interface TaskMeta {
-  [key: string]: string | null
-}
+/** Pending state types in Linear that allow dispatch. */
+const PENDING_STATE_TYPES = new Set(["triage", "backlog", "unstarted"])
 
-function parseFrontmatter(content: string): { meta: TaskMeta; body: string } {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
-  if (!match) return { meta: {}, body: content }
-
-  const meta: TaskMeta = {}
-  for (const line of match[1].split("\n")) {
-    const colonIdx = line.indexOf(":")
-    if (colonIdx === -1) continue
-    const key = line.slice(0, colonIdx).trim()
-    let value: string | null = line.slice(colonIdx + 1).trim()
-    if (value === "null") value = null
-    meta[key] = value
-  }
-  return { meta, body: match[2] }
-}
-
-function serializeFrontmatter(meta: TaskMeta, body: string): string {
-  const lines = Object.entries(meta).map(([k, v]) => `${k}: ${v ?? "null"}`)
-  return `---\n${lines.join("\n")}\n---\n${body}`
-}
-
-// ---------------------------------------------------------------------------
-// Task operations
-// ---------------------------------------------------------------------------
-
-function scanTasks(
-  tasksDir: string,
-  filter: Partial<Record<string, string>> = {},
-): Array<TaskMeta & { file: string; body: string }> {
-  if (!fs.existsSync(tasksDir)) return []
-
-  const files = fs
-    .readdirSync(tasksDir)
-    .filter((f) => f.endsWith(".md") && f !== "README.md")
-  const tasks: Array<TaskMeta & { file: string; body: string }> = []
-
-  for (const file of files) {
-    const content = fs.readFileSync(path.join(tasksDir, file), "utf-8")
-    const { meta, body } = parseFrontmatter(content)
-
-    if (filter.status && meta.status !== filter.status) continue
-    if (filter.role && meta.role !== filter.role) continue
-    if (filter.backend && meta.backend !== filter.backend) continue
-    if (filter.initiative && meta.initiative !== filter.initiative) continue
-
-    tasks.push({ file, ...meta, body })
-  }
-
-  const priorityOrder: Record<string, number> = {
-    urgent: 0,
-    high: 1,
-    medium: 2,
-    low: 3,
-  }
-  tasks.sort(
-    (a, b) =>
-      (priorityOrder[a.priority ?? ""] ?? 9) -
-      (priorityOrder[b.priority ?? ""] ?? 9),
-  )
-  return tasks
-}
-
-function findAndUpdateTask(
-  tasksDir: string,
-  id: string,
-  field: string,
-  value: string | null,
-): boolean {
-  const files = fs
-    .readdirSync(tasksDir)
-    .filter((f) => f.endsWith(".md") && f !== "README.md")
-
-  for (const file of files) {
-    const filePath = path.join(tasksDir, file)
-    const content = fs.readFileSync(filePath, "utf-8")
-    const { meta, body } = parseFrontmatter(content)
-
-    if (meta.id === id) {
-      meta[field] = value
-      fs.writeFileSync(filePath, serializeFrontmatter(meta, body))
-      return true
-    }
-  }
-  return false
+/**
+ * Parse a Linear identifier (e.g. "SG-306") into team key and issue number.
+ */
+function parseLinearIdentifier(
+  identifier: string,
+): { teamKey: string; number: number } | null {
+  const match = identifier.match(/^([A-Za-z]+)-(\d+)$/)
+  if (!match) return null
+  return { teamKey: match[1]!, number: parseInt(match[2]!, 10) }
 }
 
 async function checkLmStudio(lmStudioUrl: string): Promise<{
@@ -238,7 +162,7 @@ async function logEvent(
 // ---------------------------------------------------------------------------
 
 export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
-  const { projectRoot, tasksDir, logsDir, lmStudioUrl, serverName, taskLoggerPath } =
+  const { projectRoot, logsDir, lmStudioUrl, serverName, taskLoggerPath } =
     resolveOptions(opts)
 
   const server = new McpServer({
@@ -536,100 +460,118 @@ _Sherpa metadata: slug=${id} | role=${role} | task-type=${task_type} | backend=$
 
   server.tool(
     "task_dispatch",
-    "Dispatch a pending task to its configured backend for execution. The worker runs as a detached background process. Supports all backends: claude, opencode, codex, gemini, lm-studio, groq, google-ai, lm-studio-api.",
+    "Dispatch a pending task to its configured backend for execution. The worker runs as a detached background process. Supports all backends: claude, opencode, codex, gemini, lm-studio, groq, google-ai, lm-studio-api, openclaw.",
     {
-      id: z.string().describe("Task slug/ID to dispatch"),
+      id: z.string().describe("Linear issue identifier (e.g. 'SG-306')"),
     },
     async ({ id }) => {
-      const tasks = scanTasks(tasksDir)
-      const task = tasks.find((t) => t.id === id)
-
-      if (!task) {
-        return {
-          content: [{ type: "text" as const, text: `Error: Task not found: ${id}` }],
-          isError: true,
+      try {
+        const client = getLinearClient()
+        const parsed = parseLinearIdentifier(id)
+        if (!parsed) {
+          return {
+            content: [{ type: "text" as const, text: `Error: Invalid identifier format: ${id}. Expected format like 'SG-306'.` }],
+            isError: true,
+          }
         }
-      }
 
-      if (task.status !== "pending") {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Error: Task '${id}' has status '${task.status}' — only pending tasks can be dispatched.`,
-            },
-          ],
-          isError: true,
+        // Query the issue from Linear
+        const issuesConnection = await client.issues({
+          first: 1,
+          filter: {
+            team: { key: { eq: parsed.teamKey } },
+            number: { eq: parsed.number },
+          },
+        })
+
+        const issue = issuesConnection.nodes[0]
+        if (!issue) {
+          return {
+            content: [{ type: "text" as const, text: `Error: Task not found: ${id}` }],
+            isError: true,
+          }
         }
-      }
 
-      // Health check: only for lm-studio (local service may not be running).
-      // Other backends fail naturally via worker.sh if unavailable.
-      const taskBackend = (task.backend ?? "lm-studio") as string
-      if (taskBackend === "lm-studio" || taskBackend === "lm-studio-api") {
-        const lmStatus = await checkLmStudio(lmStudioUrl)
-        if (!lmStatus.available) {
+        // Check the issue is in a pending (dispatchable) state
+        const issueState = await issue.state
+        if (!issueState || !PENDING_STATE_TYPES.has(issueState.type)) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `Error: LM Studio not available at ${lmStudioUrl}. ${lmStatus.error ?? "Start LM Studio before dispatching."}`,
+                text: `Error: Task '${id}' has state '${issueState?.name ?? "unknown"}' (type: ${issueState?.type ?? "unknown"}) — only pending tasks (triage/backlog/unstarted) can be dispatched.`,
               },
             ],
             isError: true,
           }
         }
-      }
 
-      // Status updates handled by worker.sh — but set dispatched here for
-      // immediate feedback (worker.sh will also set it, which is idempotent).
-      findAndUpdateTask(tasksDir, id, "status", "dispatched")
-      findAndUpdateTask(tasksDir, id, "dispatched-at", new Date().toISOString())
+        // Transition to "started" state for immediate feedback
+        const team = await issue.team
+        if (!team) {
+          return {
+            content: [{ type: "text" as const, text: `Error: Could not resolve team for issue ${id}` }],
+            isError: true,
+          }
+        }
+        const states = await team.states()
+        const startedState = states.nodes.find((s) => s.type === "started")
+        if (startedState) {
+          await client.updateIssue(issue.id, { stateId: startedState.id })
+        }
 
-      // Delegate to worker.sh which handles all backend types
-      const workerShPath = path.join(projectRoot, "scripts/worker.sh")
-      const child = spawn("bash", [workerShPath, id], {
-        cwd: projectRoot,
-        detached: true,
-        stdio: "ignore",
-        env: { ...process.env },
-      })
+        // Delegate to worker.sh which handles all backend types
+        const workerShPath = path.join(projectRoot, "scripts/worker.sh")
+        const child = spawn("bash", [workerShPath, id], {
+          cwd: projectRoot,
+          detached: true,
+          stdio: "ignore",
+          env: { ...process.env },
+        })
 
-      const spawnError = await new Promise<Error | null>((resolve) => {
-        child.on("error", (err) => resolve(err))
-        setTimeout(() => resolve(null), 500)
-      })
+        const spawnError = await new Promise<Error | null>((resolve) => {
+          child.on("error", (err) => resolve(err))
+          setTimeout(() => resolve(null), 500)
+        })
 
-      if (spawnError || !child.pid) {
-        findAndUpdateTask(tasksDir, id, "status", "failed")
-        findAndUpdateTask(tasksDir, id, "dispatched-at", null)
+        if (spawnError || !child.pid) {
+          // Revert to canceled state on spawn failure
+          const canceledState = states.nodes.find((s) => s.type === "canceled")
+          if (canceledState) {
+            await client.updateIssue(issue.id, { stateId: canceledState.id })
+          }
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Error: Failed to spawn worker for '${id}': ${spawnError?.message ?? "no PID assigned"}`,
+              },
+            ],
+            isError: true,
+          }
+        }
+
+        child.unref()
+
         return {
           content: [
             {
               type: "text" as const,
-              text: `Error: Failed to spawn worker for '${id}': ${spawnError?.message ?? "no PID assigned"}`,
+              text: JSON.stringify({
+                dispatched: true,
+                id,
+                pid: child.pid,
+                message: `Worker running as PID ${child.pid}. Use task_get or task_logs to check progress.`,
+              }),
             },
           ],
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return {
+          content: [{ type: "text" as const, text: `Error dispatching task: ${message}` }],
           isError: true,
         }
-      }
-
-      child.unref()
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({
-              dispatched: true,
-              id,
-              backend: taskBackend,
-              model: task.model ?? "default",
-              pid: child.pid,
-              message: `Worker running as PID ${child.pid}. Use task_get or task_logs to check progress.`,
-            }),
-          },
-        ],
       }
     },
   )

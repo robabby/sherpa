@@ -25,26 +25,26 @@ describe("buildDashboard", () => {
     if (dir) fs.rmSync(dir, { recursive: true, force: true })
   })
 
-  it("returns empty dashboard when no state exists", () => {
-    const dashboard = buildDashboard(db, dir)
+  it("returns empty dashboard when no state exists", async () => {
+    const dashboard = await buildDashboard(db, dir)
     expect(dashboard.leases).toEqual([])
     expect(dashboard.summary.totalLeases).toBe(0)
   })
 
-  it("includes agent's active leases when agent_id is provided", () => {
+  it("includes agent's active leases when agent_id is provided", async () => {
     acquireAuthority(db, { scope: "file:a.ts", agentId: "agent-1" })
     acquireAuthority(db, { scope: "file:b.ts", agentId: "agent-2" })
 
-    const dashboard = buildDashboard(db, dir, { agentId: "agent-1" })
+    const dashboard = await buildDashboard(db, dir, { agentId: "agent-1" })
     expect(dashboard.leases).toHaveLength(1)
     expect(dashboard.leases[0].scope).toBe("file:a.ts")
   })
 
-  it("includes all leases when no agent_id filter", () => {
+  it("includes all leases when no agent_id filter", async () => {
     acquireAuthority(db, { scope: "file:a.ts", agentId: "agent-1" })
     acquireAuthority(db, { scope: "file:b.ts", agentId: "agent-2" })
 
-    const dashboard = buildDashboard(db, dir)
+    const dashboard = await buildDashboard(db, dir)
     expect(dashboard.leases).toHaveLength(2)
     expect(dashboard.summary.totalLeases).toBe(2)
   })
