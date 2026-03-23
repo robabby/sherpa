@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 const PUBLIC_PATHS = [
   "/auth",
   "/api/auth",
+  "/s",
 ]
 
 /** Legacy unscoped routes that should redirect to /projects/{primary}/... */
