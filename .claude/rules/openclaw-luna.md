@@ -15,7 +15,7 @@ Luna is the always-on OpenClaw agent running on the Hetzner VPS. She is Rob's Pe
 | Detail | Value |
 |--------|-------|
 | Workspace root | `/home/node/.openclaw/workspace` (mount of `/root/.openclaw/workspace`) |
-| Sherpa repo | `/home/node/.openclaw/workspace/sherpa` (cloned inside workspace, not bind-mounted) |
+| Sherpa repo | `/home/node/.openclaw/workspace/sherpa` (bind-mount of `/root/sherpa` on host) |
 | Identity files | `SOUL.md`, `AGENTS.md`, `IDENTITY.md`, `USER.md`, `TOOLS.md` at workspace root |
 | Git identity | `Luna (Sherpa AI) <luna.sherpa.ai@gmail.com>` |
 | Git config | `/home/node/.openclaw/.gitconfig` (persisted via volume mount) |
@@ -42,7 +42,7 @@ This is the problem the **agent-context-portability** initiative solves. See `do
 **Division of labor:**
 - Claude Code runs interactively during Rob's work sessions
 - Luna runs autonomously — overnight cron jobs at 1am PST (task runner), 2am (memory housekeeping), 6am (morning briefing)
-- Both share the same repo; Luna pulls via a 15-minute git sync cron on the host
+- Both share the same repo; the 15-minute host cron runs git pull inside Luna's container via `docker exec` (never as root on host, to avoid root-owned `.git` artifacts)
 
 **Git workflow:**
 - Luna always works on `luna/<description>` branches, never commits to main

@@ -5,8 +5,13 @@ set -euo pipefail
 #
 # Usage:
 #   ./scripts/deploy.sh              Full deploy (pull + build + swap)
+#   ./scripts/deploy.sh --skip-pull  Skip git pull (sync script already pulled via container)
 #   ./scripts/deploy.sh --skip-build Skip git pull and build (use current .next/)
 #   ./scripts/deploy.sh --rollback   Swap back to the previous slot
+#
+# NOTE: When called from sherpa-sync.sh, use --skip-pull. The sync script
+# handles git operations inside the container to avoid creating root-owned
+# files in the bind-mounted repo, which blocks Luna (UID 1000).
 
 DEPLOY_DIR="/opt/sherpa"
 REPO_DIR="/root/sherpa"
@@ -61,8 +66,11 @@ log "Deploying: $ACTIVE (port $ACTIVE_PORT) → $STANDBY (port $STANDBY_PORT)"
 if [ "${1:-}" != "--skip-build" ]; then
   cd "$REPO_DIR"
 
-  log "Pulling latest..."
-  git pull --ff-only
+  # Pull unless --skip-pull (sync script already pulled via container)
+  if [ "${1:-}" != "--skip-pull" ]; then
+    log "Pulling latest..."
+    git pull --ff-only
+  fi
 
   log "Installing dependencies..."
   pnpm install --frozen-lockfile
