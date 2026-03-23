@@ -1,0 +1,122 @@
+---
+title: Governance
+description: Three-layer coordination model that ensures multiple agents and humans can work on the same codebase without corrupting shared artifacts.
+---
+
+The core governance problem: N agents working concurrently on initiatives that touch shared artifacts — roadmaps, guidelines, conventions. Without coordination, agents overwrite each other's work or violate conventions they are not aware of. Sherpa's governance engine solves this through three layers, each with increasing enforcement strength, inspired by MMO conflict resolution: prevention before detection before compensation.
+
+## Three-layer coordination
+
+### Layer 1: Guidance
+
+Convention files auto-load via glob patterns when agents work in matching directories. When an agent edits a file under `docs/initiatives/`, the initiative convention loads automatically. When it touches architecture docs, the provenance convention loads. This is soft guidance — agents follow conventions because they see them, but nothing mechanically prevents a violation.
+
+This layer handles the majority of coordination. Most conflicts come from agents not knowing about a convention, not from deliberately ignoring one. Making the right practice visible at the right time prevents most issues before they start.
+
+### Layer 2: Enforcement
+
+Shell-level checks that prevent convention violations before they happen. These operate at the tool-call level — before an agent's file write or command execution reaches the filesystem, enforcement hooks validate the action against governance rules.
+
+This layer catches what guidance misses: cases where an agent attempts an action that would violate a structural constraint, like editing a shared artifact directly instead of writing a proposal.
+
+### Layer 3: State authority
+
+A database-backed coordination layer that serves as the source of truth for initiative state, task assignments, and agent authority. Exposed via MCP tools that agents call to query and update governance state. This layer provides the coordination primitives that make concurrent work safe: authority leases, lifecycle transitions, and task claims.
+
+## Initiative lifecycle
+
+Initiatives are Sherpa's unit of tracked work — anything that spans multiple sessions or touches shared artifacts. Each initiative moves through a nine-stage lifecycle:
+
+```
+needs-research → needs-proposal → needs-review → needs-plan →
+ready-to-start → in-flight → ready-to-integrate → integrated → archived
+```
+
+The key design decision: **lifecycle stage is computed, not stored**. A pure function examines filesystem evidence — does a proposal exist? Does it have research? Has it been reviewed? Does a plan exist? — and derives the current stage. There is no status field to get out of sync with reality. The filesystem is the source of truth, and the lifecycle function reads it.
+
+### Actor assignment
+
+Each stage has an assigned actor type that determines who acts next:
+
+| Stage | Actor | What happens |
+|-------|-------|-------------|
+| `needs-research` | agent | Discovery and analysis work |
+| `needs-proposal` | agent | Write the proposal document |
+| `needs-review` | human | Review and approve or decline |
+| `needs-plan` | agent | Break approved work into a plan |
+| `ready-to-start` | agent | Begin execution |
+| `in-flight` | — | Active work in progress |
+| `ready-to-integrate` | human | Review completed work |
+| `integrated` | — | Work merged and documented |
+| `archived` | — | Historical record |
+
+Agent stages can run autonomously — overnight batch processing, scheduled dispatch, or interactive sessions. Human stages require explicit review. This separation means you can automate the mechanical parts of governance (research, planning, documentation) while keeping humans in the loop for judgment calls (approval, integration review).
+
+## Proposal-based changes
+
+This is the primary conflict prevention mechanism: **initiatives never edit shared artifacts directly**. All changes go through proposals. When multiple agents work concurrently, they produce independent proposals rather than competing edits to the same files.
+
+A proposal contains:
+- A summary of what changes are needed
+- The current state snapshot (so reviewers can spot staleness)
+- Proposed changes per target artifact, with exact content
+- Rationale grounded in research or evidence
+- Dependencies on other proposals
+
+This approach trades speed for safety. An agent cannot immediately update a guideline document — it must write a proposal, which then goes through review. The overhead is small (one extra file), and the benefit is significant: no merge conflicts on governance documents, no silent overwrites, and a complete audit trail of why every change was made.
+
+### Risk classification
+
+Every proposal carries a risk level that determines how it flows through review:
+
+| Risk Level | Meaning | Review approach |
+|-----------|---------|----------------|
+| `additive` | New files, new sections — does not modify existing content | Batches freely with other additive proposals |
+| `evolutionary` | Modifications to existing content — changes meaning or structure | Grouped by target artifact for coordinated review |
+| `structural` | Changes to conventions, architecture, or cross-cutting constraints | Reviewed individually with full context |
+
+This stratification means low-risk work flows quickly while high-risk changes get the scrutiny they need. An agent adding a new research document does not wait in the same review queue as one proposing changes to the initiative convention itself.
+
+## Integration review
+
+When multiple proposals target the same artifact, they need coordinated review. The integration review workflow handles this:
+
+1. **Scan** — find all pending proposals
+2. **Group by target** — identify which proposals modify the same artifact
+3. **Check freshness** — has the target changed since the proposal was written?
+4. **Identify conflicts** — contradictory changes, incompatible assumptions
+5. **Present to reviewer** — recommendations per group (approve, decline, defer, refresh)
+6. **Apply** — make the approved edits
+7. **Verify** — confirm no contradictions were introduced
+
+Proposals are risk-stratified: additive proposals (new files, new sections) batch freely. Evolutionary proposals (modifications to existing content) are grouped by target artifact. Structural proposals (changes to conventions or architecture) are reviewed individually.
+
+## Governance policy
+
+How much autonomy agents have over governance decisions is configurable. The approval policy controls whether agents can approve initiatives through MCP tools:
+
+| Policy | Behavior |
+|--------|----------|
+| `never` (default) | Agents cannot approve initiatives — human action required |
+| `additive-only` | Agents can approve `additive` risk initiatives only |
+| `always` | Agents can approve any risk level |
+
+The default is deliberately restrictive. You can loosen it as you build trust in the system's judgment, or tighten it if you need stronger human oversight. The policy is set in your project's [configuration](/docs/concepts/conventions-and-config) and enforced by the MCP server — agents that attempt to approve beyond their policy get an error explaining that human action is required.
+
+## Why governance is computed, not configured
+
+A common pattern in project management tools is to store workflow state in a database and enforce transitions through application logic. Sherpa inverts this: governance state is derived from the filesystem. The proposal file exists or it does not. The plan file exists or it does not. The activity log shows work started or it does not.
+
+This design has three practical benefits:
+
+1. **No drift** — the lifecycle stage cannot disagree with reality because it is computed from reality
+2. **Git-native** — every state transition is a commit, giving you full history and blame
+3. **No migration** — adding a new lifecycle stage means updating the detection function, not migrating a database schema
+
+The tradeoff is that you cannot represent states that have no filesystem evidence. This is intentional — if there is no evidence of work, the work has not started, regardless of what a status field might claim.
+
+## How governance connects to the rest of the framework
+
+The governance engine does not operate in isolation. [Conventions](/docs/concepts/conventions-and-config) provide the rules that governance loads and enforces — every convention rule is a piece of governance guidance. The [execution pipeline](/docs/concepts/execution-pipeline) dispatches the tasks that governance creates and tracks — when an initiative reaches `ready-to-start`, the pipeline takes over. [Studio](/docs/concepts/studio) renders the entire governance state as a visual dashboard — initiative lifecycles, proposal queues, integration status. And [behavioral agents](/docs/concepts/behavioral-agents) fill the roles that governance assigns to each lifecycle stage.
+
+The result is a governance system where adding a new convention automatically applies to all future initiatives, where completed tasks automatically advance lifecycle stages, and where the entire state is visible in one place without manual status updates.

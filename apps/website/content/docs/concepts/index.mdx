@@ -1,0 +1,20 @@
+---
+title: Concepts
+description: The five systems that make up the Sherpa framework — behavioral agents, governance, execution, conventions, and Studio.
+---
+
+Sherpa is built from five systems that each solve a distinct problem in Human+AI collaboration. Understanding these systems and how they connect is the fastest way to evaluate whether the framework fits your workflow.
+
+## The Five Systems
+
+| System | What it solves | Learn more |
+|--------|---------------|------------|
+| [Behavioral Agents](/docs/concepts/behavioral-agents) | Agent roles that produce consistent, measurable behavior through constraints — not identity claims | Role schema, the 11 roles, evidence base |
+| [Governance](/docs/concepts/governance) | Coordination so multiple agents and humans can work on the same codebase without corrupting shared artifacts | Three-layer model, initiative lifecycle, conflict prevention |
+| [Execution Pipeline](/docs/concepts/execution-pipeline) | Decomposing approved work into tasks, dispatching them across backends, and reviewing the output | Planner/Worker/Judge, 9 backends, 3 dispatch modes |
+| [Conventions and Config](/docs/concepts/conventions-and-config) | Encoding process knowledge as executable artifacts — rules, skills, and project configuration | Auto-loading rules, 16 skills, sherpa.json |
+| [Studio](/docs/concepts/studio) | A centralized governance dashboard for visualizing and managing everything across multiple projects | Package architecture, multi-project federation, routes |
+
+## How the systems reinforce each other
+
+These five systems are not independent features — they form a feedback loop. **Behavioral agents** define the roles that the **execution pipeline** dispatches. The **governance engine** tracks the initiatives and tasks that agents work on, using **conventions** to enforce quality and process constraints automatically. **Studio** makes the entire system visible: initiative lifecycles, agent missions, dispatch status, and convention compliance rendered in a single dashboard. When an agent completes work and a judge reviews it, the output feeds back into governance state, which updates Studio's view, which informs the next planning cycle. The result is a system where adding structure in one layer makes every other layer more effective.

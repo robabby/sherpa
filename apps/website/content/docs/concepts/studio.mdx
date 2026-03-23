@@ -1,0 +1,121 @@
+---
+title: Studio
+description: The centralized governance dashboard that visualizes initiative lifecycles, agent missions, dispatch status, and conventions across multiple projects.
+---
+
+Studio is a Next.js application that serves as the centralized governance dashboard for all projects managed by the framework. It follows the Vercel model: Studio owns authentication and the viewer UI, while projects own their data via `.sherpa/` dotfolders. You see everything — initiative lifecycles, agent missions, dispatch progress, convention compliance — in one place.
+
+## Package architecture
+
+Studio is built from four packages, each with a clear boundary of responsibility:
+
+| Package | Responsibility | Key Exports |
+|---------|---------------|-------------|
+| `@sherpa/studio-core` | Domain logic, types, schemas, database access | `getInitiatives()`, `getTaskBoard()`, `detectLifecycle()`, `defineConfig()` |
+| `@sherpa/studio-ui` | 110+ React components, hooks | `ProcessWorkspace`, `MissionWorkspace`, `StatusBadge`, `EmptyState` |
+| `@sherpa/studio-mcp` | MCP server with SQLite WAL backend | MCP tools, session management, HTTP transport |
+| `@sherpa/studio` | Umbrella — re-exports core + UI, Next.js integration | `withSherpa()`, `defineConfig()` |
+
+The separation matters for two reasons. First, `studio-core` has zero React dependencies — it can be used in CLI tools, MCP servers, or any Node.js context. Second, `studio-ui` has zero data-fetching logic — components receive resolved data as props, making them testable and reusable.
+
+## Data flow
+
+The data flow through Studio follows a consistent pattern:
+
+1. **Routes** call `studio-core` functions to load data (initiatives, tasks, research)
+2. **studio-core** reads the filesystem — parsing frontmatter, scanning directories, computing lifecycle stages
+3. **Components** receive resolved data as props and render the UI
+4. **Client components** subscribe to real-time events via SSE for live agent activity
+
+This means Studio never stores governance state in its own database. The filesystem is the source of truth, and Studio is a read-through view. When an agent updates a proposal file or completes a task, Studio reflects the change on the next request because it re-reads the filesystem.
+
+## Authentication
+
+Studio supports two identity types:
+
+- **Humans** — email/password sign-in with session cookies. All authenticated routes are protected by middleware that redirects unauthenticated requests to the sign-in page. Sessions are validated server-side on every layout render.
+- **Agents** — API keys for MCP server access. Keys are validated on every MCP request. This is how autonomous agents authenticate when calling governance tools programmatically.
+
+Route groups separate the experiences: authenticated routes get the full Studio shell with sidebar navigation. Public share pages (see below) get a minimal layout with no authentication required. The sign-in page has its own centered layout.
+
+No self-registration is available — an administrator creates accounts directly. This is intentional for the current phase: Studio is a team tool, not a public service, and access control should be explicit.
+
+## Multi-project federation
+
+Studio federates multiple projects through a registry in `sherpa.json`. Each registered project has its own `.sherpa/` dotfolder containing governance data, and optionally its own `sherpa.json` with project-specific configuration overrides.
+
+**Project switcher** — a dropdown in the sidebar header (following the Vercel project-switching pattern) lets you switch between projects. Changing the selection navigates to the same section within the new project context, so switching from Sherpa's tasks view to WavePoint's tasks view is a single click.
+
+**Path resolution** — project roots use environment variable interpolation in `sherpa.json`, so the same configuration works across local development and production without path changes.
+
+All domain functions accept an explicit project context parameter rather than relying on global state. This design prevents race conditions when Studio loads data for multiple projects in the same request cycle.
+
+## Key UI patterns
+
+Before looking at routes, it helps to understand the two layout patterns Studio uses throughout:
+
+**Workspace pattern** — a two-pane layout for data-heavy sections. A scrollable list on the left, a detail view with tabs on the right, separated by a draggable resize handle. Used for initiatives (process) and tasks (missions). Both take full viewport width with no container padding.
+
+**Hub panels** — dashboard sections that provide at-a-glance status. Grid-based, each panel focuses on one concern (operational pulse, recent tasks, activity timeline, workforce status, convention compliance). Designed for quick orientation at the start of a session.
+
+A command palette (Cmd+K) provides global search across all entities and projects. URL-based filter state means you can bookmark a filtered view and share it with teammates.
+
+## Route structure
+
+Studio organizes its views into four primary sections, plus supporting routes:
+
+**Hub** — the landing dashboard. Grid panels showing operational pulse, recent tasks, activity timeline, workforce status, and convention compliance at a glance. This is where you start each session to understand what has happened since you last looked.
+
+**Process** — initiative [governance](/docs/concepts/governance). A two-pane workspace with a scrollable initiative list on the left and detail view with tabs (overview, content, activity, research) on the right. The lifecycle pipeline visualization shows where each initiative sits in the nine-stage progression.
+
+**Tasks** — agent missions. Same two-pane workspace pattern, showing the task board with status, role, backend, and agent metrics (tokens, cost, duration). The detail view includes summary, execution logs, and real-time event streams for active dispatches.
+
+**Research** — operational dashboard for autonomous research. Three viewing modes (stream, timeline, table) with full-text search and category filtering. Research documents are rated inline, and the dashboard shows coverage maps with staleness indicators so you can see which research areas need attention.
+
+Additional routes cover conventions (rules and CLAUDE.md files), skills (the 16 lifecycle skills), workforce ([agent role](/docs/concepts/behavioral-agents) catalog), dispatch (task creation and assignment), and session tracking (token and cost metrics).
+
+## Research dashboard
+
+The research section deserves special attention because it represents a pattern distinct from typical project management: **operational visibility into autonomous research**. When agents run research cycles overnight, the dashboard shows:
+
+- A heartbeat indicator showing whether the research system is active
+- A queue with completion progress
+- Coverage maps showing which research areas are current vs stale
+- Full-text search across all research documents
+- Rating buttons for human feedback on research quality
+
+This turns autonomous agent work from a black box into something you can monitor, evaluate, and steer. The staleness indicators are particularly useful — green means researched within the last two days, amber means two to seven days, red means over a week. You can see at a glance which topics are current and which need a fresh research cycle.
+
+## Share links
+
+Research documents can be shared via public URLs. The share mechanism uses HMAC-signed tokens that encode the project and file path — no database lookup required, and tokens cannot be forged without the signing key.
+
+Share pages render in a minimal layout with no sidebar, no header, and no authentication. They include OpenGraph meta tags for rich link previews when shared on social platforms. Pages are marked `noindex, nofollow` — discoverable only via direct link, not search engines.
+
+From the authenticated research viewer, a share button generates the URL and copies it to the clipboard. Token generation happens server-side so the signing key never reaches the client.
+
+## Tech stack
+
+Studio is built on a modern, opinionated stack:
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16, React 19 |
+| Styling | Tailwind v4, shadcn/ui, Radix UI primitives |
+| Visualization | Recharts, Mermaid, D3 modules |
+| Animation | Motion (formerly Framer Motion) |
+| Auth | Better Auth with API key plugin |
+| Database | SQLite (better-sqlite3) with Drizzle ORM |
+| Search | Fuse.js (client-side), SQLite FTS5 (server-side) |
+
+The choice of SQLite over a client-server database is deliberate. Studio co-locates with the filesystem it reads — databases for coordination, knowledge, events, and auth all live alongside the project data. This means Studio works on a single machine without external dependencies, which matters for teams that want to run everything locally without provisioning external services.
+
+SQLite in WAL (Write-Ahead Logging) mode supports concurrent reads from multiple processes — Studio and the MCP server can both read the same databases simultaneously without contention. Write operations are serialized through the single-process MCP server, which prevents corruption while keeping indexed reads fast.
+
+## Why a dashboard matters
+
+Governance without visibility is governance on paper. You can have the most rigorous initiative lifecycle, the most careful proposal process, and the most thorough judge workflow — but if nobody can see the state of the system at a glance, coordination breaks down in practice.
+
+Studio exists because the framework's filesystem-based approach needs a rendering layer. Git commits show history but not current state. File trees show structure but not lifecycle progress. Studio computes and displays what the filesystem evidence means: which initiatives need attention, which agents are active, which research areas are going stale, and whether the quality bar is being met across the board.
+
+The dashboard is also the feedback mechanism that makes the rest of the framework practical. When a [governance](/docs/concepts/governance) policy is too restrictive, you notice it in Studio because proposals pile up. When an [agent role](/docs/concepts/behavioral-agents) has a disposition that is too aggressive, you notice it in judge verdicts. When a [convention](/docs/concepts/conventions-and-config) is being violated, you notice it in the compliance panel. Studio turns abstract framework configuration into observable system behavior.

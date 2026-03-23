@@ -1,0 +1,121 @@
+---
+title: Behavioral Agents
+description: Agent roles defined through behavioral constraints, not identity claims. Research-validated approach to consistent, measurable agent behavior.
+---
+
+The industry default for agent roles is identity prompting: "You are an expert senior engineer." Sherpa rejects this approach based on research evidence. Instead, roles specify **what the agent does** — behavioral defaults, explicit fail triggers, quality standards, and domain scoping.
+
+Claude already has a character. Role definitions don't give it a new identity — they provide specific behavioral constraints and domain context that focus its existing capabilities.
+
+## The core principle
+
+Most agent frameworks start with identity: "You are a meticulous code reviewer with 15 years of experience." This feels intuitive but produces inconsistent results. The problem is that identity claims activate unpredictable associations in the model — a "senior engineer" persona might bring unwanted opinions about tooling, architecture preferences the prompt never specified, or a communication style that conflicts with your team's norms.
+
+Behavioral constraints are specific and testable. Instead of "You are a skeptical reviewer," Sherpa defines a role that "defaults to NEEDS WORK, requires evidence for every approval criterion." The first is a vibe. The second is a verifiable instruction.
+
+The practical difference shows up in five areas:
+
+- **Behavioral defaults** — "Default to NEEDS WORK. Require evidence for approval."
+- **Explicit fail triggers** — "Flag any claim of 'no issues found' without supporting evidence."
+- **Domain scoping** — "Focus on TypeScript, React, Next.js."
+- **Quality standards** — "All new functions have TypeScript types."
+- **Operational approach** — "Review bugs first, then conventions, then style."
+
+Each of these is a concrete instruction an agent can follow or violate. You can audit compliance. You can measure whether the constraint is producing the behavior you want. You cannot meaningfully audit whether an agent is "being an expert."
+
+## Evidence base
+
+This is not a philosophical preference — it is grounded in published research:
+
+- **Zheng et al. (EMNLP 2024):** Tested identity role effects across 162 roles and 2,410 questions. Found the effects are "largely random" — assigning an identity sometimes helps, sometimes hurts, with no reliable pattern.
+- **Anthropic (February 2026):** Documented that role assignments activate unpredictable "persona clouds" — behavioral traits beyond what was specified in the prompt. A "careful analyst" might also become unnecessarily verbose or adopt an unwanted communication style.
+- **Anthropic Prompt Engineering Guide:** Built entirely around behavioral instructions, not identity claims. The official guidance aligns with Sherpa's approach.
+
+The pattern across these findings is consistent: telling a model *what to do* produces reliable results; telling it *who to be* does not. Sherpa's role system is built on this distinction, and every role definition in the framework is tested against it.
+
+When you add or modify a role, the evidence gives you confidence that behavioral constraints will produce the behavior you specified — not a surprise persona cloud of unintended traits.
+
+## Role definition schema
+
+Each role uses structured YAML frontmatter with these fields:
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `disposition` | Behavioral posture | How the role approaches work (e.g., "conservative — prefers proven patterns") |
+| `quality-bar` | Acceptance standards | Concrete criteria the Judge evaluates against |
+| `category` | Classification | engineering, design, strategy, operations |
+| `model-tier` | Resource allocation | high, medium — determines which model backend handles the role |
+| `task-type` | Dispatch routing | Maps to [execution pipeline](/docs/concepts/execution-pipeline) task types |
+| `structure` | Collaboration pattern | hierarchical-manager-worker, producer-critic, expert-team, pipeline, scientific-method |
+| `vibe` | UI display text | Human-readable one-liner for Studio — never injected as a prompt |
+
+The `vibe` field is worth calling out: it exists purely for the [Studio](/docs/concepts/studio) UI to show a quick summary of the role. It is never sent to the model as part of the prompt. This separation keeps display concerns out of behavioral definitions.
+
+The `model-tier` field drives practical cost management. High-tier roles (architect, judge) route to the most capable model available because their decisions have outsized impact. Medium-tier roles (content generation, general tasks) can use lighter-weight models without meaningful quality loss. This means you are not paying top-tier inference costs for every task — only for the ones where model capability materially affects the outcome.
+
+## The 11 roles
+
+Sherpa ships with eleven roles spanning four categories:
+
+| Role | Category | Disposition | Structure |
+|------|----------|-------------|-----------|
+| `architect` | engineering | Conservative — prefers proven patterns, requires justification for new abstractions | hierarchical-manager-worker |
+| `code-reviewer` | engineering | Adversarial — assumes bugs exist, requires proof of correctness | producer-critic |
+| `designer` | design | Restrained — "if everything glows, nothing does," remove before adding | expert-team |
+| `engineer` | engineering | Precise — zero tolerance for loose types or missing exports | producer-critic |
+| `judge` | engineering | Skeptical — defaults to NEEDS WORK, requires evidence for every criterion | producer-critic |
+| `marketer` | operations | Grounded — no superlatives, no urgency, no "amazing cosmic energy" | pipeline |
+| `product-manager` | strategy | Strategic — evaluates against intelligence-native thesis before considering implementation | hierarchical-manager-worker |
+| `product-owner` | strategy | Pragmatic — smallest scope that delivers value, reject gold-plating | hierarchical-manager-worker |
+| `research-lead` | strategy | Thorough — exhaustive sourcing, every claim backed by citation | scientific-method |
+| `technical-writer` | operations | Minimalist — every line must pass the Mistake Test, prefer deletion | pipeline |
+| `ux-researcher` | design | Evidence-based — ground recommendations in observed behavior, not assumptions | expert-team |
+
+Notice that every disposition describes a behavior, not a personality. The judge role does not claim to be skeptical — it defines a default action (NEEDS WORK) and a condition for changing it (evidence). The architect role does not claim expertise — it defines a preference (proven patterns) and a gate (justification required for new abstractions).
+
+The four categories — engineering, design, strategy, operations — are not just organizational labels. They map to different quality evaluation criteria in the Judge workflow and different content standards when the role generates written output. An engineering role's output is evaluated against code correctness criteria. A strategy role's output is evaluated against evidence and reasoning criteria.
+
+## Collaboration patterns
+
+The `structure` field in the role schema defines how the agent collaborates with other agents and humans. Five patterns are available:
+
+| Pattern | How it works | Used by |
+|---------|-------------|---------|
+| `hierarchical-manager-worker` | One agent plans, others execute under its direction | architect, product-manager, product-owner |
+| `producer-critic` | One agent produces work, another critiques it | engineer, code-reviewer, judge |
+| `expert-team` | Multiple agents contribute domain expertise as peers | designer, ux-researcher |
+| `pipeline` | Agents work in sequence, each processing the previous output | marketer, technical-writer |
+| `scientific-method` | Hypothesis-driven: propose, test, analyze, conclude | research-lead |
+
+These patterns are not just metadata — they inform the [execution pipeline](/docs/concepts/execution-pipeline) about how to structure multi-agent interactions and what kind of output to expect from each role.
+
+## Agent voice
+
+Behavioral constraints extend beyond code tasks into written output. When an agent writes content — documentation, reviews, reports — its behavioral disposition shapes the tone of that text.
+
+Consider how different dispositions produce different writing:
+
+- The judge role's "defaults to NEEDS WORK" disposition produces direct, evidence-citing review text that names specific issues rather than offering vague encouragement.
+- The marketer role's "no superlatives, no urgency" constraint prevents generic marketing language from appearing in generated content — no "amazing," no "revolutionary," no manufactured excitement.
+- The technical writer's "every line must pass the Mistake Test" disposition produces tight documentation where every sentence justifies its existence.
+- The research lead's "every claim backed by citation" constraint produces writing that clearly separates evidence from analysis.
+
+This connection between role constraints and output voice means you can predict how an agent's writing will read by examining its `disposition` field. See the [Conventions and Config](/docs/concepts/conventions-and-config) section for how content quality standards work alongside agent voice.
+
+## The Test
+
+When writing or reviewing a role definition, apply this test: if a sentence describes *who the agent is*, rewrite it as *what the agent does*.
+
+| Before (identity) | After (behavioral) |
+|---|---|
+| "Skeptical reviewer" | "Defaults to NEEDS WORK, requires evidence" |
+| "Expert architect" | "Prefers proven patterns, requires justification for new abstractions" |
+| "Experienced security engineer" | "Checks OWASP top 10 on every review, flags missing input validation" |
+
+If you can't rewrite an identity claim as a concrete behavior, the claim is not adding useful information to the role definition. Drop it.
+
+## Why this matters for your project
+
+Every project that adopts the framework gets these roles as starting points. You can modify dispositions, add project-specific roles, or adjust quality bars through [configuration](/docs/concepts/conventions-and-config). The behavioral approach means your customizations produce predictable changes — tightening a quality bar raises the threshold for approval, adding a fail trigger catches a specific class of issues. No guessing about how an identity tweak might ripple through agent behavior.
+
+The roles also integrate with the rest of the framework. The `task-type` field routes work through the [execution pipeline](/docs/concepts/execution-pipeline). The `model-tier` field determines resource allocation. The `quality-bar` field feeds directly into the Judge workflow. And the `disposition` shapes agent-generated text quality, which the [content quality scorecard](/docs/concepts/conventions-and-config) evaluates. Each field in the schema connects to a concrete system behavior — nothing is decorative.
