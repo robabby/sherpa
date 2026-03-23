@@ -166,7 +166,7 @@ export default async function StudioPage() {
   const portfolio = getPortfolio()
   const skills = getSkills()
   const sessions = getSessions()
-  const tasks = getTaskBoard({ projectRoot: PROJECT_ROOT })
+  const tasks = await getTaskBoard()
   const health = getBackendHealth(PROJECT_ROOT)
   const mcpData = await getMcpDashboard()
 

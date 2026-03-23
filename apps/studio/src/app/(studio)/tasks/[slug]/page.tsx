@@ -15,7 +15,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const task = getTaskDetail(slug, { projectRoot: PROJECT_ROOT });
+  const task = await getTaskDetail(slug);
   return {
     title: task ? `${task.title} | Tasks` : "Task Not Found",
     robots: "noindex, nofollow",
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function TaskDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const task = getTaskDetail(slug, { projectRoot: PROJECT_ROOT });
+  const task = await getTaskDetail(slug);
   if (!task) notFound();
 
   const events = getTaskEvents(slug, { projectRoot: PROJECT_ROOT });

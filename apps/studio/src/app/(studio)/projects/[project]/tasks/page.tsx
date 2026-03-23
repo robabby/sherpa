@@ -24,10 +24,10 @@ export default async function ProjectTasksPage({
   if (!project) notFound();
 
   const sp = await searchParams;
-  const tasks = getTaskBoard({ projectRoot: project.root });
+  const tasks = await getTaskBoard();
   const selectedId = sp.node ?? null;
   const detail = selectedId
-    ? getTaskDetail(selectedId, { projectRoot: project.root })
+    ? await getTaskDetail(selectedId)
     : null;
   const events = selectedId
     ? getTaskEvents(selectedId, { projectRoot: project.root })
