@@ -29,6 +29,10 @@ import {
   resolveRoute,
   DEFAULT_DISPATCH,
   BACKEND_META,
+  getLinearClient,
+  getLinearTaskBoard,
+  getLinearTaskDetail,
+  mapTaskToLinearInput,
 } from "@sherpa/studio-core"
 import type { Backend } from "@sherpa/studio-core"
 import { DEFAULT_PATHS } from "@sherpa/studio-core/config"
@@ -257,25 +261,31 @@ export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
       initiative: z.string().optional().describe("Filter by initiative slug"),
     },
     async ({ status, role, backend, initiative }) => {
-      const filter: Record<string, string> = {}
-      if (status) filter.status = status
-      if (role) filter.role = role
-      if (backend) filter.backend = backend
-      if (initiative) filter.initiative = initiative
+      try {
+        const tasks = await getLinearTaskBoard()
+        let filtered = tasks
+        if (status) filtered = filtered.filter((t) => t.status === status)
+        if (role) filtered = filtered.filter((t) => t.role === role)
+        if (backend) filtered = filtered.filter((t) => t.backend === backend)
+        if (initiative) filtered = filtered.filter((t) => t.initiative === initiative)
 
-      const tasks = scanTasks(tasksDir, filter)
-      const summary = tasks.map(({ body: _body, ...meta }) => meta)
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text:
-              tasks.length === 0
-                ? "No tasks found matching filters."
-                : JSON.stringify(summary, null, 2),
-          },
-        ],
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text:
+                filtered.length === 0
+                  ? "No tasks found matching filters."
+                  : JSON.stringify(filtered, null, 2),
+            },
+          ],
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return {
+          content: [{ type: "text" as const, text: `Error fetching tasks from Linear: ${message}` }],
+          isError: true,
+        }
       }
     },
   )
@@ -289,41 +299,48 @@ export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
       id: z.string().describe("Task slug/ID"),
     },
     async ({ id }) => {
-      const tasks = scanTasks(tasksDir)
-      const task = tasks.find((t) => t.id === id)
+      try {
+        const detail = await getLinearTaskDetail(id)
+        if (!detail) {
+          return {
+            content: [{ type: "text" as const, text: `Error: Task not found: ${id}` }],
+            isError: true,
+          }
+        }
 
-      if (!task) {
+        // Still read local logs (governance artifacts stay on disk)
+        const outputPath = path.join(logsDir, `${id}-output.md`)
+        let output: string | null = null
+        if (fs.existsSync(outputPath)) {
+          output = fs.readFileSync(outputPath, "utf-8")
+        }
+
+        const blockersPath = path.join(logsDir, `${id}-blockers.md`)
+        let blockers: string | null = null
+        if (fs.existsSync(blockersPath)) {
+          blockers = fs.readFileSync(blockersPath, "utf-8")
+        }
+
+        const verdictPath = path.join(logsDir, `${id}-verdict.md`)
+        let verdict: string | null = null
+        if (fs.existsSync(verdictPath)) {
+          verdict = fs.readFileSync(verdictPath, "utf-8")
+        }
+
         return {
-          content: [{ type: "text" as const, text: `Error: Task not found: ${id}` }],
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify({ ...detail, output, blockers, verdict }, null, 2),
+            },
+          ],
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return {
+          content: [{ type: "text" as const, text: `Error fetching task from Linear: ${message}` }],
           isError: true,
         }
-      }
-
-      const outputPath = path.join(logsDir, `${id}-output.md`)
-      let output: string | null = null
-      if (fs.existsSync(outputPath)) {
-        output = fs.readFileSync(outputPath, "utf-8")
-      }
-
-      const blockersPath = path.join(logsDir, `${id}-blockers.md`)
-      let blockers: string | null = null
-      if (fs.existsSync(blockersPath)) {
-        blockers = fs.readFileSync(blockersPath, "utf-8")
-      }
-
-      const verdictPath = path.join(logsDir, `${id}-verdict.md`)
-      let verdict: string | null = null
-      if (fs.existsSync(verdictPath)) {
-        verdict = fs.readFileSync(verdictPath, "utf-8")
-      }
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({ ...task, output, blockers, verdict }, null, 2),
-          },
-        ],
       }
     },
   )
@@ -371,47 +388,30 @@ export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
       backend, task_type,
       objective, context, acceptance_criteria, constraints, deliverables,
     }) => {
-      const filePath = path.join(tasksDir, `${id}.md`)
-
-      if (fs.existsSync(filePath)) {
-        return {
-          content: [{ type: "text" as const, text: `Error: Task already exists: ${id}` }],
-          isError: true,
+      try {
+        const client = getLinearClient()
+        const teams = await client.teams()
+        const team = teams.nodes[0]
+        if (!team) {
+          return {
+            content: [{ type: "text" as const, text: "Error: No Linear team found" }],
+            isError: true,
+          }
         }
-      }
 
-      // Resolve backend route
-      const route = resolveRoute(
-        DEFAULT_DISPATCH,
-        task_type,
-        "interactive" as const,
-        backend ? { backend: backend as Backend } : undefined,
-      )
-      const resolvedBackend = route.backend
-      const resolvedModel = model ?? route.model ?? undefined
+        // Resolve backend route for metadata tracking
+        const route = resolveRoute(
+          DEFAULT_DISPATCH,
+          task_type,
+          "interactive" as const,
+          backend ? { backend: backend as Backend } : undefined,
+        )
+        const resolvedBackend = route.backend
+        const resolvedModel = model ?? route.model ?? undefined
 
-      const meta: TaskMeta = {
-        id,
-        status: "pending",
-        role,
-        priority,
-        initiative: initiative ?? null,
-        backend: resolvedBackend,
-        model: resolvedModel ?? null,
-        "task-type": task_type,
-        "budget-usd": "0.00",
-        worktree: null,
-        branch: null,
-        created: new Date().toISOString(),
-        "dispatched-at": null,
-        "completed-at": null,
-        "session-id": null,
-        "judge-verdict": "pending",
-      }
+        const criteriaList = acceptance_criteria.map((c: string) => `- [ ] ${c}`).join("\n")
 
-      const criteriaList = acceptance_criteria.map((c) => `- [ ] ${c}`).join("\n")
-
-      const body = `# ${title}
+        const body = `# ${title}
 
 ## Objective
 ${objective}
@@ -427,23 +427,44 @@ ${constraints ?? "None specified."}
 
 ## Deliverables
 ${deliverables}
-`
 
-      fs.mkdirSync(tasksDir, { recursive: true })
-      fs.writeFileSync(filePath, serializeFrontmatter(meta, body))
+---
+_Sherpa metadata: slug=${id} | role=${role} | task-type=${task_type} | backend=${resolvedBackend} | model=${resolvedModel ?? "default"} | initiative=${initiative ?? "none"}_`
 
-      await logEvent(projectRoot, logsDir, taskLoggerPath, id, "task_created", {
-        role, backend: resolvedBackend, model: resolvedModel ?? null,
-        taskType: task_type, priority, initiative: initiative ?? null,
-      })
+        const input = mapTaskToLinearInput({ title, priority })
+        const result = await client.createIssue({
+          teamId: team.id,
+          ...input,
+          description: body,
+        })
+        const issue = await result.issue
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({ created: true, path: `docs/tasks/${id}.md`, id, status: "pending" }),
-          },
-        ],
+        await logEvent(projectRoot, logsDir, taskLoggerPath, id, "task_created", {
+          role, backend: resolvedBackend, model: resolvedModel ?? null,
+          taskType: task_type, priority, initiative: initiative ?? null,
+          linearIdentifier: issue?.identifier ?? null,
+        })
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify({
+                created: true,
+                identifier: issue?.identifier,
+                id: issue?.id,
+                slug: id,
+                status: "pending",
+              }),
+            },
+          ],
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return {
+          content: [{ type: "text" as const, text: `Error creating task in Linear: ${message}` }],
+          isError: true,
+        }
       }
     },
   )
@@ -464,23 +485,49 @@ ${deliverables}
       value: z.string().nullable().describe("New value (use null to clear)"),
     },
     async ({ id, field, value }) => {
-      const updated = findAndUpdateTask(tasksDir, id, field, value)
+      try {
+        const client = getLinearClient()
 
-      if (!updated) {
+        // Resolve the Linear issue by identifier (e.g. "SHR-42")
+        const detail = await getLinearTaskDetail(id)
+        if (!detail) {
+          return {
+            content: [{ type: "text" as const, text: `Error: Task not found: ${id}` }],
+            isError: true,
+          }
+        }
+
+        // For priority, update the Linear issue directly
+        // For other fields, post as a structured comment (preserves data without complex label mutations)
+        const linearIssueId = detail.id
+        if (field === "priority" && value) {
+          const input = mapTaskToLinearInput({ priority: value as "low" | "medium" | "high" | "urgent" })
+          await client.updateIssue(linearIssueId, { priority: input.priority })
+        } else {
+          // TODO: Map status → Linear workflow state transitions
+          // TODO: Map judge-verdict → Verdict label group mutations
+          // For now, post field updates as a structured comment on the issue
+          await client.createComment({
+            issueId: linearIssueId,
+            body: `**Sherpa field update:** \`${field}\` → \`${value ?? "null"}\``,
+          })
+        }
+
+        if (field === "status") {
+          await logEvent(projectRoot, logsDir, taskLoggerPath, id, "task_status_changed", { field, to: value })
+        }
+
         return {
-          content: [{ type: "text" as const, text: `Error: Task not found: ${id}` }],
+          content: [
+            { type: "text" as const, text: JSON.stringify({ updated: true, id, field, value }) },
+          ],
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return {
+          content: [{ type: "text" as const, text: `Error updating task in Linear: ${message}` }],
           isError: true,
         }
-      }
-
-      if (field === "status") {
-        await logEvent(projectRoot, logsDir, taskLoggerPath, id, "task_status_changed", { field, to: value })
-      }
-
-      return {
-        content: [
-          { type: "text" as const, text: JSON.stringify({ updated: true, id, field, value }) },
-        ],
       }
     },
   )
