@@ -10,11 +10,9 @@ const footerLinks = [
     ],
   },
   {
-    title: "Company",
+    title: "Connect",
     links: [
-      { title: "About", href: "/about" },
-      { title: "Consulting", href: "/consulting" },
-      { title: "Contact", href: "/contact" },
+      { title: "Rob Abby", href: "https://robabby.com", external: true },
     ],
   },
 ]
@@ -24,32 +22,37 @@ export function SiteFooter() {
     <footer className="mt-auto">
       <Separator />
       <div className="mx-auto max-w-6xl px-6 py-12">
-        <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
+        <div className="flex flex-col justify-between gap-8 sm:flex-row">
           <div>
             <Link href="/" className="font-heading text-lg tracking-tight">
               Sherpa
             </Link>
             <p className="mt-2 text-sm text-muted-foreground">
-              An open-source governance framework for agentic workflows.
+              A governance framework for agentic workflows.
             </p>
           </div>
-          {footerLinks.map((group) => (
-            <div key={group.title}>
-              <h3 className="text-sm font-semibold">{group.title}</h3>
-              <ul className="mt-3 flex flex-col gap-2">
-                {group.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {link.title}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div className="flex flex-col gap-8">
+            {footerLinks.map((group) => (
+              <div key={group.title}>
+                <h3 className="text-sm font-semibold">{group.title}</h3>
+                <ul className="mt-3 flex flex-col gap-2">
+                  {group.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        {...("external" in link && link.external
+                          ? { target: "_blank", rel: "noopener noreferrer" }
+                          : {})}
+                      >
+                        {link.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="mt-10 border-t border-border/40 pt-6">
           <p className="text-xs text-muted-foreground">
