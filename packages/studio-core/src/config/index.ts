@@ -72,6 +72,7 @@ export function loadConfig(projectRoot?: string): SherpaConfig {
   return defineConfig(jsonConfig ?? { projectRoot: root })
 }
 
+export { userConfigSchema } from "./schema"
 export { loadJsonConfig } from "./load-json"
 export { withSherpa } from "./next-wrapper"
 export type {

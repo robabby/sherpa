@@ -1,0 +1,13 @@
+---
+title: Rule Frontmatter
+description: YAML frontmatter schema for convention rule files.
+---
+
+import { SchemaReference } from "@/components/docs/schema-reference"
+import { ruleFrontmatterSchema } from "@sherpa/studio-core"
+
+Convention rules live at `.claude/rules/<name>.md`. The frontmatter controls auto-loading behavior.
+
+<SchemaReference schema={ruleFrontmatterSchema} />
+
+See [Guide: Creating Conventions](/docs/guides/creating-conventions) for how to write convention rules.

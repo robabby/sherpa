@@ -1,0 +1,13 @@
+---
+title: Agent Role Frontmatter
+description: YAML frontmatter schema for behavioral agent role definitions.
+---
+
+import { SchemaReference } from "@/components/docs/schema-reference"
+import { behavioralAgentFrontmatterSchema } from "@sherpa/studio-core"
+
+Agent roles live at `docs/agents/roles/<slug>.md`. The YAML frontmatter defines behavioral constraints, dispatch routing, and collaboration patterns.
+
+<SchemaReference schema={behavioralAgentFrontmatterSchema} />
+
+See [Guide: Defining Agent Roles](/docs/guides/defining-agent-roles) for a step-by-step walkthrough.

@@ -1,0 +1,98 @@
+---
+title: CLI & Scripts
+description: Command reference for the Sherpa CLI and dispatch scripts.
+---
+
+## sherpa init
+
+Scaffold governance into an existing project.
+
+```bash
+sherpa init
+```
+
+Creates:
+
+| Path | Purpose |
+|------|---------|
+| `sherpa.json` | Project configuration |
+| `.claude/rules/` | Convention rule files |
+| `.claude/skills/` | Skill definitions |
+| `docs/agents/roles/` | Agent role definitions |
+| `docs/initiatives/` | Initiative directory |
+
+Runs interactively -- prompts for project name, description, and which conventions to include.
+
+> **Status:** Under development. Available in `@sherpa/studio-cli`.
+
+## sherpa sync
+
+Update conventions from upstream template.
+
+```bash
+sherpa sync
+```
+
+Three-way merge at heading granularity: keeps local customizations while applying upstream updates. Files with `maintained-by: human` in provenance frontmatter are skipped.
+
+> **Status:** Under development.
+
+## Dispatch Scripts
+
+Available now in the monorepo. These scripts route tasks to agent backends.
+
+### Interactive Dispatch
+
+```bash
+./scripts/dispatch.sh <role-slug>
+```
+
+Launch an interactive CLI session with a specific agent role loaded. The role's behavioral constraints, context packages, and tool permissions are injected into the session.
+
+### Headless Worker
+
+```bash
+./scripts/worker.sh <task-slug>
+```
+
+Dispatch a task to its assigned backend for autonomous execution. Backend selection follows the routing table in `sherpa.config.ts`.
+
+### Judge Review
+
+```bash
+./scripts/auto-judge.sh <task-slug>
+```
+
+Run the Judge role against a completed task's output. Evaluates against the role's `quality-bar` criteria and the content quality scorecard.
+
+### Batch Dispatch
+
+```bash
+./scripts/dispatch-queue.sh --pending
+```
+
+Dispatch all pending tasks in queue order. Respects dependency ordering -- a task blocked by an incomplete dependency is skipped.
+
+### Backends
+
+| Backend | Type | Notes |
+|---------|------|-------|
+| `claude` | CLI | Claude Code interactive session |
+| `opencode` | CLI | OpenCode CLI |
+| `codex` | CLI | OpenAI Codex CLI |
+| `gemini` | CLI | Google Gemini CLI |
+| `lm-studio` | CLI | Local LM Studio CLI |
+| `groq` | API | Groq cloud inference |
+| `google-ai` | API | Google AI Studio API |
+| `lm-studio-api` | API | Local LM Studio HTTP API |
+| `openclaw` | Gateway | Remote OpenClaw agent (WebSocket v3) |
+
+Backend routing is configured in the `dispatch` section of `sherpa.config.ts`. Task type determines backend unless explicitly overridden.
+
+## Database Sync
+
+```bash
+pnpm sync:db
+```
+
+Rebuild the knowledge index from the filesystem. Scans initiatives, agent roles, rules, and skills, then writes to the local SQLite database used by Studio and the MCP server.
