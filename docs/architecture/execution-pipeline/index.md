@@ -141,7 +141,7 @@ Research depth: `iterations / (iterations + open_questions)` — 0 to 1 normaliz
 
 ## Task Data Model
 
-`TaskBoardEntry` in `packages/studio-core/src/tasks.ts`:
+Tasks are managed in Linear. The `TaskBoardEntry` interface (`packages/studio-core/src/tasks.ts`) is populated by `getLinearTaskBoard()` in `packages/studio-core/src/linear-tasks.ts`, which queries the Linear API via `@linear/sdk` and maps issues to:
 
 ```
 { id, file, status, role, priority, initiative, backend, model,
@@ -150,7 +150,11 @@ Research depth: `iterations / (iterations + open_questions)` — 0 to 1 normaliz
   hasReport, hasVerdict, hasBlockers }
 ```
 
+Sherpa's task taxonomy maps to Linear via mutually exclusive label groups: Task Type (8 labels), Mode (3), Role (5), Verdict (4). Priority maps natively (urgent=1, high=2, medium=3, low=4). Workflow state types map to Sherpa status (unstarted→pending, started→dispatched, completed→completed, canceled→failed).
+
 Status lifecycle: `pending` → `dispatched` → `completed`/`failed` → `reviewed`
+
+> **Note:** As of sherpa-linear-integration (2026-03-22), task state lives in Linear. `docs/tasks/logs/` retains execution artifacts (NDJSON events, verdicts, reports) on disk.
 
 ## Current State
 
@@ -160,7 +164,7 @@ Status lifecycle: `pending` → `dispatched` → `completed`/`failed` → `revie
 
 **MCP Coordination Server:** Single-process MCP server at `packages/studio-mcp/` serving Streamable HTTP on port 3100 (`/mcp` endpoint). **Auth-gated** — all requests (except `/health`) must provide either an `x-api-key` header (agents, validated via Better Auth API key plugin) or a session cookie (humans, validated via `fromNodeHeaders`). Auth middleware at `packages/studio-mcp/src/auth/middleware.ts` shares `.sherpa/auth.db` with Studio via SQLite WAL. Multi-client session management — each connecting client gets its own `McpServer` + `StreamableHTTPServerTransport` pair, routed by `mcp-session-id` header. Health check at `/health` (unauthenticated). Authority lease system backed by SQLite `coordination.db` with three tools (`authority_acquire`, `authority_release`, `authority_renew`), one resource (`authority://{scope}`), and a `get_dashboard` bootstrap tool. Fencing tokens are globally monotonic via a `fence_token_seq` counter. TTL reaper cleans expired leases every 60 seconds. Authority enforcement (hooks) is deferred — applies only to autonomous agents, not collaborative sessions. See [0008 — Authority enforcement scoped to autonomous agents](../../decisions/0008-authority-enforcement-autonomous-only.md), [0012 — Better Auth over Supabase Auth](../../decisions/0012-better-auth-over-supabase.md).
 
-**MCP Task Dispatch:** The `task_create` and `task_dispatch` MCP tools route to all configured backends, not just lm-studio. `task_create` accepts optional `backend` (explicit override) and `task_type` (for route resolution via `resolveRoute()` from `@sherpa/studio-core`). When backend is omitted, `task_type` determines the backend via `DEFAULT_DISPATCH` config. `task_dispatch` delegates to `scripts/worker.sh` which handles env var setup, backend script selection, NDJSON event logging, and log streamer sidecars for all backend types. Health checks remain scoped to lm-studio only — other backends fail naturally via worker.sh.
+**MCP Task Tools:** Task CRUD tools (`task_list`, `task_get`, `task_create`, `task_update`) query the Linear API via `@linear/sdk`. `task_create` creates a Linear issue with mapped priority and label groups, then resolves backend routing via `resolveRoute()`. `task_dispatch` remains filesystem-based — it reads local task metadata and delegates to `scripts/worker.sh` for backend script selection, NDJSON event logging, and log streamer sidecars. `task_logs` reads execution artifacts from `docs/tasks/logs/`. See [0016 — Linear as task state backend](../../decisions/0016-linear-as-task-backend.md).
 
 **MCP Initiative Governance:** Seven initiative lifecycle tools registered in `packages/studio-mcp/src/initiative/tools.ts` — list, get, seeds (read-only), create, approve, update_status, activity (write, authority-gated). Write tools check authority leases when a coordination DB is available. Approval is governance-policy-gated via `governance.approval.agents` in `sherpa.config.ts` (default: `'never'`). Backed by `packages/studio-core/src/initiative-ops.ts` — filesystem CRUD with Zod validation and lifecycle transition enforcement.
 

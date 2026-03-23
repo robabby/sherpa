@@ -71,9 +71,9 @@ Cross-cutting conventions auto-load from `.claude/rules/` based on file globs:
 ./scripts/worker.sh <task-slug>         # Headless: dispatch a task to its backend
 ./scripts/auto-judge.sh <task-slug>     # Judge: review completed task
 ./scripts/dispatch-queue.sh --pending   # Queue: dispatch all pending tasks
-./scripts/task-board.sh list            # List tasks
-./scripts/task-board.sh add <slug> "description" --task-type research
 ```
+
+Task CRUD is via Linear (MCP tools: `task_list`, `task_get`, `task_create`, `task_update`).
 
 9 backends: 5 CLI (`claude`, `opencode`, `codex`, `gemini`, `lm-studio`), 3 API (`groq`, `google-ai`, `lm-studio-api`), 1 gateway (`openclaw` — remote OpenClaw agent via WebSocket protocol v3). Routing configured in `sherpa.config.ts` dispatch section. Task-type determines backend; `openclaw` is explicit-only (set `backend: openclaw` on the task).
 

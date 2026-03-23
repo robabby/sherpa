@@ -2,7 +2,8 @@ import { getAllProjects } from "./projects"
 import { getInitiatives } from "./domain"
 import type { Initiative } from "./types"
 import { scanResearchFiles, type ResearchFile } from "./research-files"
-import { getTaskBoard, type TaskBoardEntry } from "./tasks"
+import type { TaskBoardEntry } from "./tasks"
+import { getLinearTaskBoard } from "./linear-tasks"
 
 export interface CrossProjectInitiative {
   /** project/slug notation */
@@ -125,21 +126,18 @@ export interface CrossProjectTask extends TaskBoardEntry {
 
 /**
  * Get all tasks across all projects.
+ * Tasks are sourced from Linear — project-level filtering is not yet
+ * supported (all tasks come from one Linear workspace).
  */
-export function getAllTasks(): CrossProjectTask[] {
+export async function getAllTasks(): Promise<CrossProjectTask[]> {
   const projects = getAllProjects()
-  const result: CrossProjectTask[] = []
+  const defaultProject = projects[0]
+  if (!defaultProject) return []
 
-  for (const project of projects) {
-    const tasks = getTaskBoard({ projectRoot: project.root })
-    for (const task of tasks) {
-      result.push({
-        ...task,
-        projectSlug: project.slug,
-        projectName: project.name,
-      })
-    }
-  }
-
-  return result
+  const tasks = await getLinearTaskBoard()
+  return tasks.map((task) => ({
+    ...task,
+    projectSlug: defaultProject.slug,
+    projectName: defaultProject.name,
+  }))
 }

@@ -313,7 +313,7 @@ export function MissionWorkspace({
           <EmptyStateDescription>
             Tasks are dispatched to AI agents for autonomous execution.
           </EmptyStateDescription>
-          <EmptyStateCommand>./scripts/task-board.sh add my-task "description"</EmptyStateCommand>
+          <EmptyStateCommand>Use the task_create MCP tool or create an issue in Linear</EmptyStateCommand>
           <EmptyStateAction href="/dispatch">Open Dispatch</EmptyStateAction>
         </EmptyState>
       </div>

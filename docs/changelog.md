@@ -3,8 +3,8 @@ doc-type: changelog
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-21
-last-verified: 2026-03-21
+last-updated: 2026-03-22
+last-verified: 2026-03-22
 source-initiatives:
   - parallel-workflow-governance
   - dispatch-center
@@ -23,13 +23,61 @@ source-initiatives:
   - research-markdown-renderer
   - studio-zero-downtime-deploy
   - studio-research-dashboard
+  - studio-research-dashboard-v2
+  - studio-shareable-research
+  - sherpa-linear-integration
 ---
 
-> **AI-updated** 2026-03-21 · Awaiting human review
+> **AI-updated** 2026-03-22 · Awaiting human review
 
 # Changelog
 
 Reverse-chronological record of integrated initiatives and their system impact.
+
+## 2026-03-22 — Linear as Task Backend
+
+Linear replaces the filesystem as the task state backend. Hard switchover — all Studio pages and MCP task tools now query the Linear API via `@linear/sdk`. 27 existing tasks migrated to Linear issues (SG-306–SG-332). Sherpa's task taxonomy maps to Linear via mutually exclusive label groups (Task Type, Mode, Role, Verdict). Dispatch pipeline, judge system, and execution artifacts remain framework-native.
+
+**Initiative:** [sherpa-linear-integration](initiatives/sherpa-linear-integration/proposal.md)
+**Pillar:** Execution Pipeline
+**Key changes:**
+- New modules in `@sherpa/studio-core`: `linear-client.ts`, `linear-mapping.ts`, `linear-tasks.ts`
+- MCP tools `task_list`, `task_get`, `task_create`, `task_update` rewritten for Linear API
+- All 8 Studio task-consuming pages switched to async Linear fetching
+- `scripts/task-board.sh` deleted, `docs/tasks/*.md` files deleted (migrated)
+- `scripts/linear-setup.mjs` creates label groups in Linear workspace
+- `SHERPA_LINEAR_API_KEY` required as env var
+- Decision: [0016 — Linear as task state backend](decisions/0016-linear-as-task-backend.md)
+
+## 2026-03-22 — Shareable Research Documents
+
+Research documents can now be shared via public links. A "Share" button in the research viewer copies a `/s/<token>` URL that renders the document with full Sherpa styling — no sidebar, no auth required. Tokens are HMAC-SHA256 signed (no database needed), and share pages include OG meta tags for rich link previews in Slack, email, etc.
+
+**Initiative:** [studio-shareable-research](initiatives/studio-shareable-research/proposal.md)
+**Pillar:** Studio Application
+**Key changes:**
+- New `(share)` route group with minimal layout and branded footer
+- HMAC token module in `@sherpa/studio-core` (`generateShareToken` / `resolveShareToken`)
+- `/s` added to middleware public paths whitelist
+- `ShareLinkButton` component with copy-to-clipboard and visual feedback
+- Dynamic OG meta tags from document frontmatter
+
+## 2026-03-21 — Studio Research Dashboard V2
+
+Applied the Sherpa warm spatial glass design language to the research dashboard — transforming it from shadcn defaults into the distinctive control-surface aesthetic used across the rest of Studio. Added search/filter controls, inline markdown rendering in summaries, coverage map staleness indicators, and a research file rating system.
+
+**Initiative:** [studio-research-dashboard-v2](initiatives/studio-research-dashboard-v2/proposal.md)
+**Pillar:** Studio Application
+**Key changes:**
+- Glass surface treatment on all components: heartbeat bar (gold LED pulse-glow), priorities panel (gold accent bar, Fraunces italic, rail-node numbered list), state panel (copper accent bars, completion progress bar), stream/timeline/table views
+- Coverage map staleness dots: green (<2d), amber (2-7d), red (>7d) — computed via `apps/studio/src/lib/staleness.ts`
+- Search/filter bar: full-text search across title/summary/category with `useDeferredValue`, category toggle chips with gold active state, URL-persisted (`?q=`, `?categories=`)
+- Inline markdown rendering in summaries via `apps/studio/src/lib/render-inline-markdown.tsx` (bold, italic, code, links — regex-based, zero dependencies)
+- Timeline view copper spine with gold dots and staggered `panel-glow-in` animation
+- Gold active tab indicators, warm gradient page heading
+- Research file rating system: +1/-1 buttons on detail pages, rating stored in file frontmatter via `POST /api/research/rate`, rating badges in listing views
+- 12 new tests (8 inline markdown, 4 staleness), zero new dependencies
+- PR #18 (12 commits, 16 files, +618/-206 lines), PR #19 (rating system, 7 files, +146/-4 lines)
 
 ## 2026-03-21 — Studio Research Dashboard
 

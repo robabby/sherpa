@@ -1,7 +1,6 @@
 import type Database from "better-sqlite3"
 import { listActiveLeases, type LeaseInfo } from "./authority/operations"
-import fs from "node:fs"
-import path from "node:path"
+import { getLinearTaskBoard } from "@sherpa/studio-core"
 
 export interface DashboardOptions {
   agentId?: string
@@ -25,15 +24,27 @@ interface DashboardTask {
 }
 
 /** Build a role-scoped dashboard snapshot. */
-export function buildDashboard(
+export async function buildDashboard(
   db: Database.Database,
   projectRoot: string,
   opts?: DashboardOptions,
-): Dashboard {
+): Promise<Dashboard> {
   const leases = listActiveLeases(db, opts?.agentId)
   const allLeases = listActiveLeases(db)
   const agentIds = new Set(allLeases.map((l) => l.agentId))
-  const tasks = scanTasksLightweight(path.join(projectRoot, "docs/tasks"))
+
+  let tasks: DashboardTask[]
+  try {
+    const board = await getLinearTaskBoard()
+    tasks = board.map((t) => ({
+      id: t.id,
+      status: t.status,
+      role: t.role,
+      priority: t.priority,
+    }))
+  } catch {
+    tasks = []
+  }
 
   return {
     leases,
@@ -43,37 +54,4 @@ export function buildDashboard(
       totalAgents: agentIds.size,
     },
   }
-}
-
-function scanTasksLightweight(tasksDir: string): DashboardTask[] {
-  if (!fs.existsSync(tasksDir)) return []
-
-  const files = fs.readdirSync(tasksDir).filter((f) => f.endsWith(".md") && f !== "README.md")
-  const tasks: DashboardTask[] = []
-
-  for (const file of files) {
-    try {
-      const content = fs.readFileSync(path.join(tasksDir, file), "utf-8")
-      const match = content.match(/^---\n([\s\S]*?)\n---/)
-      if (!match) continue
-
-      const meta: Record<string, string> = {}
-      for (const line of match[1].split("\n")) {
-        const colonIdx = line.indexOf(":")
-        if (colonIdx === -1) continue
-        meta[line.slice(0, colonIdx).trim()] = line.slice(colonIdx + 1).trim()
-      }
-
-      if (meta.id) {
-        tasks.push({
-          id: meta.id,
-          status: meta.status ?? "unknown",
-          role: meta.role ?? "unknown",
-          priority: meta.priority ?? "medium",
-        })
-      }
-    } catch { /* skip */ }
-  }
-
-  return tasks
 }

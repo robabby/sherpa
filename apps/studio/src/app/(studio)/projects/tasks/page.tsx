@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AggregateTasksPage() {
-  const tasks = getAllTasks();
+  const tasks = await getAllTasks();
 
   // Group by status for a quick summary
   const statusCounts = new Map<string, number>();

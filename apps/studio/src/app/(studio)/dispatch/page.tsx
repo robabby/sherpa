@@ -25,7 +25,7 @@ export default async function DispatchPage({
   searchParams: Promise<Record<string, string>>;
 }) {
   const params = await searchParams;
-  const tasks = getTaskBoard({ projectRoot: PROJECT_ROOT });
+  const tasks = await getTaskBoard();
   const roles = getAgentRoles();
   const health = getBackendHealth(PROJECT_ROOT);
 

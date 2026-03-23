@@ -2,11 +2,11 @@
 
 import {
   getInitiatives,
-  getTaskBoard,
   getSkills,
   getAllProjects,
   getPrimarySlug,
 } from "@sherpa/studio-core";
+import { getTaskBoard } from "@/lib/studio/tasks";
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                      */
@@ -105,8 +105,8 @@ export async function getCommandPaletteItems(): Promise<CommandPaletteData> {
     }
   }
 
-  // Tasks from primary project only (tasks are project-root specific)
-  const taskBoard = getTaskBoard({ projectRoot: projects[0]?.root });
+  // Tasks from Linear workspace
+  const taskBoard = await getTaskBoard();
   const tasks: CommandPaletteItem[] = taskBoard.slice(0, MAX_TASKS).map((t) => ({
     label: t.title,
     href: `/projects/${primarySlug}/tasks/${t.id}`,

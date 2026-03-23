@@ -19,10 +19,10 @@ export default async function TasksPage({
   searchParams: Promise<Record<string, string>>;
 }) {
   const params = await searchParams;
-  const tasks = getTaskBoard({ projectRoot: PROJECT_ROOT });
+  const tasks = await getTaskBoard();
   const selectedId = params.node ?? null;
   const detail = selectedId
-    ? getTaskDetail(selectedId, { projectRoot: PROJECT_ROOT })
+    ? await getTaskDetail(selectedId)
     : null;
   const events = selectedId
     ? getTaskEvents(selectedId, { projectRoot: PROJECT_ROOT })

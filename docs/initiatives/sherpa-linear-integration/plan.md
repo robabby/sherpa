@@ -4,7 +4,7 @@
 
 **Goal:** Replace Sherpa's filesystem-based task state management with Linear as the state backend, keeping all governance/dispatch logic framework-native, and register Sherpa as a Linear Agent.
 
-**Architecture:** Three-zone model. Zone 1 (DELETE): task CRUD code (~550 lines + 41 task files). Zone 2 (BRIDGE): rewrite data layer to read from Linear API, same `TaskBoardEntry`/`TaskDetail` interfaces. Zone 3 (KEEP): dispatch pipeline, telemetry, judge system, initiative system, Studio governance UI — all untouched. The `@linear/sdk` TypeScript client is the primary integration surface; Linear's official MCP server is a secondary tool for agent workflows.
+**Architecture:** Hard switchover — no feature flag. Linear IS the task backend. Zone 1 (DELETE): task CRUD code, `task-source.ts`, filesystem task scanning. Zone 2 (REPLACE): `getTaskBoard()` and `getTaskDetail()` become async, Linear-backed. Zone 3 (KEEP): dispatch pipeline, telemetry, judge system, initiative system, Studio governance UI. The `@linear/sdk` TypeScript client is the primary integration surface.
 
 **Tech Stack:** `@linear/sdk` (TypeScript, auto-generated from Linear's GraphQL schema), Next.js 16 (RSC), `@sherpa/studio-core` (domain logic), `@sherpa/studio-mcp` (MCP server), shadcn/ui (Tailwind v4, new-york style, radix base), pnpm workspace monorepo.
 
@@ -650,390 +650,152 @@ git commit -m "feat(studio-core): add Linear-backed task data layer"
 
 ---
 
-### Task 2.2: Create task source switcher
+### Task 2.2: ~~Create task source switcher~~ REMOVED
 
-**Files:**
-- Create: `packages/studio-core/src/task-source.ts`
-
-This module provides a unified interface that reads from either filesystem (existing `tasks.ts`) or Linear (`linear-tasks.ts`) based on configuration. Studio pages will import from this instead of `tasks.ts` directly.
-
-**Step 1: Write the test**
-
-```typescript
-import { describe, it, expect, vi } from "vitest";
-
-describe("task-source", () => {
-  it("exports getTaskSource function", async () => {
-    const mod = await import("../task-source");
-    expect(typeof mod.getTaskSource).toBe("function");
-  });
-
-  it("defaults to filesystem source", () => {
-    const { getTaskSource } = require("../task-source");
-    expect(getTaskSource()).toBe("filesystem");
-  });
-});
-```
-
-**Step 2: Write implementation**
-
-```typescript
-export type TaskSource = "filesystem" | "linear";
-
-/** Determine task source from env var. */
-export function getTaskSource(): TaskSource {
-  const source = process.env.SHERPA_TASK_SOURCE;
-  if (source === "linear") return "linear";
-  return "filesystem";
-}
-```
-
-**Step 3: Run tests, commit**
-
-```bash
-cd /Users/rob/Workbench/sherpa && pnpm exec vitest run packages/studio-core/src/__tests__/task-source.test.ts
-git add packages/studio-core/src/task-source.ts packages/studio-core/src/__tests__/task-source.test.ts packages/studio-core/src/index.ts
-git commit -m "feat(studio-core): add task source switcher (filesystem | linear)"
-```
+> Removed — hard switchover means no feature flag. `task-source.ts` deleted.
 
 ---
 
-## Session 3: Studio App Integration
+## Session 3: Studio App Hard Switchover
 
-**Objective:** Update the Studio app's re-export layer and server components to support both task sources. When `SHERPA_TASK_SOURCE=linear`, pages fetch from Linear; otherwise filesystem (existing behavior).
+**Objective:** Replace all task data fetching in the Studio app. `getTaskBoard()` and `getTaskDetail()` become async, Linear-backed. Delete the filesystem re-exports. All 8 consuming pages `await` the Linear calls directly.
 
-### Task 3.1: Update Studio task re-exports
+### Task 3.1: Replace Studio task re-exports with Linear
 
 **Files:**
 - Modify: `apps/studio/src/lib/studio/tasks.ts`
 
-Currently this file is a single re-export line. Add the source-switching logic here so all 8 consuming pages get it automatically.
-
-**Step 1: Write implementation**
+Replace the single re-export line with async wrappers around the Linear data layer. All 8 consuming pages import from this file, so the switchover propagates automatically.
 
 ```typescript
-import { getTaskSource } from "@sherpa/studio-core";
-import {
-  getTaskBoard as getFilesystemTaskBoard,
-  getTaskDetail as getFilesystemTaskDetail,
-  getTaskStats,
-} from "@sherpa/studio-core/tasks";
-import type { TaskBoardEntry, TaskBoardOptions, TaskDetail, TaskStats } from "@sherpa/studio-core/tasks";
+import { getLinearTaskBoard, getLinearTaskDetail } from "@sherpa/studio-core";
+import type { TaskBoardEntry, TaskDetail } from "@sherpa/studio-core";
+import type { LinearTaskBoardOptions } from "@sherpa/studio-core";
 
-// Re-export types and utilities unchanged
-export type { TaskBoardEntry, TaskBoardOptions, TaskDetail, TaskStats };
-export { getTaskStats };
+export type { TaskBoardEntry, TaskDetail, LinearTaskBoardOptions };
 
-/**
- * Get task board from configured source.
- * When SHERPA_TASK_SOURCE=linear, fetches from Linear API.
- * Otherwise reads from filesystem (default).
- */
-export function getTaskBoard(opts?: TaskBoardOptions): TaskBoardEntry[] {
-  const source = getTaskSource();
-
-  if (source === "linear") {
-    // Linear is async — for RSC we need to handle this at the page level
-    // For now, fall back to filesystem in sync contexts
-    // Pages that want Linear should call getLinearTaskBoard directly
-    console.warn("[tasks] Linear source requested in sync context, falling back to filesystem");
-    return getFilesystemTaskBoard(opts);
-  }
-
-  return getFilesystemTaskBoard(opts);
+/** Fetch task board from Linear. */
+export async function getTaskBoard(opts?: LinearTaskBoardOptions): Promise<TaskBoardEntry[]> {
+  return getLinearTaskBoard(opts);
 }
 
-/**
- * Get task detail from configured source.
- */
-export function getTaskDetail(slug: string, opts?: TaskBoardOptions): TaskDetail | null {
-  return getFilesystemTaskDetail(slug, opts);
+/** Fetch task detail from Linear. */
+export async function getTaskDetail(identifier: string, opts?: LinearTaskBoardOptions): Promise<TaskDetail | null> {
+  return getLinearTaskDetail(identifier, opts);
 }
 ```
 
-> **Design note:** The existing `getTaskBoard()` is synchronous (reads filesystem). Linear's API is async. Rather than making all 8 consuming pages async-aware in this session, we add the async Linear path in Session 4 when we update individual pages. This session ensures the re-export layer is ready without breaking anything.
+**Step 1: Update the re-export file**
 
-**Step 2: Verify build**
+**Step 2: Update all 8 consuming pages to `await getTaskBoard()`**
 
-```bash
-cd /Users/rob/Workbench/sherpa && pnpm build
-```
+Every page that calls `getTaskBoard()` must now `await` it. These are all RSC (async server components), so this is a straightforward change:
 
-Expected: Build succeeds. All pages still work with filesystem source.
+- `apps/studio/src/app/(studio)/tasks/page.tsx` — `const tasks = await getTaskBoard(...)`
+- `apps/studio/src/app/(studio)/tasks/[slug]/page.tsx` — same
+- `apps/studio/src/app/(studio)/dispatch/page.tsx` — same
+- `apps/studio/src/app/(studio)/page.tsx` — same
+- `apps/studio/src/app/(studio)/workforce/page.tsx` — same
+- `apps/studio/src/app/(studio)/projects/page.tsx` — same
+- `apps/studio/src/app/(studio)/projects/[project]/tasks/page.tsx` — same
+- `apps/studio/src/app/(studio)/actions/command-palette-items.ts` — same
 
-**Step 3: Commit**
-
-```bash
-git add apps/studio/src/lib/studio/tasks.ts
-git commit -m "feat(studio): prepare task re-exports for Linear source switching"
-```
-
----
-
-### Task 3.2: Update Tasks page for async Linear support
-
-**Files:**
-- Modify: `apps/studio/src/app/(studio)/tasks/page.tsx`
-
-This is the primary tasks page. Update it to call `getLinearTaskBoard()` when Linear source is configured.
-
-**Step 1: Read current file and update**
-
-The current page is already a server component (async function). Update to conditionally fetch from Linear.
-
-Add at the top of the page component:
-
-```typescript
-import { getTaskSource } from "@sherpa/studio-core";
-import { getLinearTaskBoard } from "@sherpa/studio-core";
-
-// Inside the page component:
-const source = getTaskSource();
-const tasks = source === "linear"
-  ? await getLinearTaskBoard({ projectRoot: PROJECT_ROOT })
-  : getTaskBoard({ projectRoot: PROJECT_ROOT });
-```
-
-**Step 2: Verify build**
+**Step 3: Verify build**
 
 ```bash
 cd /Users/rob/Workbench/sherpa && pnpm build
-```
-
-**Step 3: Test with filesystem source (default)**
-
-```bash
-cd /Users/rob/Workbench/sherpa && pnpm dev
-# Visit http://localhost:3000/tasks — should work identically
 ```
 
 **Step 4: Commit**
 
 ```bash
-git add apps/studio/src/app/(studio)/tasks/page.tsx
-git commit -m "feat(studio): tasks page supports Linear as task source"
+git add apps/studio/src/
+git commit -m "feat(studio): hard switchover — all task pages fetch from Linear"
 ```
 
 ---
 
-### Task 3.3: Update remaining pages (Dispatch, Dashboard, Workforce, Projects)
+## Session 4: MCP Tool Switchover + Script Cleanup
 
-**Files:**
-- Modify: `apps/studio/src/app/(studio)/dispatch/page.tsx`
-- Modify: `apps/studio/src/app/(studio)/page.tsx`
-- Modify: `apps/studio/src/app/(studio)/workforce/page.tsx`
-- Modify: `apps/studio/src/app/(studio)/projects/page.tsx`
-- Modify: `apps/studio/src/app/(studio)/tasks/[slug]/page.tsx`
-- Modify: `apps/studio/src/app/(studio)/projects/[project]/tasks/page.tsx`
-- Modify: `apps/studio/src/app/(studio)/actions/command-palette-items.ts`
+**Objective:** Replace MCP task tools with Linear-backed implementations. Update dispatch scripts to query Linear. Delete `task-board.sh`.
 
-Apply the same pattern to each page: import `getTaskSource` and `getLinearTaskBoard`, conditionally call the async Linear path when configured.
-
-Each page follows the same pattern:
-
-```typescript
-const source = getTaskSource();
-const tasks = source === "linear"
-  ? await getLinearTaskBoard({ projectRoot: PROJECT_ROOT })
-  : getTaskBoard({ projectRoot: PROJECT_ROOT });
-```
-
-**Step 1: Update each file with the conditional fetch pattern**
-
-**Step 2: Verify build**
-
-```bash
-cd /Users/rob/Workbench/sherpa && pnpm build
-```
-
-**Step 3: Verify all pages render with filesystem source**
-
-```bash
-cd /Users/rob/Workbench/sherpa && pnpm dev
-# Visit each page: /, /tasks, /dispatch, /workforce, /projects
-```
-
-**Step 4: Commit**
-
-```bash
-git add apps/studio/src/app/
-git commit -m "feat(studio): all task-consuming pages support Linear source"
-```
-
----
-
-## Session 4: MCP Tool Migration
-
-**Objective:** Repoint `task_list`, `task_get`, `task_create`, `task_update` MCP tools to use Linear API when configured. Keep `task_dispatch` and `task_logs` unchanged (governance).
-
-### Task 4.1: Add Linear-backed MCP task tools
+### Task 4.1: Rewrite MCP task tools for Linear
 
 **Files:**
 - Modify: `packages/studio-mcp/src/server.ts`
-- Modify: `packages/studio-mcp/package.json` (add `@linear/sdk` dep)
 
-**Step 1: Install SDK in MCP package**
+Replace the filesystem-based implementations of `task_list`, `task_get`, `task_create`, `task_update` with Linear API calls. `task_dispatch` and `task_logs` stay unchanged (governance).
 
-```bash
-cd /Users/rob/Workbench/sherpa && pnpm add @linear/sdk --filter @sherpa/studio-mcp
-```
+**`task_list`** — call `getLinearTaskBoard()`, apply filters, return JSON.
 
-**Step 2: Update task_list tool**
+**`task_create`** — call `client.createIssue()` with mapped fields. Apply label IDs for task-type, mode, role. No local file creation.
 
-In the `task_list` handler, add source switching:
+**`task_update`** — map field updates to Linear mutations:
+- `status` → workflow state transition
+- `priority` → `issueUpdate({ priority })`
+- `judge-verdict` → update Verdict label group
+- Other governance fields (worktree, branch, session-id) → store as issue comment or attachment
 
-```typescript
-async ({ status, role, backend, initiative }) => {
-  const source = getTaskSource();
+**Step 1: Rewrite tool implementations**
 
-  if (source === "linear") {
-    const { getLinearTaskBoard } = await import("@sherpa/studio-core");
-    const tasks = await getLinearTaskBoard({ projectRoot });
-    // Apply filters
-    let filtered = tasks;
-    if (status) filtered = filtered.filter((t) => t.status === status);
-    if (role) filtered = filtered.filter((t) => t.role === role);
-    if (backend) filtered = filtered.filter((t) => t.backend === backend);
-    if (initiative) filtered = filtered.filter((t) => t.initiative === initiative);
-
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(filtered, null, 2) }],
-    };
-  }
-
-  // Existing filesystem implementation
-  const filter: Record<string, string> = {};
-  // ... existing code unchanged
-}
-```
-
-**Step 3: Update task_create tool**
-
-When Linear source is configured, create a Linear issue AND a local task file (for dispatch metadata):
-
-```typescript
-if (source === "linear") {
-  const client = getLinearClient();
-  const input = mapTaskToLinearInput({ title, priority, taskType: task_type, description: objective });
-  // Get team ID (first team in workspace)
-  const teams = await client.teams();
-  const team = teams.nodes[0];
-  const created = await client.createIssue({
-    teamId: team.id,
-    ...input,
-    description: body, // full task body markdown
-  });
-  // Also write minimal local file for dispatch metadata (backend, model, judge-verdict)
-  // ...
-}
-```
-
-**Step 4: Update task_update tool**
-
-When Linear source, update the Linear issue:
-
-```typescript
-if (source === "linear") {
-  const client = getLinearClient();
-  // Map field to Linear mutation
-  // status → state transition
-  // priority → priority number
-  // judge-verdict → label update
-  // ...
-}
-```
-
-**Step 5: Verify build and test**
+**Step 2: Verify build**
 
 ```bash
 cd /Users/rob/Workbench/sherpa && pnpm build && pnpm check
 ```
 
-**Step 6: Commit**
+**Step 3: Commit**
 
 ```bash
 git add packages/studio-mcp/
-git commit -m "feat(studio-mcp): task MCP tools support Linear as state backend"
+git commit -m "feat(studio-mcp): replace filesystem task tools with Linear API"
 ```
 
 ---
 
-### Task 4.2: Update dispatch scripts for Linear task lookup
+### Task 4.2: Update dispatch scripts for Linear
 
 **Files:**
-- Modify: `scripts/task-scanner.mjs` — add `--source linear` flag
-- Modify: `scripts/worker.sh` — pass source flag
-- Modify: `scripts/dispatch-queue.sh` — pass source flag
+- Modify: `scripts/task-scanner.mjs` — replace `scanTasks()` with Linear API query
+- Modify: `scripts/worker.sh` — update task resolution to use Linear
+- Modify: `scripts/dispatch-queue.sh` — fetch pending tasks from Linear
+- Delete: `scripts/task-board.sh` — entirely redundant
 
-**Step 1: Add Linear query path to task-scanner.mjs**
+`task-scanner.mjs` becomes a thin wrapper: query Linear for issues matching status/role/backend filters, return same JSON format the scripts expect. The `--id` flag queries by Linear identifier.
 
-Add a `--source linear` flag that queries Linear instead of scanning the filesystem. Keep the existing filesystem path as default.
+**Step 1: Rewrite task-scanner to query Linear**
 
-**Step 2: Update worker.sh**
-
-Pass `SHERPA_TASK_SOURCE` env var through to task-scanner calls:
+**Step 2: Delete task-board.sh**
 
 ```bash
-# In worker.sh, before task-scanner call:
-SCANNER_ARGS="--id $TASK_SLUG"
-if [ "$SHERPA_TASK_SOURCE" = "linear" ]; then
-  SCANNER_ARGS="$SCANNER_ARGS --source linear"
-fi
+git rm scripts/task-board.sh
 ```
 
-**Step 3: Update dispatch-queue.sh**
-
-Same pattern — pass source flag to task-scanner.
-
-**Step 4: Test with filesystem source (default)**
+**Step 3: Verify dispatch scripts work**
 
 ```bash
 cd /Users/rob/Workbench/sherpa && ./scripts/dispatch-queue.sh --pending --dry-run
 ```
 
-**Step 5: Commit**
+**Step 4: Commit**
 
 ```bash
-git add scripts/task-scanner.mjs scripts/worker.sh scripts/dispatch-queue.sh
-git commit -m "feat(dispatch): scripts support Linear as task source via SHERPA_TASK_SOURCE"
+git add scripts/
+git commit -m "feat(dispatch): scripts query Linear directly, delete task-board.sh"
 ```
 
 ---
 
-## Session 5: Deprecation + Cleanup
+## Session 5: Migration + Cleanup
 
-**Objective:** Delete redundant code, migrate existing task files, update documentation.
+**Objective:** Import existing task files to Linear, delete filesystem task files, update documentation.
 
-### Task 5.1: Delete task-board.sh
-
-**Files:**
-- Delete: `scripts/task-board.sh`
-
-**Step 1: Verify no active callers**
-
-```bash
-cd /Users/rob/Workbench/sherpa && grep -r "task-board.sh" scripts/ packages/ apps/ --include="*.sh" --include="*.ts" --include="*.mjs"
-```
-
-Expected: Only documentation references, no execution paths.
-
-**Step 2: Delete and commit**
-
-```bash
-git rm scripts/task-board.sh
-git commit -m "chore: delete task-board.sh (Linear replaces filesystem CRUD)"
-```
-
----
-
-### Task 5.2: Create task migration script
+### Task 5.1: Run migration script
 
 **Files:**
-- Create: `scripts/linear-import-tasks.mjs`
+- Create: `scripts/linear-import-tasks.mjs` — one-time import
 
-One-time script to import existing `docs/tasks/*.md` files as Linear issues.
-
-**Step 1: Write the migration script**
+Import all `docs/tasks/*.md` files as Linear issues, mapping frontmatter fields to Linear issue properties and labels.
 
 ```javascript
 #!/usr/bin/env node
@@ -1047,7 +809,6 @@ import path from "path";
 
 const TASKS_DIR = path.resolve(process.cwd(), "docs/tasks");
 
-// Parse frontmatter from task file
 function parseFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!match) return { meta: {}, body: content };
@@ -1095,38 +856,43 @@ async function main() {
 main().catch(console.error);
 ```
 
-**Step 2: Commit (don't run yet — run when ready to cutover)**
+**Step 1: Run migration**
 
 ```bash
-git add scripts/linear-import-tasks.mjs
-git commit -m "feat: add one-time task migration script (filesystem → Linear)"
+SHERPA_LINEAR_API_KEY=lin_... node scripts/linear-import-tasks.mjs
 ```
+
+**Step 2: Verify issues appear in Linear workspace**
 
 ---
 
-### Task 5.3: Update documentation
+### Task 5.2: Delete filesystem task files + dead code
 
 **Files:**
-- Modify: `docs/tasks/README.md` — update to describe Linear as primary source, filesystem as legacy/fallback
-- Modify: `CLAUDE.md` — add `SHERPA_TASK_SOURCE` and `SHERPA_LINEAR_API_KEY` env vars
+- Delete: `docs/tasks/*.md` (all task files except README.md)
+- Delete: `packages/studio-core/src/tasks.ts` (filesystem reader — replaced by `linear-tasks.ts`)
+- Keep: `docs/tasks/logs/` (execution artifacts stay on disk)
+- Keep: `docs/tasks/README.md` (update to document Linear as task backend)
 
-**Step 1: Update README**
-
-Add a section explaining:
-- `SHERPA_TASK_SOURCE=linear` enables Linear as task backend
-- `SHERPA_LINEAR_API_KEY` must be set
-- `docs/tasks/logs/` still holds execution artifacts (framework-side)
-- Legacy task files remain for offline/fallback use
-
-**Step 2: Update CLAUDE.md workspace section**
-
-Add the two new env vars to the workspace commands section.
-
-**Step 3: Commit**
+**Step 1: Delete task files**
 
 ```bash
-git add docs/tasks/README.md CLAUDE.md
-git commit -m "docs: document Linear task source configuration"
+find docs/tasks -name "*.md" ! -name "README.md" -delete
+```
+
+**Step 2: Update README.md**
+
+Document that tasks now live in Linear. `docs/tasks/logs/` retains execution artifacts (NDJSON events, verdicts, reports).
+
+**Step 3: Update CLAUDE.md**
+
+Add `SHERPA_LINEAR_API_KEY` as a required env var in the Workspace section.
+
+**Step 4: Commit**
+
+```bash
+git add docs/tasks/ packages/studio-core/src/tasks.ts CLAUDE.md
+git commit -m "chore: complete Linear switchover — delete filesystem task files and reader"
 ```
 
 ---
@@ -1341,24 +1107,25 @@ When a task comes from Linear, show the Linear identifier (e.g., "ENG-42") as a 
 
 ## Summary
 
-| Session | Scope | Files Created | Files Modified | Effort |
-|---------|-------|--------------|----------------|--------|
-| 1 | Linear client + mapping + workspace setup | 4 | 2 | 1 session |
-| 2 | Linear task data layer + source switcher | 3 | 1 | 1 session |
-| 3 | Studio app integration (8 pages) | 0 | 9 | 1 session |
-| 4 | MCP tool migration + dispatch scripts | 0 | 5 | 1 session |
-| 5 | Deprecation + cleanup + migration | 1 | 3 | 1 session |
-| 6 | OAuth registration + webhook + agent handler | 2 | 0 | 1 session |
-| 7 | UI polish (conditional) | 0 | 2 | 0.5 session |
-| **Total** | | **10** | **22** | **5.5-6.5 sessions** |
+| Session | Scope | Effort | Status |
+|---------|-------|--------|--------|
+| 1 | Linear client + mapping + workspace setup | 1 session | DONE |
+| 2 | Linear task data layer | 1 session | DONE |
+| 3 | Studio app hard switchover (8 pages) | 1 session | |
+| 4 | MCP tool switchover + script cleanup | 1 session | |
+| 5 | Migration + delete filesystem task code | 1 session | |
+| 6 | OAuth registration + webhook + agent handler | 1 session | |
+| 7 | UI polish (conditional) | 0.5 session | |
+| **Total** | | **5.5-6.5 sessions** | |
 
 ### Key Decisions
 
-1. **Feature flag, not hard cutover.** `SHERPA_TASK_SOURCE=linear` enables Linear; filesystem remains the default. Both paths coexist.
-2. **Same interfaces.** `TaskBoardEntry` and `TaskDetail` interfaces are unchanged. Linear data is mapped into these types.
+1. **Hard switchover, no feature flag.** Linear IS the task backend. No `SHERPA_TASK_SOURCE`, no conditional logic, no dual paths. Filesystem task code gets deleted.
+2. **Same interfaces.** `TaskBoardEntry` and `TaskDetail` interfaces are unchanged. Linear data is mapped into these types. `getTaskBoard()` becomes async.
 3. **Governance stays framework-side.** Dispatch pipeline, judge system, event logs, initiative lifecycle — none of this moves to Linear.
 4. **Label groups as taxonomy.** Since Linear has no custom fields, Sherpa's task-type/mode/role/verdict map to mutually exclusive label groups.
 5. **10-second acknowledgment.** Agent session handler emits a `thought` activity immediately, then processes governance checks asynchronously.
+6. **Execution artifacts stay on disk.** `docs/tasks/logs/` retains NDJSON events, verdicts, reports. Linear doesn't store dispatch telemetry.
 
 ### Dependencies
 

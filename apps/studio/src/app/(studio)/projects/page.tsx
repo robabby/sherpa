@@ -6,9 +6,9 @@ import {
   getAllProjects,
   getInitiatives,
   getProjectContext,
-  getTaskBoard,
   scanResearchFiles,
 } from "@/lib/studio";
+import { getTaskBoard } from "@/lib/studio/tasks";
 
 export const metadata: Metadata = {
   title: "All Projects | Studio",
@@ -17,11 +17,12 @@ export const metadata: Metadata = {
 
 export default async function ProjectsPage() {
   const projects = getAllProjects();
+  const allTasks = await getTaskBoard();
 
   const projectStats = projects.map((project) => {
     const ctx = getProjectContext(project.slug);
     const initiativeCount = ctx ? getInitiatives(ctx).length : 0;
-    const taskCount = getTaskBoard({ projectRoot: project.root }).length;
+    const taskCount = allTasks.length;
     const researchCount = scanResearchFiles(project.root).length;
 
     return { ...project, initiativeCount, taskCount, researchCount };
