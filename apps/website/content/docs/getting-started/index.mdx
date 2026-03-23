@@ -1,0 +1,26 @@
+---
+title: Getting Started
+description: Install Sherpa, scaffold governance into your project, and understand the directory structure.
+---
+
+Sherpa installs into an existing codebase as a set of conventions, configuration, and tooling. There is no hosted service — everything lives in your repository and versions with git.
+
+## Prerequisites
+
+- Node.js 22 or later
+- pnpm (recommended), npm, or bun
+- A git repository
+- An AI coding assistant (Claude Code, Cursor, Windsurf, or similar)
+
+## What gets installed
+
+1. **`sherpa.json`** at your project root — paths, dispatch routing, vocabulary, governance policy
+2. **`.claude/rules/`** — behavioral conventions that auto-load based on file globs
+3. **`.claude/skills/`** — executable workflows invocable as slash commands
+4. **`docs/agents/roles/`** — behavioral agent definitions for your dispatch pipeline
+5. **`docs/initiatives/`** — governance tracking for proposals and plans
+
+## Next steps
+
+- [Quick Start](/docs/getting-started/quick-start) — Scaffold governance and explore what was created
+- [Project Structure](/docs/getting-started/project-structure) — Understand where everything lives and why

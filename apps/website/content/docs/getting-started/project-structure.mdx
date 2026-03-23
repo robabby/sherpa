@@ -1,0 +1,120 @@
+---
+title: Project Structure
+description: Understand where Sherpa puts things and why — the three-directory model.
+---
+
+Sherpa organizes project artifacts across three directories, each with a distinct purpose and git strategy. Understanding this layout makes everything else in the framework predictable.
+
+## The three directories
+
+| Directory | Contents | Git status |
+|-----------|----------|------------|
+| `.sherpa/` | Runtime databases, coordination state | Gitignored |
+| `.claude/` | Convention files, skills, agent config | Committed |
+| `docs/` | Governance artifacts, agent roles, architecture | Committed |
+
+### `.sherpa/` — runtime data
+
+This directory contains SQLite databases that Sherpa manages at runtime. You never edit these files directly.
+
+- `coordination.db` — agent session coordination and task claims
+- `knowledge.db` — markdown corpus with full-text search indexing
+- `events.db` — audit trail of dispatches, approvals, and state transitions
+
+The `.sherpa/` directory is gitignored and regenerated on startup. Deleting it is safe — Sherpa rebuilds the databases from your committed governance artifacts.
+
+### `.claude/` — conventions for AI assistants
+
+This directory contains files that AI coding assistants load automatically based on glob patterns.
+
+```
+.claude/
+  rules/          # Convention files — auto-load by file glob
+  skills/         # Executable workflows — invocable as slash commands
+```
+
+**Rules** are markdown files with a `globs:` frontmatter field. When an AI assistant opens a file matching that pattern, the rule loads as context. This is how governance scales without manual prompt injection — the right constraints appear at the right time.
+
+**Skills** are structured workflows (like `/rr` for recursive research or `/plan-tasks` for breaking initiatives into dispatchable work). Each skill lives in its own directory with a `SKILL.md` definition.
+
+### `docs/` — governance artifacts
+
+This is where the human-readable governance lives. Everything here is committed to git and versions with your code.
+
+```
+docs/
+  agents/
+    roles/        # Behavioral agent definitions
+  initiatives/    # Proposals, plans, activity logs
+  architecture/   # System design documents
+  decisions/      # Architectural decision records
+```
+
+The `docs/` directory follows the [directoturtle convention](/docs/concepts/directoturtle) — a recursive, self-similar structure where any file can expand into a directory without changing its logical path.
+
+## `sherpa.json` — the configuration file
+
+The `sherpa.json` file at your project root is the single entry point for all Sherpa configuration. It tells the framework where to find things and how to behave.
+
+```json
+{
+  "$schema": "https://sherpa.solar/schema.json",
+  "admin": {
+    "projectName": "My Project",
+    "projectDescription": "What this project does"
+  },
+  "paths": {
+    "initiatives": "docs/initiatives",
+    "agentRoles": "docs/agents/roles",
+    "rules": ".claude/rules",
+    "skills": ".claude/skills"
+  }
+}
+```
+
+The full schema supports these sections:
+
+| Section | Purpose |
+|---------|---------|
+| `admin` | Project name, description, metadata |
+| `paths` | Directory locations for all governance artifacts |
+| `vocabulary` | Custom terminology — rename "initiatives" to "epics" if that fits your team |
+| `entities` | Organizational context injected into agent prompts |
+| `knowledge` | Markdown corpus configuration and search settings |
+| `governance` | Initiative lifecycle policy and approval workflows |
+| `mcp` | MCP server connection and tool configuration |
+| `projects` | Multi-project workspace definitions |
+
+All paths in `sherpa.json` are configurable. If your team calls initiatives "epics" and keeps them in `docs/epics/`, change the path. The framework follows the config, not a hardcoded layout.
+
+## Convention files
+
+Convention files live in `.claude/rules/` and auto-load based on file glob patterns. Each file is a markdown document with YAML frontmatter specifying when it should load.
+
+When an AI assistant opens a file matching a convention's glob pattern, that convention loads automatically. This means:
+
+- Working in `docs/initiatives/` loads the initiative convention
+- Working in `docs/agents/roles/` loads the behavioral engineering convention
+- Working across the project loads cross-cutting conventions like effort estimation
+
+You write conventions once, and they apply consistently across every AI session — no manual prompt setup, no copy-pasting instructions.
+
+## Agent roles
+
+Agent role definitions live in `docs/agents/roles/` as markdown files with YAML frontmatter. Each role defines behavioral constraints, not identity claims.
+
+A role file specifies:
+
+- **`disposition`** — how the agent approaches work (analytical, scope-conscious, evidence-driven)
+- **`quality-bar`** — concrete acceptance criteria the agent evaluates against
+- **`vibe`** — a human-readable one-liner for UI display (never injected as a prompt)
+
+The dispatch system reads these definitions when routing work. The role's behavioral constraints load into the agent session alongside relevant convention files, creating a focused working context.
+
+See [Behavioral Agents](/docs/concepts/behavioral-agents) for the research behind this approach and [Defining Agent Roles](/docs/guides/defining-agent-roles) for a practical walkthrough.
+
+## What to do next
+
+- [Quick Start](/docs/getting-started/quick-start) — Set up the structure in your own project
+- [Behavioral Agents](/docs/concepts/behavioral-agents) — The principle behind agent role definitions
+- [Initiative Lifecycle](/docs/concepts/initiative-lifecycle) — How proposals move through governance
