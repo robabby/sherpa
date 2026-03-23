@@ -4,7 +4,7 @@
 
 **Goal:** Replace Sherpa's filesystem-based task state management with Linear as the state backend, keeping all governance/dispatch logic framework-native, and register Sherpa as a Linear Agent.
 
-**Architecture:** Three-zone model. Zone 1 (DELETE): task CRUD code (~550 lines + 41 task files). Zone 2 (BRIDGE): rewrite data layer to read from Linear API, same `TaskBoardEntry`/`TaskDetail` interfaces. Zone 3 (KEEP): dispatch pipeline, telemetry, judge system, initiative system, Studio governance UI — all untouched. The `@linear/sdk` TypeScript client is the primary integration surface; Linear's official MCP server is a secondary tool for agent workflows.
+**Architecture:** Hard switchover — no feature flag. Linear IS the task backend. Zone 1 (DELETE): task CRUD code, `task-source.ts`, filesystem task scanning. Zone 2 (REPLACE): `getTaskBoard()` and `getTaskDetail()` become async, Linear-backed. Zone 3 (KEEP): dispatch pipeline, telemetry, judge system, initiative system, Studio governance UI. The `@linear/sdk` TypeScript client is the primary integration surface.
 
 **Tech Stack:** `@linear/sdk` (TypeScript, auto-generated from Linear's GraphQL schema), Next.js 16 (RSC), `@sherpa/studio-core` (domain logic), `@sherpa/studio-mcp` (MCP server), shadcn/ui (Tailwind v4, new-york style, radix base), pnpm workspace monorepo.
 
