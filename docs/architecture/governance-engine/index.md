@@ -109,12 +109,12 @@ The MCP server (`packages/studio-mcp/src/server.ts`) exposes tools for task, ini
 
 | Tool | Purpose |
 |------|---------|
-| `task_list` | Filter tasks by status, role, backend, initiative |
-| `task_get` | Full task with output, blockers, verdict logs |
-| `task_create` | Create task in `docs/tasks/` with frontmatter |
-| `task_update` | Update single metadata field |
-| `task_dispatch` | Spawn detached worker for LM Studio tasks |
-| `task_logs` | Read NDJSON events and artifact logs |
+| `task_list` | Query Linear issues, filter by status/role/backend/initiative |
+| `task_get` | Linear issue detail + local execution logs (output, blockers, verdict) |
+| `task_create` | Create Linear issue with mapped priority + label groups |
+| `task_update` | Update Linear issue fields (priority via API, others via comment) |
+| `task_dispatch` | Spawn detached worker for backend execution (filesystem-based) |
+| `task_logs` | Read NDJSON events and artifact logs from `docs/tasks/logs/` |
 | `initiative_list` | List initiatives with status/type/risk filters |
 | `initiative_get` | Full detail: proposal, plan, activity, lifecycle, seeds |
 | `initiative_create` | Create proposal — authority required on `initiatives/` scope |

@@ -1,8 +1,8 @@
 ---
-status: in-progress
+status: integrated
 initiative: sherpa-linear-integration
 created: 2026-03-21
-updated: '2026-03-21'
+updated: '2026-03-22'
 type: research-synthesis
 risk: additive
 targets:
