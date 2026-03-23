@@ -3,9 +3,10 @@ doc-type: architecture
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-22
-last-verified: 2026-03-22
+last-updated: 2026-03-23
+last-verified: 2026-03-23
 source-initiatives:
+  - studio-docs-site
   - studio-ux-patterns
   - studio-agent-missions
   - agent-narrative-streaming
@@ -16,8 +17,8 @@ source-initiatives:
   - studio-shareable-research
 ---
 
-> **AI-updated** 2026-03-22 · Awaiting human review
-> Sources: studio-ux-patterns, studio-agent-missions, agent-narrative-streaming, studio-production-auth, multi-project-studio, studio-research-dashboard, studio-research-dashboard-v2, studio-shareable-research
+> **AI-updated** 2026-03-23 · Awaiting human review
+> Sources: studio-docs-site, studio-ux-patterns, studio-agent-missions, agent-narrative-streaming, studio-production-auth, multi-project-studio, studio-research-dashboard, studio-research-dashboard-v2, studio-shareable-research
 
 # Studio Application
 
@@ -167,9 +168,33 @@ Two-level layout with route group separation:
 - **Reverse proxy:** Caddy (production TLS)
 - **Search:** Fuse.js (client-side), SQLite FTS5 (server-side)
 
+## Documentation Site
+
+Public documentation at `sherpa.solar/docs`, built with Fumadocs v16 within the existing Next.js 16 website app (`apps/website/`). Coexists with the Velite-powered blog at `/learn` — Velite handles `content/posts/`, Fumadocs handles `content/docs/`, each with independent content pipelines (`.velite/` and `.source/` outputs).
+
+**Content architecture:** 45 SSG pages across 5 sections — Getting Started (3), Concepts (6), Guides (5), Reference (hand-authored: 8, auto-generated: 11). Sidebar navigation via `meta.json` at each directory level. Full-text search via Orama (build-time indexed, no external service).
+
+**Self-documenting reference pipeline:** Three auto-generation targets run at prebuild (`apps/website/scripts/generate-reference-docs.ts`):
+
+| Target | Source | Output |
+|--------|--------|--------|
+| Zod schemas | `@sherpa/studio-core` config + frontmatter schemas (130 `.describe()` fields) | `<SchemaReference>` RSC renders TypeTable at build time |
+| MCP tools | InMemoryTransport extraction from `@sherpa/studio-mcp` (18 tools) | 4 domain-grouped MDX pages |
+| Component catalog | `COMPONENT_CATALOG` from `@sherpa/studio-ui` (104 entries) | 7 domain-grouped MDX pages |
+
+**Content Registry** (`apps/website/src/lib/_registry.ts`): TypeScript manifest mapping internal `docs/architecture/` paths to external `content/docs/concepts/` paths with `lastSynced` dates. Staleness detection uses provenance frontmatter `last-updated` against registry dates. Bridge between `/integrate` output and the public docs surface — not an auto-transform pipeline, but a traceable link.
+
+**Key infrastructure files:**
+- `apps/website/source.config.ts` — Fumadocs MDX collection config
+- `apps/website/src/lib/source.ts` — source loader (`baseUrl: '/docs'`)
+- `apps/website/src/app/(docs)/docs/layout.tsx` — DocsLayout with sidebar
+- `apps/website/src/app/(docs)/docs/[[...slug]]/page.tsx` — catch-all SSG route
+- `apps/website/src/components/docs/schema-reference.tsx` — Zod → JSON Schema → TypeTable RSC
+- `apps/website/src/components/docs/mcp-tool.tsx` — MCP tool parameter table component
+
 ## Current State
 
-**Implemented:** 15 route sections + project-scoped routes, 110+ components, multi-project federation with 3 projects (Sherpa, WavePoint, robabby), workspace pattern, hub dashboard, command palette (cross-project search), skeleton loading, empty states, tab status, URL filters, mission control, SSE event streaming, research viewer, project switcher, shareable research links (public `/s/<token>` pages with HMAC-signed tokens).
+**Implemented:** 15 route sections + project-scoped routes, 110+ components, multi-project federation with 3 projects (Sherpa, WavePoint, robabby), workspace pattern, hub dashboard, command palette (cross-project search), skeleton loading, empty states, tab status, URL filters, mission control, SSE event streaming, research viewer, project switcher, shareable research links (public `/s/<token>` pages with HMAC-signed tokens). Documentation site at `sherpa.solar/docs` with 45 SSG pages, self-documenting reference pipeline, and Content Registry.
 
 **In progress:** studio-state-machine (governance view models), studio-dashboard-sidenav (layout), design-system (component library formalization), studio-process-playbook-ui (process visualization).
 

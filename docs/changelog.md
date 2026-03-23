@@ -3,9 +3,10 @@ doc-type: changelog
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-22
-last-verified: 2026-03-22
+last-updated: 2026-03-23
+last-verified: 2026-03-23
 source-initiatives:
+  - studio-docs-site
   - parallel-workflow-governance
   - dispatch-center
   - voice-and-tone
@@ -28,11 +29,29 @@ source-initiatives:
   - sherpa-linear-integration
 ---
 
-> **AI-updated** 2026-03-22 · Awaiting human review
+> **AI-updated** 2026-03-23 · Awaiting human review
 
 # Changelog
 
 Reverse-chronological record of integrated initiatives and their system impact.
+
+## 2026-03-23 — Sherpa Studio Documentation Site
+
+Formal product documentation site at `sherpa.solar/docs` using Fumadocs v16 within the existing Next.js 16 website app. 45 SSG pages across five sections: Getting Started, Concepts, Guides, and Reference (hand-authored + auto-generated). Self-documenting reference pipeline auto-generates docs from Zod schemas (130 `.describe()` annotated fields), MCP tools (18 tools via InMemoryTransport extraction), and the component catalog (104 entries across 7 domains).
+
+**Initiative:** [studio-docs-site](initiatives/studio-docs-site/proposal.md)
+**Pillar:** Studio Application, Executable Conventions
+**Key changes:**
+- Fumadocs v16 integrated alongside Velite blog pipeline (path-based at `/docs`, ADR 0017)
+- 5 concept pages adapted from internal architecture docs with voice transformation
+- 4 how-to guides synthesized from conventions and patterns
+- `<SchemaReference>` RSC renders Zod schemas as TypeTable at build time
+- `<McpTool>` component renders tool definitions with parameter tables
+- Prebuild script (`generate-reference-docs.ts`) extracts MCP tools and component catalog
+- Content Registry (`_registry.ts`) maps 10 internal→external doc relationships
+- 130 Zod schema fields annotated with `.describe()` across `@sherpa/studio-core`
+- Navigation updated: "Docs" in header, footer links restructured, `/framework/docs` → `/docs` redirect
+- Orama full-text search across all docs content
 
 ## 2026-03-22 — Linear as Task Backend
 

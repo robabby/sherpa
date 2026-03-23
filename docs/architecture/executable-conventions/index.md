@@ -3,15 +3,16 @@ doc-type: architecture
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-16
-last-verified: 2026-03-16
+last-updated: 2026-03-23
+last-verified: 2026-03-23
 source-initiatives:
+  - studio-docs-site
   - voice-and-tone
   - self-documenting-system
 ---
 
-> **AI-generated** 2026-03-16 · Awaiting human review
-> Sources: voice-and-tone, self-documenting-system
+> **AI-updated** 2026-03-23 · Awaiting human review
+> Sources: studio-docs-site, voice-and-tone, self-documenting-system
 
 # Executable Conventions
 
@@ -110,9 +111,21 @@ The newest convention layer: documentation that maintains itself as initiatives 
 - **`/doc-bootstrap`** — history crawl that generates the initial documentation surface
 - **Directoturtle convention** — recursive `index.md` structure for all documentation
 
+## Self-Documenting Reference Pipeline
+
+The documentation site at `sherpa.solar/docs` auto-generates reference content from code-level artifacts at build time. Three targets:
+
+1. **Zod schemas → reference pages:** `<SchemaReference>` RSC imports Zod schemas from `@sherpa/studio-core`, converts to JSON Schema via `zod-to-json-schema`, and renders nested TypeTable components. 130 schema fields carry `.describe()` annotations. Zero drift — the RSC reads the schema at build time, no intermediate files.
+
+2. **MCP tools → reference pages:** Prebuild script instantiates the MCP server via InMemoryTransport, calls `listTools()`, and generates domain-grouped MDX files with parameter tables.
+
+3. **Component catalog → reference pages:** Prebuild script reads `COMPONENT_CATALOG` from `@sherpa/studio-ui` and generates domain-grouped MDX pages.
+
+This extends the self-documenting system: `/integrate` maintains internal architecture docs, the Content Registry maps those to external docs pages, and the reference pipeline auto-generates from structured data sources.
+
 ## Current State
 
-**Implemented:** 16 skills, 8 convention rules, 13 UX guidelines, content quality scorecard, self-documenting system with provenance tracking.
+**Implemented:** 16 skills, 8 convention rules, 13 UX guidelines, content quality scorecard, self-documenting system with provenance tracking, self-documenting reference pipeline (Zod schemas, MCP tools, component catalog → public docs).
 
 **In progress:** Hook enforcement layer (specific governance hooks for Claude Code PreToolUse).
 
