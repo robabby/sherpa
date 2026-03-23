@@ -3,23 +3,24 @@ doc-type: architecture
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-17
-last-verified: 2026-03-17
+last-updated: 2026-03-20
+last-verified: 2026-03-20
 source-initiatives:
   - dispatch-center
   - mcp-initiative-governance
+  - multi-project-studio
 ---
 
-> **AI-updated** 2026-03-17 · Awaiting human review
-> Sources: dispatch-center, mcp-initiative-governance
+> **AI-updated** 2026-03-20 · Awaiting human review
+> Sources: dispatch-center, mcp-initiative-governance, multi-project-studio
 
 # Config-as-Code
 
-Project configuration via `sherpa.config.ts` using the `defineConfig()` pattern. The single file that tells Sherpa how a project is organized — paths, entities, dispatch routing, vocabulary, theming, and plugins.
+Project configuration via `sherpa.json` (canonical) or `sherpa.config.ts` (escape hatch for plugins). Tells Sherpa how a project is organized — paths, entities, dispatch routing, vocabulary, theming, plugins, and federated projects.
 
 ## Overview
 
-Every Sherpa project has a `sherpa.config.ts` at its root (currently `apps/studio/sherpa.config.ts` — will move to monorepo root). The `defineConfig()` function validates the config, merges defaults, applies plugins, and resolves the project root. All packages read from this resolved config.
+The primary config format is `sherpa.json` at the project root (ADR 0013). The loader (`packages/studio-core/src/config/load-json.ts`) discovers `sherpa.json` or `.sherpa/config.json`, interpolates `${ENV_VAR}` references, and resolves paths. `sherpa.config.ts` remains as an escape hatch for plugins and computed values. All packages read from the resolved `SherpaConfig`.
 
 ## Config Schema
 
@@ -48,27 +49,71 @@ const myPlugin = createPlugin<TOptions>((options) => (config) => { ...modify con
 
 Plugins are applied in order during `defineConfig()`. Each receives the current config and returns a modified version. Used for vocabulary overrides, custom dispatch routes, and (future) theme extensions.
 
+## Multi-Project Federation
+
+The `projects` array in `sherpa.json` registers additional projects for Studio to federate. Each project's `root` path supports `${ENV_VAR}` interpolation for environment-specific resolution (local dev vs VPS).
+
+```json
+{
+  "projects": [
+    {
+      "name": "WavePoint",
+      "slug": "wavepoint",
+      "root": "${SHERPA_PROJECTS_DIR}/wavepoint",
+      "remote": "git@github.com:robabby/wavepoint.git"
+    }
+  ]
+}
+```
+
+Each registered project can have its own `sherpa.json` or `.sherpa/config.json` with project-specific overrides. Projects without a config file use framework defaults.
+
+The `remote` field stores the git URL for future SaaS resolution (Phase 2+). Currently unused at runtime — path resolution uses `root` with env var interpolation.
+
+## `.sherpa/` Dotfolder
+
+Every project that adopts Sherpa gets a `.sherpa/` directory with a standard schema:
+
+```
+.sherpa/
+  config.json        # Project identity and config overrides
+  initiatives/       # Project-specific initiatives
+  tasks/             # Project-specific tasks
+  research/          # Research output (Luna writes here)
+  rules/             # Convention overrides
+  skills/            # Project-specific skills
+  agents/            # Agent role definitions
+  db/                # Databases (gitignored)
+```
+
+Scaffolded via `scaffoldDotfolder()` in `packages/studio-core/src/config/dotfolder.ts`. The `db/` directory has a `.gitignore` for `*.db` files. All other directories are committed to git.
+
 ## Current Config
 
-```typescript
-// apps/studio/sherpa.config.ts
-export default defineConfig({
-  projectRoot: path.resolve(process.cwd(), "../.."),
-  admin: {
-    projectName: "Sherpa",
-    projectDescription: "Behavioral agentic collaboration framework",
+```json
+// sherpa.json (monorepo root)
+{
+  "$schema": "https://sherpa.solar/schema.json",
+  "admin": {
+    "projectName": "Sherpa",
+    "projectDescription": "Behavioral agentic collaboration framework"
   },
-  paths: {
-    initiatives: "docs/initiatives",
-    agentRoles: "docs/agents/roles",
-    rules: ".claude/rules",
-    skills: ".claude/skills",
+  "paths": {
+    "initiatives": "docs/initiatives",
+    "agentRoles": "docs/agents/roles",
+    "rules": ".claude/rules",
+    "skills": ".claude/skills"
   },
-  entities: {
-    projectSkillSlugs: ["rr", "integration-review", "plan-tasks"],
-    claudeMdLocations: ["CLAUDE.md"],
+  "entities": {
+    "projectSkillSlugs": ["rr", "integration-review", "plan-tasks"],
+    "claudeMdLocations": ["CLAUDE.md"],
+    "claudeMdScanDirs": []
   },
-})
+  "projects": [
+    { "name": "WavePoint", "slug": "wavepoint", "root": "${SHERPA_PROJECTS_DIR}/wavepoint" },
+    { "name": "Rob Abby", "slug": "robabby", "root": "${SHERPA_PROJECTS_DIR}/robabby" }
+  ]
+}
 ```
 
 ## Integration Points
@@ -80,9 +125,9 @@ export default defineConfig({
 
 ## Current State
 
-**Implemented:** `defineConfig()` with validation, admin metadata, paths, entities, dispatch routing, MCP settings, knowledge backend config, governance approval policy, plugin system.
+**Implemented:** `sherpa.json` canonical config with JSON Schema, `defineConfig()` with validation, `loadConfig()` / `loadJsonConfig()` with env var interpolation, project registry, `.sherpa/` dotfolder schema, admin metadata, paths, entities, dispatch routing, MCP settings, knowledge backend config, governance approval policy, plugin system.
 
-**Designed but not integrated:** Vocabulary overrides for UI terminology, theming (accent color, logo), convention sync configuration. These arrive with sherpa-framework-extraction.
+**Designed but not integrated:** Vocabulary overrides for UI terminology, theming (accent color, logo), convention inheritance via `extends` field (ESLint flat config model). These arrive with sherpa-framework-extraction.
 
 ## Related
 
@@ -92,4 +137,5 @@ export default defineConfig({
 
 ## Decisions
 
-- None extracted yet — config decisions are implicit in the current schema shape. As the schema stabilizes through framework extraction, explicit decisions will emerge.
+- [0013 — sherpa.json as canonical config format](../../decisions/0013-sherpa-json-canonical-config.md)
+- [0014 — Three-directory model](../../decisions/0014-three-directory-model.md)

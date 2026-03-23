@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: integrated
 initiative: multi-project-studio
 created: 2026-03-20T00:00:00.000Z
 updated: '2026-03-20'

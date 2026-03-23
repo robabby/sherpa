@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Research Dashboard V2 — Warm Spatial Glass Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#08080a',
+            'warm-charcoal': '#18181b',
+            'dark-bronze': '#27272a',
+            gold: { DEFAULT: '#d4a574', bright: '#e8c49a', muted: '#b08a5e' },
+            copper: '#c49a6c',
+            bronze: '#8b7355',
+            tarnished: '#6b5a42',
+            cream: '#f5f0e8',
+            'warm-gray': '#9a8e80',
+            dim: '#71665a',
+          },
+          fontFamily: {
+            display: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['DM Sans', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #08080a;
+      --fg: #e8e4e0;
+      --card: #0a0a0c;
+      --muted: #1a1a1e;
+      --muted-fg: #9a8e80;
+      --gold: #d4a574;
+      --gold-bright: #e8c49a;
+      --gold-muted: #b08a5e;
+      --copper: #c49a6c;
+      --bronze: #8b7355;
+      --tarnished: #6b5a42;
+      --dim: #71665a;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-bg-hover: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --glass-border-hover: rgba(255, 255, 255, 0.10);
+      --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2);
+      --glass-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.25);
+      --border-gold: rgba(212, 165, 116, 0.10);
+      --border-copper: rgba(196, 154, 108, 0.08);
+      --glow-gold: rgba(212, 165, 116, 0.04);
+      --surface-hover: rgba(255, 255, 255, 0.06);
+      --surface-hover-border: rgba(255, 255, 255, 0.10);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Atmosphere ── */
+    .atmosphere-mesh {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 30% 20%, rgba(212, 165, 116, 0.025), transparent),
+        radial-gradient(ellipse 50% 50% at 70% 60%, rgba(196, 154, 108, 0.02), transparent);
+    }
+
+    /* ── Glass surfaces ── */
+    .glass {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 0.75rem;
+    }
+    .glass-bar {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 0.5rem;
+    }
+    .glass:hover, .glass-interactive:hover {
+      border-color: var(--glass-border-hover);
+      box-shadow: var(--glass-shadow-hover);
+    }
+
+    /* ── Accent bars ── */
+    .accent-bar-gold::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.75rem;
+      bottom: 0.75rem;
+      width: 2px;
+      background: linear-gradient(to bottom, rgba(212, 165, 116, 0.5), transparent);
+      border-radius: 1px;
+    }
+    .accent-bar-copper::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.75rem;
+      bottom: 0.75rem;
+      width: 2px;
+      background: linear-gradient(to bottom, rgba(196, 154, 108, 0.5), transparent);
+      border-radius: 1px;
+    }
+
+    /* ── Keyframes ── */
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 transparent; }
+      50% { box-shadow: 0 0 8px 3px rgba(212, 165, 116, 0.2); }
+    }
+    @keyframes led-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    @keyframes panel-glow-in {
+      0% { opacity: 0; transform: translateY(4px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes heartbeat-ping {
+      0% { transform: scale(1); opacity: 0.75; }
+      75%, 100% { transform: scale(2.2); opacity: 0; }
+    }
+    @keyframes spine-grow {
+      from { height: 0; }
+      to { height: 100%; }
+    }
+    @keyframes dot-appear {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes completion-fill {
+      from { width: 0; }
+      to { width: var(--fill-pct); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .led-active { animation: led-pulse 3s ease-in-out infinite; }
+    .pulse-ring { animation: pulse-glow 2.5s ease-in-out infinite; }
+
+    .stagger-1 { animation: panel-glow-in 0.5s ease-out 0.1s both; }
+    .stagger-2 { animation: panel-glow-in 0.5s ease-out 0.15s both; }
+    .stagger-3 { animation: panel-glow-in 0.5s ease-out 0.2s both; }
+    .stagger-4 { animation: panel-glow-in 0.5s ease-out 0.25s both; }
+    .stagger-5 { animation: panel-glow-in 0.5s ease-out 0.3s both; }
+    .stagger-6 { animation: panel-glow-in 0.5s ease-out 0.35s both; }
+    .stagger-7 { animation: panel-glow-in 0.5s ease-out 0.4s both; }
+    .stagger-8 { animation: panel-glow-in 0.5s ease-out 0.45s both; }
+    .stagger-9 { animation: panel-glow-in 0.5s ease-out 0.5s both; }
+    .stagger-10 { animation: panel-glow-in 0.5s ease-out 0.55s both; }
+
+    /* ── Rail nodes ── */
+    .rail-node { position: relative; }
+    .rail-node::before {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 28px;
+      bottom: -4px;
+      width: 1px;
+      background: linear-gradient(to bottom, rgba(212, 165, 116, 0.25), rgba(212, 165, 116, 0.08));
+    }
+    .rail-node:last-child::before { display: none; }
+
+    /* ── Timeline spine ── */
+    .timeline-spine {
+      position: relative;
+      padding-left: 2rem;
+    }
+    .timeline-spine::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, rgba(196, 154, 108, 0.3), rgba(196, 154, 108, 0.08));
+    }
+    .timeline-entry {
+      position: relative;
+      transition: background 150ms, border-color 150ms;
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      margin-left: 0.5rem;
+    }
+    .timeline-entry:hover {
+      background: var(--surface-hover);
+    }
+    .timeline-entry::before {
+      content: '';
+      position: absolute;
+      left: -1.5rem;
+      top: 1.125rem;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--copper);
+      border: 2px solid var(--bg);
+      box-shadow: 0 0 0 1px rgba(196, 154, 108, 0.3);
+      transition: transform 150ms, box-shadow 150ms;
+    }
+    .timeline-entry:hover::before {
+      transform: scale(1.3);
+      box-shadow: 0 0 6px 2px rgba(212, 165, 116, 0.2);
+    }
+
+    /* ── Tabs ── */
+    .tab-list {
+      display: inline-flex;
+      gap: 0;
+      border-bottom: 1px solid var(--glass-border);
+      margin-bottom: 1.5rem;
+    }
+    .tab-trigger {
+      padding: 0.5rem 1rem;
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: var(--muted-fg);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 150ms;
+      letter-spacing: 0.01em;
+    }
+    .tab-trigger:hover { color: var(--fg); }
+    .tab-trigger.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 0.375rem;
+      padding: 0.125rem 0.5rem;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-secondary { background: var(--muted); color: var(--fg); }
+    .badge-outline { border: 1px solid var(--border-gold); color: var(--muted-fg); }
+    .badge-gold { background: rgba(212, 165, 116, 0.1); color: var(--gold); border: 1px solid rgba(212, 165, 116, 0.15); }
+    .badge-destructive { background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.15); }
+    .badge-amber { background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.15); }
+
+    /* ── Table ── */
+    .glass-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .glass-table thead th {
+      padding: 0.625rem 1rem;
+      text-align: left;
+      font-weight: 400;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      border-bottom: 1px solid var(--border-gold);
+      cursor: pointer;
+      transition: color 150ms;
+    }
+    .glass-table thead th:hover { color: var(--copper); }
+    .glass-table tbody tr {
+      transition: background 150ms;
+    }
+    .glass-table tbody tr:hover {
+      background: var(--surface-hover);
+    }
+    .glass-table tbody tr:hover .table-title {
+      color: var(--gold);
+    }
+    .glass-table tbody td {
+      padding: 0.625rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+      font-size: 0.875rem;
+    }
+
+    /* ── Filter input ── */
+    .search-input {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border);
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+      color: var(--fg);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 200ms, box-shadow 200ms;
+      width: 100%;
+      max-width: 20rem;
+    }
+    .search-input::placeholder { color: var(--dim); }
+    .search-input:focus {
+      border-color: rgba(212, 165, 116, 0.3);
+      box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.08), 0 0 12px rgba(212, 165, 116, 0.05);
+    }
+
+    /* ── Category checkbox ── */
+    .cat-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted-fg);
+      cursor: pointer;
+      transition: background 150ms, color 150ms;
+      user-select: none;
+    }
+    .cat-check:hover { background: var(--surface-hover); color: var(--fg); }
+    .cat-check.active { color: var(--gold); background: rgba(212, 165, 116, 0.06); }
+    .cat-check input { display: none; }
+    .cat-check .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      border: 1px solid var(--dim);
+      transition: all 150ms;
+    }
+    .cat-check.active .dot {
+      background: var(--gold);
+      border-color: var(--gold);
+      box-shadow: 0 0 4px rgba(212, 165, 116, 0.3);
+    }
+
+    /* ── Stream card ── */
+    .stream-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 0.75rem;
+      overflow: hidden;
+      transition: border-color 200ms, box-shadow 200ms;
+    }
+    .stream-card:hover {
+      border-color: var(--glass-border-hover);
+    }
+    .stream-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.875rem 1.25rem;
+      cursor: pointer;
+      transition: background 150ms;
+      position: relative;
+    }
+    .stream-header:hover { background: var(--glass-bg-hover); }
+    .stream-header .accent-line {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+    }
+    .stream-header .chevron {
+      transition: transform 200ms;
+      color: var(--dim);
+      flex-shrink: 0;
+    }
+    .stream-card.open .stream-header .chevron { transform: rotate(90deg); }
+    .stream-files {
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .stream-file {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.625rem 1.25rem 0.625rem 2.5rem;
+      font-size: 0.875rem;
+      transition: background 150ms;
+      cursor: pointer;
+      position: relative;
+    }
+    .stream-file:hover { background: var(--surface-hover); }
+    .stream-file::before {
+      content: '';
+      position: absolute;
+      left: 1.5rem;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(212, 165, 116, 0.08);
+    }
+    .stream-file:last-child::before { bottom: 50%; }
+
+    /* ── Collapsible operations ── */
+    .ops-trigger {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 0.75rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: background 150ms;
+      border: none;
+      background: transparent;
+      color: var(--muted-fg);
+    }
+    .ops-trigger:hover { background: rgba(255, 255, 255, 0.03); }
+    .ops-trigger .chevron {
+      transition: transform 200ms;
+      flex-shrink: 0;
+    }
+    .ops-trigger.open .chevron { transform: rotate(90deg); }
+
+    /* ── Completion bar ── */
+    .completion-bar {
+      height: 3px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 0.75rem;
+    }
+    .completion-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold-muted), var(--gold));
+      border-radius: 2px;
+      animation: completion-fill 1s ease-out 0.5s both;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+
+    /* ── Reduced motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="atmosphere-mesh"></div>
+
+  <div style="position: relative; z-index: 1; max-width: 64rem; margin: 0 auto; padding: 2rem 1.5rem;">
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE HEADER
+         ════════════════════════════════════════════════════════════════ -->
+    <header class="stagger-1" style="margin-bottom: 2rem;">
+      <h1 style="font-family: 'Fraunces', Georgia, serif; font-size: 1.75rem; font-weight: 400; letter-spacing: -0.01em; margin: 0;">
+        <span style="background: linear-gradient(135deg, #e8e4e0 0%, #d4a574 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Research</span>
+      </h1>
+    </header>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         ZONE 1: HEARTBEAT INDICATOR
+         ════════════════════════════════════════════════════════════════ -->
+    <div class="glass-bar stagger-2" style="padding: 0.625rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;" role="status">
+      <!-- Pulsing LED -->
+      <span style="position: relative; display: flex; width: 10px; height: 10px;">
+        <span style="position: absolute; inset: 0; border-radius: 50%; background: #34d399; animation: heartbeat-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; opacity: 0.5;"></span>
+        <span class="pulse-ring" style="position: relative; display: inline-flex; width: 10px; height: 10px; border-radius: 50%; background: #34d399;"></span>
+      </span>
+
+      <span class="led-active" style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--fg);">Research active</span>
+
+      <span style="color: rgba(196, 154, 108, 0.3);">&#xb7;</span>
+
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">
+        <span style="color: var(--gold);">12</span>
+        <span style="color: var(--muted-fg);"> cycles today</span>
+      </span>
+
+      <span style="color: rgba(196, 154, 108, 0.3);">&#xb7;</span>
+
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--dim);">Every 30m &middot; 8am&ndash;11pm PT</span>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         ZONE 2: OPERATIONS (COLLAPSIBLE)
+         ════════════════════════════════════════════════════════════════ -->
+    <div class="stagger-3" style="margin-bottom: 1.5rem;">
+      <button class="ops-trigger" id="ops-toggle" onclick="toggleOps()">
+        <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.15em;">Research Operations</span>
+        <!-- Critical dot -->
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0;"></span>
+      </button>
+
+      <div id="ops-content" style="display: none; padding-top: 0.75rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+
+          <!-- ── Priorities Panel ── -->
+          <div class="glass" style="position: relative; padding: 1.25rem 1.5rem 1.25rem 1.75rem;">
+            <div class="accent-bar-gold"></div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--dim); margin-bottom: 1rem;">Priorities</div>
+
+            <p style="font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 0.875rem; color: var(--gold-muted); line-height: 1.6; margin: 0 0 1.25rem 0;">
+              Build the portfolio of proof while the framework extracts. Every research cycle should produce intelligence that feeds positioning, website content, or client discovery.
+            </p>
+
+            <!-- Rail-node numbered list -->
+            <div style="display: flex; flex-direction: column; gap: 0;">
+              <div class="rail-node" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.375rem 0;">
+                <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(212, 165, 116, 0.12); border: 1px solid rgba(212, 165, 116, 0.2); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.625rem; color: var(--gold); flex-shrink: 0;">1</span>
+                <span style="font-size: 0.8125rem; line-height: 1.5; padding-top: 0.125rem;">Job market intelligence &mdash; positioning for AI-native consulting roles</span>
+              </div>
+              <div class="rail-node" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.375rem 0;">
+                <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(212, 165, 116, 0.12); border: 1px solid rgba(212, 165, 116, 0.2); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.625rem; color: var(--gold); flex-shrink: 0;">2</span>
+                <span style="font-size: 0.8125rem; line-height: 1.5; padding-top: 0.125rem;">Competitive landscape &mdash; who builds what, where Sherpa differentiates</span>
+              </div>
+              <div class="rail-node" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.375rem 0;">
+                <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(212, 165, 116, 0.12); border: 1px solid rgba(212, 165, 116, 0.2); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.625rem; color: var(--gold); flex-shrink: 0;">3</span>
+                <span style="font-size: 0.8125rem; line-height: 1.5; padding-top: 0.125rem;">Content strategy seeds &mdash; Trails narratives for the website</span>
+              </div>
+              <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.375rem 0;">
+                <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(212, 165, 116, 0.12); border: 1px solid rgba(212, 165, 116, 0.2); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.625rem; color: var(--gold); flex-shrink: 0;">4</span>
+                <span style="font-size: 0.8125rem; line-height: 1.5; padding-top: 0.125rem;">PNW remote ecosystem mapping &mdash; local network discovery</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── State Panel (stacked cards) ── -->
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+
+            <!-- Dangling Threads -->
+            <div class="glass" style="position: relative; padding: 1rem 1.25rem 1rem 1.5rem;">
+              <div class="accent-bar-copper"></div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--dim); margin-bottom: 0.75rem;">Dangling Threads</div>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <div style="display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.8125rem;">
+                  <span class="badge badge-destructive" style="margin-top: 1px;">CRITICAL</span>
+                  <span>Consulting market disruption signals need synthesis into positioning doc</span>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.8125rem;">
+                  <span class="badge badge-amber" style="margin-top: 1px;">HIGH</span>
+                  <span>Target company list needs refresh &mdash; 3 entries from Q4 are stale</span>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.8125rem;">
+                  <span class="badge badge-outline" style="margin-top: 1px;">MEDIUM</span>
+                  <span style="color: var(--muted-fg);">Studio landscape competitive matrix incomplete</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Research Queue -->
+            <div class="glass" style="position: relative; padding: 1rem 1.25rem 1rem 1.5rem;">
+              <div class="accent-bar-copper"></div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--dim);">Research Queue</div>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.625rem; color: var(--gold-muted);">3/5</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.375rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--dim);">
+                  <span style="color: #34d399;">&#x2713;</span>
+                  <span style="text-decoration: line-through;">Deep dive on Stripe engineering culture</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--dim);">
+                  <span style="color: #34d399;">&#x2713;</span>
+                  <span style="text-decoration: line-through;">Analyze consulting market positioning</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--dim);">
+                  <span style="color: #34d399;">&#x2713;</span>
+                  <span style="text-decoration: line-through;">Review agentic governance frameworks</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem;">
+                  <span style="color: rgba(154, 142, 128, 0.4);">&#x25CB;</span>
+                  <span>Map PNW remote engineering ecosystem</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem;">
+                  <span style="color: rgba(154, 142, 128, 0.4);">&#x25CB;</span>
+                  <span>Compare AI SDK pricing models</span>
+                </div>
+              </div>
+              <!-- Completion bar -->
+              <div class="completion-bar">
+                <div class="completion-fill" style="--fill-pct: 60%;"></div>
+              </div>
+            </div>
+
+            <!-- Coverage Map -->
+            <div class="glass" style="position: relative; padding: 1rem 1.25rem 1rem 1.5rem;">
+              <div class="accent-bar-copper"></div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--dim); margin-bottom: 0.75rem;">Coverage Map</div>
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-gold);">
+                    <th style="text-align: left; font-weight: 400; padding-bottom: 0.375rem; color: var(--dim); font-size: 0.6875rem; font-family: 'JetBrains Mono', monospace;">Stream</th>
+                    <th style="text-align: left; font-weight: 400; padding-bottom: 0.375rem; color: var(--dim); font-size: 0.6875rem; font-family: 'JetBrains Mono', monospace;">Last Run</th>
+                    <th style="text-align: left; font-weight: 400; padding-bottom: 0.375rem; color: var(--dim); font-size: 0.6875rem; font-family: 'JetBrains Mono', monospace;">Findings</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                    <td style="padding: 0.375rem 0.5rem 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">job-market</td>
+                    <td style="padding: 0.375rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; display: flex; align-items: center; gap: 0.375rem;">
+                      <span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399; flex-shrink: 0;"></span>
+                      2026-03-21
+                    </td>
+                    <td style="padding: 0.375rem 0; color: var(--muted-fg);">12 new postings, 3 strong matches</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                    <td style="padding: 0.375rem 0.5rem 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">competitive</td>
+                    <td style="padding: 0.375rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; display: flex; align-items: center; gap: 0.375rem;">
+                      <span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399; flex-shrink: 0;"></span>
+                      2026-03-21
+                    </td>
+                    <td style="padding: 0.375rem 0; color: var(--muted-fg);">Cursor raises Series B</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                    <td style="padding: 0.375rem 0.5rem 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">content-strategy</td>
+                    <td style="padding: 0.375rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; display: flex; align-items: center; gap: 0.375rem;">
+                      <span style="width: 6px; height: 6px; border-radius: 50%; background: #fbbf24; flex-shrink: 0;" title="Last run >2 days ago"></span>
+                      2026-03-18
+                    </td>
+                    <td style="padding: 0.375rem 0; color: var(--muted-fg);">Trails framework draft</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                    <td style="padding: 0.375rem 0.5rem 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">network</td>
+                    <td style="padding: 0.375rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; display: flex; align-items: center; gap: 0.375rem;">
+                      <span style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0; animation: led-pulse 2s ease-in-out infinite;" title="Last run >7 days ago"></span>
+                      2026-03-12
+                    </td>
+                    <td style="padding: 0.375rem 0; color: var(--muted-fg);">No recent findings</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 0.375rem 0.5rem 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">pnw-remote</td>
+                    <td style="padding: 0.375rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; display: flex; align-items: center; gap: 0.375rem;">
+                      <span style="width: 6px; height: 6px; border-radius: 50%; background: #fbbf24; flex-shrink: 0;"></span>
+                      2026-03-19
+                    </td>
+                    <td style="padding: 0.375rem 0; color: var(--muted-fg);">5 companies identified</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="margin-top: 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.625rem; color: var(--dim); display: flex; align-items: center; gap: 1rem;">
+                <span>State updated: 2026-03-21 08:32 PT</span>
+                <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 5px; height: 5px; border-radius: 50%; background: #34d399;"></span> &lt;2d</span>
+                <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 5px; height: 5px; border-radius: 50%; background: #fbbf24;"></span> 2&ndash;7d</span>
+                <span style="display: flex; align-items: center; gap: 0.25rem;"><span style="width: 5px; height: 5px; border-radius: 50%; background: #ef4444;"></span> &gt;7d</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         ZONE 3: FILTER BAR + VIEW TABS
+         ════════════════════════════════════════════════════════════════ -->
+
+    <!-- Filter Bar -->
+    <div class="glass-bar stagger-4" style="padding: 0.625rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+      <div style="position: relative; flex-shrink: 0;">
+        <svg style="position: absolute; left: 0.625rem; top: 50%; transform: translateY(-50%); color: var(--dim);" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" placeholder="Search research..." id="search-input">
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.625rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 0.25rem;">Streams:</span>
+        <label class="cat-check active" onclick="this.classList.toggle('active')"><span class="dot"></span>job-market <span style="color: var(--dim); font-size: 0.625rem;">4</span></label>
+        <label class="cat-check active" onclick="this.classList.toggle('active')"><span class="dot"></span>competitive <span style="color: var(--dim); font-size: 0.625rem;">3</span></label>
+        <label class="cat-check active" onclick="this.classList.toggle('active')"><span class="dot"></span>content-strategy <span style="color: var(--dim); font-size: 0.625rem;">2</span></label>
+        <label class="cat-check active" onclick="this.classList.toggle('active')"><span class="dot"></span>heartbeat <span style="color: var(--dim); font-size: 0.625rem;">12</span></label>
+        <label class="cat-check active" onclick="this.classList.toggle('active')"><span class="dot"></span>consulting <span style="color: var(--dim); font-size: 0.625rem;">2</span></label>
+        <label class="cat-check active" onclick="this.classList.toggle('active')"><span class="dot"></span>pnw-remote <span style="color: var(--dim); font-size: 0.625rem;">1</span></label>
+        <label class="cat-check active" onclick="this.classList.toggle('active')"><span class="dot"></span>network <span style="color: var(--dim); font-size: 0.625rem;">1</span></label>
+        <label class="cat-check active" onclick="this.classList.toggle('active')"><span class="dot"></span>studio-landscape <span style="color: var(--dim); font-size: 0.625rem;">1</span></label>
+        <label class="cat-check active" onclick="this.classList.toggle('active')"><span class="dot"></span>target-companies <span style="color: var(--dim); font-size: 0.625rem;">1</span></label>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="stagger-5">
+      <div class="tab-list">
+        <button class="tab-trigger active" onclick="switchTab('streams', this)">Streams</button>
+        <button class="tab-trigger" onclick="switchTab('timeline', this)">Timeline</button>
+        <button class="tab-trigger" onclick="switchTab('table', this)">Table</button>
+      </div>
+    </div>
+
+    <!-- ── STREAMS VIEW ── -->
+    <div id="tab-streams" class="stagger-6">
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+
+        <!-- Stream: Job Market -->
+        <div class="stream-card open" data-stream>
+          <div class="stream-header" onclick="toggleStream(this.parentElement)">
+            <div class="accent-line" style="background: linear-gradient(to bottom, var(--gold), transparent);"></div>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: 'Fraunces', Georgia, serif; font-size: 0.875rem; font-weight: 500;">Job Market</span>
+                <span class="badge badge-gold">4</span>
+              </div>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--muted-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                PNW remote engineering roles with <strong style="color: var(--fg); font-weight: 500;">AI-native consulting</strong> requirements
+              </p>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); flex-shrink: 0;">2026-03-21</span>
+          </div>
+          <div class="stream-files">
+            <div class="stream-file">
+              <span>PNW Remote Engineering Market Analysis</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-21 <span style="opacity: 0.5;">08:32</span></span>
+            </div>
+            <div class="stream-file">
+              <span>AI Consulting Role Requirements Survey</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-20</span>
+            </div>
+            <div class="stream-file">
+              <span>Competitive Compensation Benchmarks</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-19</span>
+            </div>
+            <div class="stream-file">
+              <span>Target Company Remote Work Policies</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-17</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stream: Competitive -->
+        <div class="stream-card" data-stream>
+          <div class="stream-header" onclick="toggleStream(this.parentElement)">
+            <div class="accent-line" style="background: linear-gradient(to bottom, var(--copper), transparent);"></div>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: 'Fraunces', Georgia, serif; font-size: 0.875rem; font-weight: 500;">Competitive</span>
+                <span class="badge badge-gold">3</span>
+              </div>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--muted-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                Cursor raises <strong style="color: var(--fg); font-weight: 500;">Series B</strong> at $2.5B valuation
+              </p>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); flex-shrink: 0;">2026-03-21</span>
+          </div>
+          <div class="stream-files" style="display: none;">
+            <div class="stream-file">
+              <span>Agentic Platform Comparison Matrix</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-21</span>
+            </div>
+            <div class="stream-file">
+              <span>Cursor Series B Analysis</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-20</span>
+            </div>
+            <div class="stream-file">
+              <span>Claude Code Market Position</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-18</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stream: Content Strategy -->
+        <div class="stream-card" data-stream>
+          <div class="stream-header" onclick="toggleStream(this.parentElement)">
+            <div class="accent-line" style="background: linear-gradient(to bottom, var(--bronze), transparent);"></div>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: 'Fraunces', Georgia, serif; font-size: 0.875rem; font-weight: 500;">Content Strategy</span>
+                <span class="badge badge-gold">2</span>
+              </div>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--muted-fg);">Trails framework narratives for <em style="color: var(--muted-fg);">sherpa.solar</em></p>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); flex-shrink: 0;">2026-03-18</span>
+          </div>
+          <div class="stream-files" style="display: none;">
+            <div class="stream-file">
+              <span>Trails Content Framework Draft</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-18</span>
+            </div>
+            <div class="stream-file">
+              <span>Voice and Tone Competitive Analysis</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-16</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stream: Heartbeat (collapsed, many files) -->
+        <div class="stream-card" data-stream>
+          <div class="stream-header" onclick="toggleStream(this.parentElement)">
+            <div class="accent-line" style="background: linear-gradient(to bottom, #34d399, transparent); opacity: 0.6;"></div>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: 'Fraunces', Georgia, serif; font-size: 0.875rem; font-weight: 500;">Heartbeat</span>
+                <span class="badge badge-gold">12</span>
+              </div>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--muted-fg);">Adaptive 30-min research cycles throughout the day</p>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); flex-shrink: 0;">2026-03-21</span>
+          </div>
+          <div class="stream-files" style="display: none;">
+            <div class="stream-file"><span>Heartbeat 2026-03-21 08:32</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">08:32</span></div>
+            <div class="stream-file"><span>Heartbeat 2026-03-21 08:00</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">08:00</span></div>
+          </div>
+        </div>
+
+        <!-- Stream: Consulting -->
+        <div class="stream-card" data-stream>
+          <div class="stream-header" onclick="toggleStream(this.parentElement)">
+            <div class="accent-line" style="background: linear-gradient(to bottom, var(--gold-muted), transparent);"></div>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: 'Fraunces', Georgia, serif; font-size: 0.875rem; font-weight: 500;">Consulting</span>
+                <span class="badge badge-gold">2</span>
+              </div>
+              <p style="margin: 0; font-size: 0.75rem; color: var(--muted-fg);">Market disruption signals and <strong style="color: var(--fg); font-weight: 500;">positioning analysis</strong></p>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); flex-shrink: 0;">2026-03-20</span>
+          </div>
+          <div class="stream-files" style="display: none;">
+            <div class="stream-file"><span>AI Consulting Disruption Signal Report</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-20</span></div>
+            <div class="stream-file"><span>Consulting Market Size Estimates</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim);">2026-03-18</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── TIMELINE VIEW ── -->
+    <div id="tab-timeline" style="display: none;">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 0.75rem;">
+        <button onclick="this.textContent = this.textContent.includes('Newest') ? '↑ Oldest first' : '↓ Newest first'" style="display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.625rem; border-radius: 0.375rem; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--muted-fg); background: var(--glass-bg); border: 1px solid var(--glass-border); cursor: pointer; transition: all 150ms;">
+          &#x2193; Newest first
+        </button>
+      </div>
+
+      <div class="timeline-spine">
+        <div class="timeline-entry stagger-5">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); white-space: nowrap; padding-top: 0.125rem; min-width: 7rem;">
+              2026-03-21 <span style="opacity: 0.5;">08:32</span>
+            </span>
+            <span class="badge badge-outline" style="margin-top: 1px;">job-market</span>
+            <div style="flex: 1;">
+              <div style="font-size: 0.875rem; font-weight: 500;">PNW Remote Engineering Market Analysis</div>
+              <p style="margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--muted-fg); line-height: 1.5;">
+                PNW remote engineering roles with <strong style="color: var(--fg); font-weight: 500;">AI-native consulting</strong> requirements are growing 40% YoY
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-entry stagger-6">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); white-space: nowrap; padding-top: 0.125rem; min-width: 7rem;">
+              2026-03-21
+            </span>
+            <span class="badge badge-outline" style="margin-top: 1px;">competitive</span>
+            <div style="flex: 1;">
+              <div style="font-size: 0.875rem; font-weight: 500;">Agentic Platform Comparison Matrix</div>
+              <p style="margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--muted-fg); line-height: 1.5;">
+                Compared <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; padding: 0.125rem 0.375rem; background: var(--muted); border-radius: 0.25rem;">Claude Code</code>, Cursor, Windsurf, Cody across 12 dimensions
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-entry stagger-7">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); white-space: nowrap; padding-top: 0.125rem; min-width: 7rem;">
+              2026-03-20
+            </span>
+            <span class="badge badge-outline" style="margin-top: 1px;">consulting</span>
+            <div style="flex: 1;">
+              <div style="font-size: 0.875rem; font-weight: 500;">AI Consulting Disruption Signal Report</div>
+              <p style="margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--muted-fg); line-height: 1.5;">
+                Traditional consulting firms losing <em>mid-market deals</em> to AI-native boutiques
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-entry stagger-8">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); white-space: nowrap; padding-top: 0.125rem; min-width: 7rem;">
+              2026-03-20
+            </span>
+            <span class="badge badge-outline" style="margin-top: 1px;">competitive</span>
+            <div style="flex: 1;">
+              <div style="font-size: 0.875rem; font-weight: 500;">Cursor Series B Analysis</div>
+              <p style="margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--muted-fg); line-height: 1.5;">
+                $2.5B valuation validates the <strong style="color: var(--fg); font-weight: 500;">AI-first IDE</strong> category
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-entry stagger-9">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); white-space: nowrap; padding-top: 0.125rem; min-width: 7rem;">
+              2026-03-19
+            </span>
+            <span class="badge badge-outline" style="margin-top: 1px;">job-market</span>
+            <div style="flex: 1;">
+              <div style="font-size: 0.875rem; font-weight: 500;">Competitive Compensation Benchmarks</div>
+              <p style="margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--muted-fg); line-height: 1.5;">
+                Senior AI/ML roles in PNW: $180k&ndash;$250k base + equity
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-entry stagger-10">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--dim); white-space: nowrap; padding-top: 0.125rem; min-width: 7rem;">
+              2026-03-18
+            </span>
+            <span class="badge badge-outline" style="margin-top: 1px;">content-strategy</span>
+            <div style="flex: 1;">
+              <div style="font-size: 0.875rem; font-weight: 500;">Trails Content Framework Draft</div>
+              <p style="margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--muted-fg); line-height: 1.5;">
+                Five trail patterns mapped to real engagement stories &mdash; see <a href="#" style="color: var(--gold); text-decoration: none; border-bottom: 1px solid rgba(212, 165, 116, 0.3);">trails proposal</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TABLE VIEW ── -->
+    <div id="tab-table" style="display: none;">
+      <div class="glass" style="padding: 0; overflow: hidden;">
+        <table class="glass-table">
+          <thead>
+            <tr style="background: rgba(24, 24, 27, 0.5);">
+              <th style="width: 9rem;">Date &#x2193;</th>
+              <th style="width: 8rem;">Stream</th>
+              <th>Title</th>
+              <th style="width: 16rem;">Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--dim);">2026-03-21 <span style="opacity: 0.5;">08:32</span></td>
+              <td><span class="badge badge-outline">job-market</span></td>
+              <td class="table-title" style="transition: color 150ms;">PNW Remote Engineering Market Analysis</td>
+              <td style="color: var(--muted-fg); font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 16rem;">PNW remote roles with <strong style="font-weight: 500;">AI-native consulting</strong> growing 40% YoY</td>
+            </tr>
+            <tr>
+              <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--dim);">2026-03-21</td>
+              <td><span class="badge badge-outline">competitive</span></td>
+              <td class="table-title" style="transition: color 150ms;">Agentic Platform Comparison Matrix</td>
+              <td style="color: var(--muted-fg); font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 16rem;">Compared <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; padding: 0.0625rem 0.25rem; background: var(--muted); border-radius: 0.25rem;">Claude Code</code>, Cursor, Windsurf</td>
+            </tr>
+            <tr>
+              <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--dim);">2026-03-20</td>
+              <td><span class="badge badge-outline">consulting</span></td>
+              <td class="table-title" style="transition: color 150ms;">AI Consulting Disruption Signal Report</td>
+              <td style="color: var(--muted-fg); font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 16rem;">Traditional firms losing <em>mid-market deals</em></td>
+            </tr>
+            <tr>
+              <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--dim);">2026-03-20</td>
+              <td><span class="badge badge-outline">competitive</span></td>
+              <td class="table-title" style="transition: color 150ms;">Cursor Series B Analysis</td>
+              <td style="color: var(--muted-fg); font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 16rem;">$2.5B valuation validates <strong style="font-weight: 500;">AI-first IDE</strong> category</td>
+            </tr>
+            <tr>
+              <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--dim);">2026-03-19</td>
+              <td><span class="badge badge-outline">job-market</span></td>
+              <td class="table-title" style="transition: color 150ms;">Competitive Compensation Benchmarks</td>
+              <td style="color: var(--muted-fg); font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 16rem;">Senior AI/ML roles: $180k&ndash;$250k base</td>
+            </tr>
+            <tr>
+              <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--dim);">2026-03-18</td>
+              <td><span class="badge badge-outline">content-strategy</span></td>
+              <td class="table-title" style="transition: color 150ms;">Trails Content Framework Draft</td>
+              <td style="color: var(--muted-fg); font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 16rem;">Five trail patterns mapped to engagement stories</td>
+            </tr>
+            <tr>
+              <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--dim);">2026-03-17</td>
+              <td><span class="badge badge-outline">job-market</span></td>
+              <td class="table-title" style="transition: color 150ms;">Target Company Remote Work Policies</td>
+              <td style="color: var(--muted-fg); font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 16rem;">7/10 target companies offer full remote for senior roles</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Tab switching
+    function switchTab(tab, el) {
+      document.querySelectorAll('.tab-trigger').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('tab-streams').style.display = tab === 'streams' ? '' : 'none';
+      document.getElementById('tab-timeline').style.display = tab === 'timeline' ? '' : 'none';
+      document.getElementById('tab-table').style.display = tab === 'table' ? '' : 'none';
+    }
+
+    // Stream expand/collapse
+    function toggleStream(card) {
+      const isOpen = card.classList.contains('open');
+      const files = card.querySelector('.stream-files');
+      if (isOpen) {
+        card.classList.remove('open');
+        files.style.display = 'none';
+      } else {
+        card.classList.add('open');
+        files.style.display = '';
+      }
+    }
+
+    // Operations panel toggle
+    function toggleOps() {
+      const trigger = document.getElementById('ops-toggle');
+      const content = document.getElementById('ops-content');
+      const isOpen = trigger.classList.contains('open');
+      if (isOpen) {
+        trigger.classList.remove('open');
+        content.style.display = 'none';
+      } else {
+        trigger.classList.add('open');
+        content.style.display = '';
+      }
+    }
+
+    // Search filter demo
+    document.getElementById('search-input').addEventListener('input', function(e) {
+      const q = e.target.value.toLowerCase();
+      // In the real app, this would filter via React state.
+      // For the prototype, just show the interaction pattern.
+      if (q.length > 0) {
+        this.style.borderColor = 'rgba(212, 165, 116, 0.3)';
+      } else {
+        this.style.borderColor = '';
+      }
+    });
+  </script>
+</body>
+</html>

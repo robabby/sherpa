@@ -1,8 +1,8 @@
 ---
-status: pending
+status: approved
 initiative: agent-context-portability
-created: 2026-03-18
-updated: 2026-03-18
+created: 2026-03-18T00:00:00.000Z
+updated: '2026-03-19'
 type: process-change
 risk: additive
 targets:
