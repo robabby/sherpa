@@ -1,0 +1,148 @@
+---
+title: Dispatch and Backends
+description: Route tasks to the right execution backend using the Planner/Worker/Judge pipeline.
+---
+
+Dispatch is the system that connects approved work to execution. A task goes in with a type, acceptance criteria, and an assigned role. The dispatch system determines which backend handles it, runs the work, and passes the output to a judge for evaluation.
+
+For the conceptual overview of the pipeline, see [Execution Pipeline](/docs/concepts/execution-pipeline).
+
+## The dispatch model
+
+Three roles separate concerns in every piece of work:
+
+- **Planner** — reads an approved initiative and decomposes it into discrete tasks. Each task gets a type, acceptance criteria, assigned role, and dependencies. The planner considers sequencing: which tasks block others, which can run in parallel.
+- **Worker** — receives a single task with its full context and executes the work. Workers operate in isolated environments (worktrees for CLI backends, sandboxed contexts for API backends) so concurrent tasks cannot interfere with each other.
+- **Judge** — receives the original task definition, the worker's output, and the git diff. Evaluates each acceptance criterion independently and renders a verdict.
+
+Any of these roles can be filled by a human or an AI agent. The pipeline adapts to your trust level and the nature of the work.
+
+## Task types
+
+Eight task types determine default routing. Each type has characteristics that inform which backend is most effective:
+
+| Task Type | Default Backend | What it covers |
+|-----------|----------------|----------------|
+| `code-implementation` | claude | Feature development, bug fixes, refactoring |
+| `code-review` | claude | Peer review of code changes |
+| `architect` | claude | Design decisions, architecture proposals |
+| `research` | groq / google-ai | Discovery, analysis, market research |
+| `content-generation` | opencode | Documentation, copy, reports |
+| `audit` | claude | Compliance, security, convention review |
+| `embeddings` | lm-studio | Vectorization, indexing operations |
+| `general` | groq | Tasks that do not fit other categories |
+
+The default backend is a starting point. You can override it per-task or change the defaults in your project [configuration](/docs/reference/configuration).
+
+## Backends
+
+Nine backends span three categories based on how they execute work:
+
+### CLI backends (5)
+
+Run as shell processes. Each launches its CLI tool with the task context:
+
+| Backend | Best for |
+|---------|----------|
+| `claude` | Code implementation, review, architecture -- deep codebase understanding |
+| `opencode` | Content generation, documentation |
+| `codex` | Code generation with broad language support |
+| `gemini` | Tasks benefiting from large context windows |
+| `lm-studio` | Local inference -- no data leaves your machine |
+
+### API backends (3)
+
+Call model APIs directly via the AI SDK, no CLI wrapper:
+
+| Backend | Best for |
+|---------|----------|
+| `groq` | Fast inference for research and general tasks |
+| `google-ai` | Research tasks needing current information |
+| `lm-studio-api` | Local inference via API for batch operations |
+
+### Gateway backend (1)
+
+| Backend | Best for |
+|---------|----------|
+| `openclaw` | Remote agent dispatch -- persistent agents on servers |
+
+The `openclaw` backend is explicit-only -- you must set `backend: openclaw` on the task. This prevents accidental dispatch to a remote agent.
+
+## Route resolution
+
+When a task is dispatched, the framework resolves which backend handles it through four steps in order:
+
+1. **Governance guard** -- files in `.claude/`, `CLAUDE.md`, and `docs/agents/roles/` always route to `claude`.
+2. **Explicit override** -- if the task specifies `backend: openclaw` (or any backend), that takes precedence.
+3. **Task-type lookup** -- the dispatch configuration in `sherpa.json` maps task types to backends:
+   ```json
+   {
+     "dispatch": {
+       "routes": {
+         "code-implementation": "claude",
+         "research": "groq",
+         "content-generation": "opencode"
+       }
+     }
+   }
+   ```
+4. **Fallback route** -- if no specific route matches, the default fallback is `claude`.
+
+## Dispatch modes
+
+Three modes control how much human involvement a dispatch requires:
+
+### Interactive
+
+The human drives the session. The agent executes within a live terminal, and the human can intervene at any point. This is the default for `dispatch.sh`:
+
+```bash
+./scripts/dispatch.sh engineer
+```
+
+### Supervised
+
+The agent runs autonomously, but a human reviews before merging. The worker executes in an isolated worktree, the judge evaluates, and approved work becomes a pull request:
+
+```bash
+./scripts/worker.sh implement-auth-flow
+```
+
+### Overnight
+
+Fully autonomous execution via the dispatch queue:
+
+```bash
+./scripts/dispatch-queue.sh --pending
+```
+
+Overnight mode blocks two task types: `code-implementation` (too high-impact) and `architect` (needs human judgment). Eligible types: `research`, `audit`, `content-generation`, `embeddings`, `general`, `code-review`.
+
+## Running a dispatch
+
+Four scripts cover the common dispatch operations:
+
+| Script | Command | What it does |
+|--------|---------|-------------|
+| Interactive session | `./scripts/dispatch.sh <role-slug>` | Opens a CLI session with the role's constraints loaded |
+| Task execution | `./scripts/worker.sh <task-slug>` | Dispatches a task to its backend in an isolated worktree |
+| Judge review | `./scripts/auto-judge.sh <task-slug>` | Evaluates completed work against acceptance criteria |
+| Queue processing | `./scripts/dispatch-queue.sh --pending` | Batch-dispatches all pending tasks, respects overnight restrictions |
+
+## The judge workflow
+
+The judge receives three inputs: the task definition (with acceptance criteria), the worker's output, and the git diff. It evaluates each criterion independently, scoring pass or fail, then renders a verdict:
+
+| Verdict | Meaning | What happens next |
+|---------|---------|-------------------|
+| `approved` | All acceptance criteria met | Work proceeds to human review (PR) |
+| `needs-changes` | Some criteria not met, fixable | Worker receives feedback, can retry |
+| `rejected` | Fundamental issues, approach is wrong | Task returns to planner for re-scoping |
+
+The judge's disposition is key: "Skeptical -- defaults to NEEDS WORK, requires evidence for every criterion." It does not assume work is correct because no issues are obvious. It requires positive evidence that each criterion is met. Role-specific `quality-bar` criteria stack with task-specific acceptance criteria -- if the worker's role specifies "no console.log in committed code," the judge checks the diff for violations.
+
+## What to read next
+
+- [Execution Pipeline](/docs/concepts/execution-pipeline) — the conceptual model behind dispatch
+- [Defining Agent Roles](/docs/guides/defining-agent-roles) — how roles connect to dispatch routing
+- [MCP Tools reference](/docs/reference/mcp-tools) — programmatic task management via the MCP server

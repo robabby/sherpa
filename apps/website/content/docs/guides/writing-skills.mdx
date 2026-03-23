@@ -1,0 +1,160 @@
+---
+title: Writing Skills
+description: Create executable workflows that agents invoke as slash commands.
+---
+
+Skills are structured protocols that agents execute as slash commands. Where [conventions](/docs/guides/creating-conventions) load passively based on file patterns, skills are invoked actively — an agent or human types `/skill-name` and the protocol runs. Skills encode multi-step workflows that would otherwise require lengthy, per-task instructions.
+
+For an overview of the full skill catalog, see [Conventions and Config](/docs/concepts/conventions-and-config).
+
+## What skills are
+
+A skill is a markdown file at `.claude/skills/<name>/SKILL.md`. The filename `SKILL.md` is the convention — the framework looks for this exact name. The directory name becomes the slash command: `.claude/skills/rr/SKILL.md` is invoked as `/rr`.
+
+Skills differ from conventions in a key way:
+
+| | Conventions | Skills |
+|---|---|---|
+| **Loading** | Automatic via glob patterns | Explicit invocation via `/command` |
+| **Purpose** | Behavioral guardrails (constraints) | Workflow execution (procedures) |
+| **When to use** | Rules that should always apply in context | Multi-step processes with defined inputs and outputs |
+
+If it is a guardrail that agents should follow without thinking about it, write a convention. If it is a workflow that agents execute deliberately, write a skill.
+
+## Skill file anatomy
+
+Every `SKILL.md` has YAML frontmatter and a markdown body defining the protocol:
+
+```yaml
+---
+name: propose
+description: Create an initiative proposal following the governance convention
+---
+```
+
+### Frontmatter fields
+
+| Field | Purpose | Required |
+|-------|---------|----------|
+| `name` | Skill identifier (matches directory name) | Yes |
+| `description` | One-line summary shown when listing available skills | Yes |
+
+### Body structure
+
+The body defines the protocol an agent follows. Common sections:
+
+1. **When to use** — conditions that make this skill the right choice
+2. **Protocol** — numbered steps the agent follows in order
+3. **Rules** — constraints that apply during execution
+4. **Deliverables** — what the skill produces when complete
+5. **Invocation patterns** — example commands showing how to call the skill
+
+## Example: a simple proposal skill
+
+A skill that guides agents through creating an initiative proposal:
+
+```yaml
+---
+name: propose
+description: Create an initiative proposal following the governance convention
+---
+```
+
+```markdown
+# /propose
+
+Create an initiative proposal.
+
+## When to use
+
+When you have identified work that spans multiple sessions or
+modifies shared artifacts and needs governance tracking.
+
+## Protocol
+
+1. **Check existing initiatives.** Read `docs/initiatives/*/proposal.md`
+   frontmatter to identify related or conflicting work.
+
+2. **Choose a slug.** Lowercase with hyphens, descriptive of the work.
+   Verify no existing initiative uses this slug.
+
+3. **Create the directory.** `docs/initiatives/<slug>/`
+
+4. **Write proposal.md** with required frontmatter:
+   - status: pending
+   - initiative: <slug>
+   - created: today's date
+   - type: choose from roadmap-update, guideline-evolution,
+     new-skill, research-synthesis, process-change, new-plan
+   - risk: additive, evolutionary, or structural
+   - targets: list of files/directories this will change
+
+5. **Write the body sections.** Summary, State Snapshot,
+   Proposed Changes, Rationale, Dependencies, Review Notes.
+
+6. **Self-review.** Verify the proposal against the initiative
+   convention rules before submitting.
+
+## Rules
+
+- Never edit shared artifacts directly — the proposal describes
+  intended changes; implementation happens after approval
+- Every factual claim needs a source or explicit marking as
+  project experience
+- Keep the summary to 2-3 sentences
+
+## Deliverables
+
+- `docs/initiatives/<slug>/proposal.md` with status: pending
+```
+
+Notice the protocol is concrete enough that an agent can follow each step without ambiguity. Step 4 lists the exact frontmatter fields. Step 1 specifies where to look. There is no "assess the situation" — there is "read these specific files."
+
+## Example: a complex research skill
+
+The `/rr` (recursive research) skill demonstrates how skills handle modes, cycles, and substantial deliverables. Its protocol defines a six-step cycle: **orient** (read existing initiatives and roadmap), **focus** (select a research vector), **fan out** (gather evidence from multiple sources), **converge** (synthesize findings), **propose** (produce at least one initiative proposal), **seed** (record out-of-scope threads for future cycles).
+
+The skill defines two modes -- **lean** (4-5 quick vectors, for interactive sessions) and **deep** (exhaustive sourcing, for overnight autonomous research). Each mode produces different deliverables. Lean produces proposals and a brief summary. Deep produces proposals, a full research report, and a seeds file.
+
+## The lifecycle skills sequence
+
+Skills map to the stages of work in Sherpa. The full sequence from discovery through delivery:
+
+| Stage | Skill | What it does |
+|-------|-------|-------------|
+| Discovery | `/rr` | Recursive research — find what needs doing |
+| Creation | `/propose` | Write an initiative proposal |
+| Scoping | `/scope` | Define boundaries and acceptance criteria |
+| Commitment | `/plan-tasks` | Break approved initiatives into dispatchable tasks |
+| Architecture | `/design` | Produce architecture decisions for structural work |
+| Validation | `/validate` | Check implementation against acceptance criteria |
+| Risk | `/risk-assess` | Evaluate risk level before proceeding |
+| Dispatch | `/dispatch` | Route tasks to appropriate backends |
+| Documentation | `/integrate` | Update shared artifacts from completed initiatives |
+| Calibration | `/retro` | Retrospective analysis of completed work |
+
+Not every piece of work uses every skill. A simple bug fix might only need `/dispatch`. A new system feature might use the full sequence from `/rr` through `/retro`.
+
+## Skills vs conventions
+
+**Convention** -- "All exported functions use TypeScript types." Passive constraint, always present. Put it in `.claude/rules/`.
+
+**Skill** -- "Break this approved initiative into dispatchable tasks." Active workflow with inputs and outputs. Put it in `.claude/skills/`.
+
+## Tips for writing effective skills
+
+**Make each step observable.** "Analyze the codebase" is not observable. "Read `src/index.ts` and list all exported functions" is observable. After each step, someone should be able to verify it happened.
+
+**Include expected outputs.** Specify deliverables concretely: file paths, frontmatter schemas, section headers. The more concrete, the more consistent the output.
+
+**Define failure conditions.** Should the agent stop and escalate? Skip and note? Retry? Explicit failure handling prevents silently incomplete work.
+
+**Keep protocols under 15 steps.** Longer protocols lose coherence. Split into two skills or organize into phases.
+
+**Reference conventions, do not repeat them.** If a skill produces a proposal, point to the initiative convention for the format. This prevents drift.
+
+## What to read next
+
+- [Conventions and Config](/docs/concepts/conventions-and-config) — the full skill catalog and convention system
+- [Creating Conventions](/docs/guides/creating-conventions) — passive guardrails vs. active workflows
+- [Dispatch and Backends](/docs/guides/dispatch-and-backends) — how dispatched tasks use roles and skills together

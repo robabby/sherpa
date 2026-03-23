@@ -1,0 +1,158 @@
+---
+title: Defining Agent Roles
+description: Write behavioral role definitions that produce consistent, predictable agent behavior.
+---
+
+A role definition tells the framework how an agent should behave when assigned a specific type of work. Roles use behavioral constraints — what the agent does — rather than identity claims about who the agent is. This guide walks through creating a new role from scratch.
+
+For the research evidence behind this approach, see [Behavioral Agents](/docs/concepts/behavioral-agents).
+
+## When to create a role
+
+Create a new role when you have a recurring task type with specific quality standards that differ from existing roles. Signs you need one: you keep repeating the same instructions across task prompts, a category of work has acceptance criteria no existing role covers, or you want different behavioral defaults for a task type.
+
+If the work is a one-off, add instructions directly to the task. Roles are for patterns, not exceptions.
+
+## File location
+
+Role definitions live at `docs/agents/roles/<slug>.md`. The slug becomes the role identifier used in task dispatch and configuration. Use lowercase with hyphens: `code-reviewer`, `technical-writer`, `ux-researcher`.
+
+## The frontmatter fields
+
+Every role file has YAML frontmatter that the framework reads for dispatch routing, model selection, and UI rendering. Here is each field and what it controls:
+
+### Identity and classification
+
+```yaml
+name: engineer
+display-name: Engineer
+category: engineering
+```
+
+- **`name`** — The slug used in task assignment and dispatch scripts. Must match the filename.
+- **`display-name`** — Human-readable label shown in Studio and dispatch output.
+- **`category`** — One of `engineering`, `design`, `strategy`, `operations`. Determines which quality evaluation criteria the Judge applies to this role's output.
+
+### Model and routing
+
+```yaml
+model-tier: medium
+task-type: code-implementation
+```
+
+- **`model-tier`** — `high` for roles where capability materially affects outcome (architect, judge). `medium` for roles where lighter-weight models perform well (content generation, general tasks). This drives cost management — you are not paying top-tier inference for every task.
+- **`task-type`** — Maps to the [execution pipeline](/docs/concepts/execution-pipeline) task types. Determines default backend routing. Values: `code-implementation`, `code-review`, `architect`, `research`, `content-generation`, `audit`, `embeddings`, `general`.
+
+### Behavioral definition
+
+This is where the role becomes useful. Three fields define agent behavior:
+
+```yaml
+disposition: precise — zero tolerance for loose types or missing exports
+quality-bar:
+  - TypeScript types on all exports
+  - barrel exports updated for new public functions
+  - no console.log in committed code
+behavioral-constraints:
+  - every new function must have typed inputs and outputs
+  - update barrel exports when adding new public functions
+  - run pnpm check before claiming work is complete
+```
+
+- **`disposition`** — The single most important field. One sentence describing the agent's behavioral posture. This is not a personality — it is a constraint that shapes every decision the agent makes during task execution. Write it as an adjective followed by a concrete rule.
+- **`quality-bar`** — Array of concrete acceptance criteria. The Judge evaluates completed work against these. Each item should be testable: you can look at the output and determine pass or fail.
+- **`behavioral-constraints`** — Array of specific rules the agent follows during execution. These are operational instructions, not aspirational goals. "Run pnpm check before claiming work is complete" is a constraint. "Write high-quality code" is not.
+
+### Collaboration and output
+
+```yaml
+structure: producer-critic
+output-style: code-with-explanation
+escalation: flag for human review when architectural changes exceed task scope
+context-packages:
+  - project-conventions
+  - typescript-standards
+```
+
+- **`structure`** — Collaboration pattern: `hierarchical-manager-worker`, `producer-critic`, `expert-team`, `pipeline`, `scientific-method`.
+- **`output-style`** — Expected output format: `code-with-explanation`, `analysis-report`, `review-verdict`, etc.
+- **`tool-permissions`** — What the agent is allowed to do. Restricts scope to prevent overstepping.
+- **`escalation`** — When to stop and ask for human input instead of proceeding.
+- **`context-packages`** — Named sets of conventions and documentation loaded at task start.
+
+## Worked example: building a code-reviewer role
+
+Walk through the thought process for each field. The goal: a role that reviews pull requests with a focus on correctness over style.
+
+**Start with disposition.** What behavior do you want? You want a reviewer that assumes problems exist and requires the author to prove correctness — not one that skims for obvious issues and approves. Write it as a constraint:
+
+```yaml
+disposition: adversarial — assumes bugs exist, requires proof of correctness
+```
+
+**Set the quality bar.** What does a good review look like? Define the criteria a Judge would use to evaluate whether this reviewer did its job:
+
+```yaml
+quality-bar:
+  - every function with side effects is identified
+  - edge cases are called out with specific inputs
+  - security implications are noted for any user-input handling
+  - approval requires explicit justification, not just absence of issues
+```
+
+**Add behavioral constraints.** These are the operational rules during execution:
+
+```yaml
+behavioral-constraints:
+  - check error handling paths before happy paths
+  - flag any function longer than 50 lines for decomposition review
+  - require test coverage evidence for new logic branches
+  - never approve with "looks good" — cite specific evidence
+```
+
+**Fill in the routing fields.** Code review needs a capable model (adversarial reasoning is hard), routes through the `code-review` task type, and uses producer-critic structure.
+
+**The complete role file** at `docs/agents/roles/code-reviewer.md`:
+
+```yaml
+name: code-reviewer
+display-name: Code Reviewer
+category: engineering
+model-tier: high
+task-type: code-review
+disposition: adversarial — assumes bugs exist, requires proof of correctness
+quality-bar:
+  - every function with side effects is identified
+  - edge cases are called out with specific inputs
+  - security implications are noted for any user-input handling
+  - approval requires explicit justification, not just absence of issues
+behavioral-constraints:
+  - check error handling paths before happy paths
+  - flag any function longer than 50 lines for decomposition review
+  - require test coverage evidence for new logic branches
+  - never approve with "looks good" — cite specific evidence
+structure: producer-critic
+output-style: review-verdict
+escalation: flag for human review when changes touch security-sensitive code
+context-packages:
+  - project-conventions
+  - security-standards
+```
+
+## The Test
+
+When writing or reviewing any role definition, apply this check: if a sentence describes *who the agent is*, rewrite it as *what the agent does*.
+
+| Before (identity) | After (behavioral) |
+|---|---|
+| "Skeptical reviewer" | "Defaults to NEEDS WORK, requires evidence" |
+| "Expert architect" | "Prefers proven patterns, requires justification for new abstractions" |
+| "Experienced security engineer" | "Checks OWASP top 10 on every review, flags missing input validation" |
+
+If you cannot rewrite an identity claim as a concrete behavior, the claim is not adding useful information. Drop it.
+
+## What to read next
+
+- [Behavioral Agents](/docs/concepts/behavioral-agents) — the evidence base and full role catalog
+- [Dispatch and Backends](/docs/guides/dispatch-and-backends) — how roles connect to task execution
+- [Configuration reference](/docs/reference/configuration) — customizing role behavior through `sherpa.json`

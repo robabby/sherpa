@@ -1,0 +1,159 @@
+---
+title: Creating Conventions
+description: Write convention rules that auto-load when agents work in matching directories.
+---
+
+Conventions are the mechanism that turns process knowledge into executable guardrails. Instead of telling every agent "remember to use sessions for effort estimates," you write a convention rule once, attach a glob pattern, and every agent working in a matching directory gets the rule automatically.
+
+This guide covers writing convention files from scratch. For an overview of how conventions fit into the broader framework, see [Conventions and Config](/docs/concepts/conventions-and-config).
+
+## What conventions are
+
+A convention is a markdown file in `.claude/rules/` with YAML frontmatter that specifies when it loads. When an agent opens or edits a file matching the convention's glob pattern, the rule enters the agent's context automatically. No manual inclusion, no per-task instructions.
+
+The file has two parts:
+
+1. **Frontmatter** — metadata including glob patterns that control when the rule loads
+2. **Body** — the actual rules, written in markdown
+
+Conventions are passive — they load based on file access patterns. Compare this with [skills](/docs/guides/writing-skills), which are active workflows agents invoke explicitly.
+
+## Convention file anatomy
+
+Here is the minimal structure:
+
+```yaml
+---
+description: Use sessions as unit of effort, not calendar time
+globs:
+  - "docs/initiatives/**"
+  - "docs/plans/**"
+---
+```
+
+### Frontmatter fields
+
+| Field | Purpose | Required |
+|-------|---------|----------|
+| `description` | One-line summary of what this convention enforces | Yes |
+| `globs` | Array of glob patterns — the rule loads when an agent touches a matching file | No (omit for global rules) |
+
+The `globs` field accepts standard glob syntax. Common patterns:
+
+| Pattern | Matches |
+|---------|---------|
+| `"docs/initiatives/**"` | Any file in any initiative directory |
+| `"*.ts"` | All TypeScript files at any depth |
+| `"apps/studio/**"` | Everything in the Studio app |
+| `"**/*.test.ts"` | All test files |
+
+### Body
+
+The markdown body contains the actual rules. Write these as concrete instructions an agent can follow, not general advice. Structure with headers, tables, and code blocks as needed.
+
+## Simple example: effort estimation
+
+This convention ensures agents use sessions (not calendar time) when estimating work:
+
+```yaml
+---
+description: Use sessions as unit of effort, not calendar time
+globs:
+  - "docs/initiatives/**"
+  - "docs/plans/**"
+---
+```
+
+```markdown
+# Effort Estimation Convention
+
+## Unit of Effort: Sessions
+
+A **session** = one full context window of task execution.
+Never use calendar time (days, weeks) for effort estimates.
+
+## Format
+
+In proposals, plans, and roadmaps:
+
+**Effort:** 2 sessions
+**Session breakdown:**
+- Session 1: [what gets done]
+- Session 2: [what gets done]
+
+## Rough Calibration
+
+| Scope | Sessions |
+|-------|----------|
+| Single component or data change | 1 |
+| Feature with UI + API + schema | 2 |
+| Feature with infrastructure setup | 3-4 |
+| Multi-feature system with dependencies | 4-6 |
+```
+
+Notice the specificity. The convention does not say "estimate effort carefully." It defines the unit (sessions), provides the format, and gives calibration ranges. An agent reading this knows exactly what to produce.
+
+## When the convention always applies
+
+Some rules apply regardless of which file the agent is working in. For these, either omit `globs` entirely or use a broad pattern:
+
+```yaml
+---
+description: Agent roles use behavioral constraints, not identity claims
+---
+```
+
+Without a `globs` field, this convention loads in every context. Use this for foundational rules that should never be absent — coding standards, naming conventions, behavioral engineering principles.
+
+Be deliberate about global conventions. Every global rule adds to the context budget for every task. If a rule only matters in specific directories, scope it with globs.
+
+## Complex example: initiative convention
+
+Conventions can define entire workflow structures. The initiative convention governs how proposals, plans, and activity logs work across the project:
+
+```yaml
+---
+description: Initiative lifecycle — proposals, plans, activity logs, seeds
+globs:
+  - "docs/initiatives/**"
+---
+```
+
+The body of this convention defines:
+
+- **Required files** — `proposal.md` with specific YAML frontmatter fields (status, slug, dates, risk level, targets, dependencies)
+- **Lifecycle stages** — pending, approved, in-progress, integrated, declined, archived
+- **Proposal body sections** — Summary, State Snapshot, Proposed Changes, Rationale, Dependencies, Review Notes
+- **Activity log format** — frontmatter with started date and worktree path, lightweight milestone entries
+- **Seeds section** — how completed initiatives record follow-on work for future proposals
+- **Relationship types** — dependencies (hard gates), informs (intelligence flow), spawned-from (genealogy)
+
+This single convention file replaces what would otherwise be a lengthy onboarding document that every agent would need to read before touching initiative files. Instead, the rules appear automatically when the agent enters `docs/initiatives/`.
+
+## When to create a convention
+
+The threshold: **three or more files sharing the same pattern**. If you find yourself correcting agents repeatedly on the same issue — wrong frontmatter format, missing exports, inconsistent naming — that correction belongs in a convention.
+
+Signs you need one: the same instruction appears in three or more task descriptions, agents produce inconsistent output in a directory, or new team members keep making the same mistakes.
+
+Signs you do not need one: the rule applies to exactly one file, the pattern is obvious from the code itself, or the rule is aspirational rather than enforceable.
+
+## Best practices
+
+**Keep each convention focused on one concern.** A convention about effort estimation should not also cover proposal formatting. If two rules always apply together in the same directories, they can share the same file — but they should be about the same concern.
+
+**Link between conventions rather than duplicating.** If the initiative convention references the effort estimation format, point to it rather than repeating the format. This prevents drift when one convention updates.
+
+**Write testable rules.** Every instruction should be something you can evaluate as pass or fail. "Use clear naming" is not testable. "All exported functions use camelCase, all exported types use PascalCase" is testable.
+
+**Include examples.** Show the correct format, not just the rules about it. A code block with the expected frontmatter schema is worth more than a paragraph describing it.
+
+**Use tables for structured information.** Field definitions, calibration ranges, and enumerated options are easier to scan in table format than in prose.
+
+**Consider the context budget.** Every convention that loads adds tokens to the agent's context. Keep conventions concise — include what the agent needs to follow the rule, not background theory about why the rule exists. Link to concept pages for the rationale.
+
+## What to read next
+
+- [Conventions and Config](/docs/concepts/conventions-and-config) — how conventions fit into the broader framework
+- [Writing Skills](/docs/guides/writing-skills) — active workflows vs. passive guardrails
+- [Configuration reference](/docs/reference/configuration) — project-level settings in `sherpa.json`

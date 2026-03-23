@@ -98,4 +98,29 @@ export const contentRegistry: RegistryEntry[] = [
     ],
     lastSynced: "2026-03-23",
   },
+  // --- Guides (synthesized from multiple sources, not 1:1 adapted) ---
+  {
+    source: ".claude/rules/behavioral-engineering.md",
+    target: "guides/defining-agent-roles",
+    sections: ["The Principle", "What to Use", "The Test"],
+    lastSynced: "2026-03-23",
+  },
+  {
+    source: ".claude/rules/initiative-convention.md",
+    target: "guides/creating-conventions",
+    sections: ["Directoturtle Structure", "Proposal Frontmatter"],
+    lastSynced: "2026-03-23",
+  },
+  {
+    source: ".claude/skills/rr/SKILL.md",
+    target: "guides/writing-skills",
+    sections: ["Overview", "The Protocol", "Modes"],
+    lastSynced: "2026-03-23",
+  },
+  {
+    source: "docs/architecture/execution-pipeline/index.md",
+    target: "guides/dispatch-and-backends",
+    sections: ["Task Types and Routing", "Dispatch Modes", "Backend Architecture"],
+    lastSynced: "2026-03-23",
+  },
 ]
