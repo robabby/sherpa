@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Research Dashboard — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#08080a',
+            foreground: '#e8e4e0',
+            card: '#0a0a0c',
+            'card-foreground': '#e8e4e0',
+            muted: '#1a1a1e',
+            'muted-foreground': '#9a8e80',
+            border: 'rgba(212, 165, 116, 0.12)',
+            secondary: '#1a1a1e',
+            'secondary-foreground': '#e8e4e0',
+            destructive: '#ef4444',
+            gold: '#d4a574',
+            'gold-bright': '#e8c49a',
+            copper: '#c49a6c',
+            bronze: '#8b7355',
+            tarnished: '#6b5a42',
+            'warm-gray': '#9a8e80',
+          },
+          fontFamily: {
+            display: ['Georgia', 'serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+            sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            ping: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    body { background: #08080a; color: #e8e4e0; font-family: 'DM Sans', system-ui, sans-serif; }
+
+    /* shadcn-like tab styles */
+    .tab-list {
+      display: inline-flex;
+      height: 2.5rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.5rem;
+      background: #1a1a1e;
+      padding: 0.25rem;
+      gap: 0;
+    }
+    .tab-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      border-radius: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #9a8e80;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      transition: all 150ms;
+    }
+    .tab-trigger:hover { color: #e8e4e0; }
+    .tab-trigger.active {
+      background: rgba(26, 26, 30, 0.8);
+      color: #e8e4e0;
+      border-color: rgba(212, 165, 116, 0.15);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    /* Card */
+    .card {
+      background: #0a0a0c;
+      border: 1px solid rgba(212, 165, 116, 0.12);
+      border-radius: 0.75rem;
+      padding: 1rem 1.5rem;
+    }
+    .card-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #9a8e80;
+      margin-bottom: 0.75rem;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 0.375rem;
+      padding: 0.125rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .badge-secondary { background: #1a1a1e; color: #e8e4e0; }
+    .badge-outline { border: 1px solid rgba(212, 165, 116, 0.2); color: #9a8e80; }
+    .badge-destructive { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+    /* Collapsible */
+    .stream-trigger {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(212, 165, 116, 0.08);
+      background: rgba(10, 10, 12, 0.3);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      cursor: pointer;
+      transition: background 150ms;
+    }
+    .stream-trigger:hover { background: rgba(10, 10, 12, 0.5); }
+    .stream-trigger .chevron {
+      transition: transform 150ms;
+      color: #9a8e80;
+      flex-shrink: 0;
+    }
+    .stream-trigger.open .chevron { transform: rotate(90deg); }
+    .stream-content {
+      margin-left: 1.75rem;
+      padding-left: 1rem;
+      padding-top: 0.25rem;
+      border-left: 1px solid rgba(212, 165, 116, 0.1);
+    }
+
+    /* Table */
+    .research-table th {
+      cursor: pointer;
+      padding-bottom: 0.5rem;
+      text-align: left;
+      font-weight: 400;
+      color: rgba(154, 142, 128, 0.6);
+      font-size: 0.875rem;
+    }
+    .research-table th:hover { color: #9a8e80; }
+    .research-table td {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(212, 165, 116, 0.05);
+      font-size: 0.875rem;
+    }
+
+    /* Timeline entry */
+    .timeline-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      transition: background 150ms;
+      cursor: pointer;
+    }
+    .timeline-entry:hover { background: rgba(10, 10, 12, 0.5); }
+  </style>
+</head>
+<body>
+  <div style="max-width: 64rem; margin: 0 auto; padding: 2rem 1.5rem;">
+
+    <!-- Page title -->
+    <h1 style="font-family: Georgia, serif; font-size: 1.5rem; margin-bottom: 1.5rem;">Research</h1>
+
+    <!-- ═══ ZONE 1: Heartbeat Bar ═══ -->
+    <div style="border-radius: 0.375rem; background: rgba(26, 26, 30, 0.3); padding: 0.5rem 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: rgba(154, 142, 128, 0.6); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+      <!-- Pulsing dot -->
+      <span style="position: relative; display: flex; width: 0.625rem; height: 0.625rem;">
+        <span style="position: absolute; display: inline-flex; width: 100%; height: 100%; border-radius: 9999px; background: rgba(16, 185, 129, 0.75); animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+        <span style="position: relative; display: inline-flex; width: 0.625rem; height: 0.625rem; border-radius: 9999px; background: #10b981;"></span>
+      </span>
+      <span>Research active</span>
+      <span style="color: rgba(154, 142, 128, 0.3);">·</span>
+      <span><span style="color: rgba(232, 228, 224, 0.6);">4</span> cycles today</span>
+      <span style="color: rgba(154, 142, 128, 0.3);">·</span>
+      <span>Every 30m · 8am–11pm PT</span>
+    </div>
+
+    <!-- ═══ ZONE 2: Operational Panels ═══ -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+
+      <!-- Priorities Panel -->
+      <div class="card">
+        <div class="card-title">Priorities</div>
+        <p style="font-size: 0.875rem; color: #9a8e80; font-style: italic; margin-bottom: 0.75rem;">
+          Building the platform while landing first clients. Employment search is top priority.
+        </p>
+        <ol style="list-style: decimal; list-style-position: inside; font-size: 0.875rem; display: flex; flex-direction: column; gap: 0.375rem;">
+          <li>Ship Studio research dashboard</li>
+          <li>Close first consulting engagement</li>
+          <li>Build content pipeline for sherpa.solar</li>
+        </ol>
+      </div>
+
+      <!-- State Panel -->
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Dangling Threads -->
+        <div class="card">
+          <div class="card-title">Dangling Threads</div>
+          <ul style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <li style="display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.875rem;">
+              <span class="badge badge-destructive" style="margin-top: 2px; flex-shrink: 0;">CRITICAL</span>
+              <span>API rate limits hitting ceiling on job-market scraping</span>
+            </li>
+            <li style="display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.875rem;">
+              <span class="badge badge-secondary" style="margin-top: 2px; flex-shrink: 0;">MEDIUM</span>
+              <span>Monitor competitor pricing changes — two new entrants</span>
+            </li>
+            <li style="display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.875rem;">
+              <span>Follow up on PNW remote hiring surge signal</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Research Queue -->
+        <div class="card">
+          <div class="card-title">Research Queue</div>
+          <ul style="display: flex; flex-direction: column; gap: 0.375rem;">
+            <li style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: #9a8e80;">
+              <span style="color: #10b981; flex-shrink: 0;">✓</span>
+              <span style="text-decoration: line-through;">Deep dive on Stripe engineering culture</span>
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: #9a8e80;">
+              <span style="color: #10b981; flex-shrink: 0;">✓</span>
+              <span style="text-decoration: line-through;">Founder narrative patterns research</span>
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+              <span style="color: rgba(154, 142, 128, 0.4); flex-shrink: 0;">○</span>
+              <span>Analyze consulting market trends Q1 2026</span>
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+              <span style="color: rgba(154, 142, 128, 0.4); flex-shrink: 0;">○</span>
+              <span>Content piece validation — voice test</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ZONE 3: View Tabs ═══ -->
+    <div>
+      <!-- Tab bar -->
+      <div class="tab-list" id="tab-list" style="margin-bottom: 1rem;">
+        <button class="tab-trigger active" data-tab="stream" onclick="switchTab('stream')">Streams</button>
+        <button class="tab-trigger" data-tab="timeline" onclick="switchTab('timeline')">Timeline</button>
+        <button class="tab-trigger" data-tab="table" onclick="switchTab('table')">Table</button>
+      </div>
+
+      <!-- ── Stream View ── -->
+      <div id="view-stream" class="tab-content" style="display: flex; flex-direction: column; gap: 0.75rem;">
+
+        <div>
+          <button class="stream-trigger open" onclick="toggleStream(this)">
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: Georgia, serif; font-size: 0.875rem; font-weight: 500;">Competitive</span>
+                <span class="badge badge-secondary">2</span>
+              </div>
+              <p style="font-size: 0.75rem; color: #9a8e80; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Two new AI consulting firms launched in the Pacific Northwest region this week.</p>
+            </div>
+            <span style="flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</span>
+          </button>
+          <div class="stream-content">
+            <a href="#" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; text-decoration: none; color: #e8e4e0; transition: background 150ms;" onmouseover="this.style.background='rgba(10,10,12,0.5)'" onmouseout="this.style.background='transparent'">
+              <span>Competitive Landscape — Week of March 21</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</span>
+            </a>
+            <a href="#" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; text-decoration: none; color: #e8e4e0; transition: background 150ms;" onmouseover="this.style.background='rgba(10,10,12,0.5)'" onmouseout="this.style.background='transparent'">
+              <span>Competitive Landscape — Week of March 20</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-20</span>
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <button class="stream-trigger open" onclick="toggleStream(this)">
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: Georgia, serif; font-size: 0.875rem; font-weight: 500;">Heartbeat</span>
+                <span class="badge badge-secondary">4</span>
+              </div>
+              <p style="font-size: 0.75rem; color: #9a8e80; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Content piece validation: tested voice guidelines against 3 draft posts.</p>
+            </div>
+            <span style="flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</span>
+          </button>
+          <div class="stream-content">
+            <a href="#" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; text-decoration: none; color: #e8e4e0;" onmouseover="this.style.background='rgba(10,10,12,0.5)'" onmouseout="this.style.background='transparent'">
+              <span>Content Piece Validation</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</span>
+            </a>
+            <a href="#" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; text-decoration: none; color: #e8e4e0;" onmouseover="this.style.background='rgba(10,10,12,0.5)'" onmouseout="this.style.background='transparent'">
+              <span>Founder Narrative Patterns</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</span>
+            </a>
+            <a href="#" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; text-decoration: none; color: #e8e4e0;" onmouseover="this.style.background='rgba(10,10,12,0.5)'" onmouseout="this.style.background='transparent'">
+              <span>Homepage Copy Drafts</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</span>
+            </a>
+            <a href="#" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; text-decoration: none; color: #e8e4e0;" onmouseover="this.style.background='rgba(10,10,12,0.5)'" onmouseout="this.style.background='transparent'">
+              <span>Narrative Audit</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</span>
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <button class="stream-trigger" onclick="toggleStream(this)">
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: Georgia, serif; font-size: 0.875rem; font-weight: 500;">Job Market</span>
+                <span class="badge badge-secondary">2</span>
+              </div>
+              <p style="font-size: 0.75rem; color: #9a8e80;">Strong demand for AI infrastructure roles in the Pacific Northwest.</p>
+            </div>
+            <span style="flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</span>
+          </button>
+          <div class="stream-content" style="display: none;"></div>
+        </div>
+
+        <div>
+          <button class="stream-trigger" onclick="toggleStream(this)">
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: Georgia, serif; font-size: 0.875rem; font-weight: 500;">Target Companies</span>
+                <span class="badge badge-secondary">1</span>
+              </div>
+              <p style="font-size: 0.75rem; color: #9a8e80;">Stripe engineering culture deep-dive — remote-first, high autonomy.</p>
+            </div>
+            <span style="flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</span>
+          </button>
+          <div class="stream-content" style="display: none;"></div>
+        </div>
+
+        <!-- Remaining collapsed streams -->
+        <div>
+          <button class="stream-trigger" onclick="toggleStream(this)">
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: Georgia, serif; font-size: 0.875rem; font-weight: 500;">Consulting</span>
+                <span class="badge badge-secondary">1</span>
+              </div>
+            </div>
+            <span style="flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</span>
+          </button>
+          <div class="stream-content" style="display: none;"></div>
+        </div>
+      </div>
+
+      <!-- ── Timeline View ── -->
+      <div id="view-timeline" class="tab-content" style="display: none;">
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+          <div class="timeline-entry">
+            <span style="flex-shrink: 0; padding-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80; min-width: 5.5rem;">2026-03-21</span>
+            <span class="badge badge-outline" style="flex-shrink: 0; margin-top: 1px;">heartbeat</span>
+            <div style="display: flex; flex-direction: column; gap: 0.125rem;">
+              <span style="font-size: 0.875rem; font-weight: 500;">Content Piece Validation</span>
+              <p style="font-size: 0.75rem; color: #9a8e80; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Tested voice guidelines against 3 draft posts. Two passed, one needs significant rework on tone.</p>
+            </div>
+          </div>
+          <div class="timeline-entry">
+            <span style="flex-shrink: 0; padding-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80; min-width: 5.5rem;">2026-03-21</span>
+            <span class="badge badge-outline" style="flex-shrink: 0; margin-top: 1px;">heartbeat</span>
+            <div style="display: flex; flex-direction: column; gap: 0.125rem;">
+              <span style="font-size: 0.875rem; font-weight: 500;">Founder Narrative Patterns</span>
+              <p style="font-size: 0.75rem; color: #9a8e80;">Analyzed 12 founder narratives from successful AI companies. Three patterns emerge strongly.</p>
+            </div>
+          </div>
+          <div class="timeline-entry">
+            <span style="flex-shrink: 0; padding-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80; min-width: 5.5rem;">2026-03-21</span>
+            <span class="badge badge-outline" style="flex-shrink: 0; margin-top: 1px;">competitive</span>
+            <div style="display: flex; flex-direction: column; gap: 0.125rem;">
+              <span style="font-size: 0.875rem; font-weight: 500;">Competitive Landscape — Week of March 21</span>
+              <p style="font-size: 0.75rem; color: #9a8e80;">Two new AI consulting firms launched in the Pacific Northwest region this week.</p>
+            </div>
+          </div>
+          <div class="timeline-entry">
+            <span style="flex-shrink: 0; padding-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80; min-width: 5.5rem;">2026-03-21</span>
+            <span class="badge badge-outline" style="flex-shrink: 0; margin-top: 1px;">job-market</span>
+            <div style="display: flex; flex-direction: column; gap: 0.125rem;">
+              <span style="font-size: 0.875rem; font-weight: 500;">Job Market — AI Infrastructure Roles</span>
+              <p style="font-size: 0.75rem; color: #9a8e80;">Strong demand for AI infrastructure roles in the Pacific Northwest. 23 new postings this week.</p>
+            </div>
+          </div>
+          <div class="timeline-entry">
+            <span style="flex-shrink: 0; padding-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80; min-width: 5.5rem;">2026-03-21</span>
+            <span class="badge badge-outline" style="flex-shrink: 0; margin-top: 1px;">heartbeat</span>
+            <div style="display: flex; flex-direction: column; gap: 0.125rem;">
+              <span style="font-size: 0.875rem; font-weight: 500;">Homepage Copy Drafts</span>
+              <p style="font-size: 0.75rem; color: #9a8e80;">Drafted 3 versions of the sherpa.solar hero section using trails concept.</p>
+            </div>
+          </div>
+          <div class="timeline-entry">
+            <span style="flex-shrink: 0; padding-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80; min-width: 5.5rem;">2026-03-20</span>
+            <span class="badge badge-outline" style="flex-shrink: 0; margin-top: 1px;">competitive</span>
+            <div style="display: flex; flex-direction: column; gap: 0.125rem;">
+              <span style="font-size: 0.875rem; font-weight: 500;">Competitive Landscape — Week of March 20</span>
+              <p style="font-size: 0.75rem; color: #9a8e80;">Baseline competitive survey — 8 firms identified in the AI consulting space.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Table View ── -->
+      <div id="view-table" class="tab-content" style="display: none;">
+        <div style="overflow-x: auto;">
+          <table class="research-table" style="width: 100%;">
+            <thead>
+              <tr style="border-bottom: 1px solid rgba(212, 165, 116, 0.15);">
+                <th>Date ↓</th>
+                <th>Category</th>
+                <th>Title</th>
+                <th>Summary</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">2026-03-21</td>
+                <td><span class="badge badge-outline">heartbeat</span></td>
+                <td><a href="#" style="color: #e8e4e0; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Content Piece Validation</a></td>
+                <td style="color: #9a8e80; max-width: 20rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Tested voice guidelines against 3 draft posts. Two passed, one needs rework.</td>
+              </tr>
+              <tr>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">2026-03-21</td>
+                <td><span class="badge badge-outline">heartbeat</span></td>
+                <td><a href="#" style="color: #e8e4e0; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Founder Narrative Patterns</a></td>
+                <td style="color: #9a8e80; max-width: 20rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Analyzed 12 founder narratives from successful AI companies.</td>
+              </tr>
+              <tr>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">2026-03-21</td>
+                <td><span class="badge badge-outline">competitive</span></td>
+                <td><a href="#" style="color: #e8e4e0; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Competitive Landscape — Week of March 21</a></td>
+                <td style="color: #9a8e80; max-width: 20rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Two new AI consulting firms launched in the Pacific Northwest.</td>
+              </tr>
+              <tr>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">2026-03-21</td>
+                <td><span class="badge badge-outline">job-market</span></td>
+                <td><a href="#" style="color: #e8e4e0; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Job Market — AI Infrastructure Roles</a></td>
+                <td style="color: #9a8e80; max-width: 20rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Strong demand for AI infrastructure roles in the PNW. 23 new postings.</td>
+              </tr>
+              <tr>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">2026-03-21</td>
+                <td><span class="badge badge-outline">target-companies</span></td>
+                <td><a href="#" style="color: #e8e4e0; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Stripe — Engineering Culture Deep Dive</a></td>
+                <td style="color: #9a8e80; max-width: 20rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Remote-first, high autonomy, strong documentation culture.</td>
+              </tr>
+              <tr>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">2026-03-20</td>
+                <td><span class="badge badge-outline">competitive</span></td>
+                <td><a href="#" style="color: #e8e4e0; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Competitive Landscape — Week of March 20</a></td>
+                <td style="color: #9a8e80; max-width: 20rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Baseline competitive survey — 8 firms identified in the AI consulting space.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Coverage Map (below tabs, subtle) -->
+    <div style="max-width: 64rem; margin: 1.5rem auto 0; padding: 0 1.5rem;">
+      <div class="card">
+        <div class="card-title">Coverage Map</div>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; font-size: 0.875rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid rgba(212, 165, 116, 0.15);">
+                <th style="padding-bottom: 0.5rem; text-align: left; font-weight: 400; color: rgba(154, 142, 128, 0.6);">Stream</th>
+                <th style="padding-bottom: 0.5rem; text-align: left; font-weight: 400; color: rgba(154, 142, 128, 0.6);">Last Run</th>
+                <th style="padding-bottom: 0.5rem; text-align: left; font-weight: 400; color: rgba(154, 142, 128, 0.6);">Key Findings</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid rgba(212, 165, 116, 0.05);">
+                <td style="padding: 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">job-market</td>
+                <td style="padding: 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</td>
+                <td style="padding: 0.375rem 0; color: #9a8e80;">Strong demand for AI infra roles</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(212, 165, 116, 0.05);">
+                <td style="padding: 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">competitive</td>
+                <td style="padding: 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</td>
+                <td style="padding: 0.375rem 0; color: #9a8e80;">Two new entrants this week</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(212, 165, 116, 0.05);">
+                <td style="padding: 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">consulting</td>
+                <td style="padding: 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</td>
+                <td style="padding: 0.375rem 0; color: #9a8e80;">Market sizing complete</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(212, 165, 116, 0.05);">
+                <td style="padding: 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">content-strategy</td>
+                <td style="padding: 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</td>
+                <td style="padding: 0.375rem 0; color: #9a8e80;">Editorial calendar drafted</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(212, 165, 116, 0.05);">
+                <td style="padding: 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">pnw-remote</td>
+                <td style="padding: 0.375rem 0; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #9a8e80;">2026-03-21</td>
+                <td style="padding: 0.375rem 0; color: #9a8e80;">Hiring surge confirmed</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: rgba(154, 142, 128, 0.4); margin-top: 0.75rem;">
+        State updated: 2026-03-21T14:30:00-07:00
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-trigger').forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+      document.getElementById(`view-${tab}`).style.display = '';
+    }
+
+    function toggleStream(btn) {
+      btn.classList.toggle('open');
+      const content = btn.nextElementSibling;
+      content.style.display = content.style.display === 'none' ? '' : 'none';
+    }
+  </script>
+</body>
+</html>

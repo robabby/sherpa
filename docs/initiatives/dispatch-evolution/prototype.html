@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dispatch Evolution — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gold: '#d4a574',
+            copper: '#c49a6c',
+            bronze: '#8b7355',
+            primitive: '#059669',
+            eclipse: '#7c3aed',
+            session: '#6366f1',
+            obsidian: '#08080a',
+            'warm-charcoal': '#18181b',
+            'dark-bronze': '#27272a',
+          },
+          fontFamily: {
+            display: ['Georgia', 'serif'],
+            mono: ['ui-monospace', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #08080a;
+      color: #e8e4e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* ---- Sidebar ---- */
+    .sidebar {
+      width: 220px;
+      background: #0e0e10;
+      border-right: 1px solid #1e1e22;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-group-label {
+      font-family: ui-monospace, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.25em;
+      color: rgba(232, 228, 224, 0.35);
+      padding: 0.75rem 0.75rem 0.25rem;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8125rem;
+      color: rgba(232, 228, 224, 0.55);
+      transition: all 0.15s;
+      border-radius: 0.375rem;
+      margin: 1px 0.375rem;
+    }
+    .sidebar-item:hover { background: rgba(255,255,255,0.04); color: rgba(232, 228, 224, 0.8); }
+    .sidebar-item.active { background: rgba(255,255,255,0.06); color: #e8e4e0; }
+    .sidebar-item svg { width: 16px; height: 16px; opacity: 0.6; }
+
+    /* ---- Panel chrome ---- */
+    .panel-header {
+      border-bottom: 1px solid #27272a;
+      padding: 0.6rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(232, 228, 224, 0.35);
+    }
+    .panel-count {
+      font-size: 10px;
+      color: #c49a6c;
+    }
+
+    /* ---- Task type badges ---- */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 0.25rem;
+      border: 1px solid;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+    .badge-code-impl { border-color: rgba(5,150,105,0.2); background: rgba(5,150,105,0.12); color: #059669; }
+    .badge-research { border-color: rgba(124,58,237,0.2); background: rgba(124,58,237,0.12); color: #7c3aed; }
+    .badge-audit { border-color: rgba(212,165,116,0.2); background: rgba(212,165,116,0.12); color: #d4a574; }
+    .badge-content { border-color: rgba(196,154,108,0.2); background: rgba(196,154,108,0.12); color: #c49a6c; }
+    .badge-code-review { border-color: rgba(5,150,105,0.2); background: rgba(5,150,105,0.12); color: #059669; }
+    .badge-general { border-color: rgba(161,161,170,0.2); background: rgba(161,161,170,0.1); color: #a1a1aa; }
+
+    /* ---- Status badges ---- */
+    .status-dispatched {
+      border-color: rgba(196,154,108,0.4); background: rgba(196,154,108,0.1); color: #c49a6c;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .status-failed { border-color: rgba(244,63,94,0.4); background: rgba(244,63,94,0.1); color: #f43f5e; }
+    .status-completed { border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.1); color: #10b981; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* ---- Mono badge ---- */
+    .mono-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 0.25rem;
+      border: 1px solid rgba(232, 228, 224, 0.12);
+      padding: 1px 6px;
+      font-size: 10px;
+      font-family: ui-monospace, monospace;
+      color: rgba(232, 228, 224, 0.5);
+    }
+
+    /* ---- Health dot ---- */
+    .health-dot {
+      width: 6px; height: 6px; border-radius: 50%; display: inline-block;
+    }
+    .health-dot.up { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.4); }
+    .health-dot.down { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,0.4); }
+
+    /* ---- Dispatch bar ---- */
+    .dispatch-bar {
+      background: rgba(14, 14, 16, 0.95);
+      border-top: 1px solid rgba(196, 154, 108, 0.15);
+      backdrop-filter: blur(8px);
+      padding: 0.625rem 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* ---- Segmented control ---- */
+    .segment-control {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      border: 1px solid rgba(232, 228, 224, 0.1);
+      border-radius: 0.5rem;
+      padding: 2px;
+    }
+    .segment-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 0.375rem;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: rgba(232, 228, 224, 0.3);
+      transition: all 0.15s;
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+    .segment-btn:hover { color: rgba(232, 228, 224, 0.5); }
+    .segment-btn.active {
+      background: rgba(196, 154, 108, 0.12);
+      color: #c49a6c;
+    }
+    .segment-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      border: 1px solid rgba(232, 228, 224, 0.3);
+    }
+    .segment-btn.active .segment-dot {
+      background: #c49a6c;
+      border-color: #c49a6c;
+    }
+
+    /* ---- Agent dropdown ---- */
+    .agent-select {
+      appearance: none;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(196,154,108,0.2);
+      border-radius: 0.375rem;
+      padding: 0.375rem 2rem 0.375rem 0.625rem;
+      font-size: 12px;
+      color: #e8e4e0;
+      cursor: pointer;
+      min-width: 160px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c49a6c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+    }
+    .agent-select:focus { outline: none; border-color: rgba(196,154,108,0.5); }
+
+    /* ---- Dispatch button ---- */
+    .dispatch-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(196,154,108,0.3);
+      background: rgba(196,154,108,0.15);
+      color: #c49a6c;
+      border-radius: 0.375rem;
+      padding: 0.375rem 0.875rem;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .dispatch-btn:hover { background: rgba(196,154,108,0.25); border-color: rgba(196,154,108,0.5); }
+    .dispatch-btn.disabled {
+      border-color: rgba(161,161,170,0.15);
+      background: rgba(161,161,170,0.05);
+      color: rgba(161,161,170,0.4);
+      cursor: not-allowed;
+    }
+
+    /* ---- Backend chip in dispatch bar ---- */
+    .backend-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: rgba(232, 228, 224, 0.4);
+      margin-left: auto;
+    }
+
+    /* ---- Guard rail banner ---- */
+    .guard-rail {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1px solid rgba(244, 63, 94, 0.2);
+      background: rgba(244, 63, 94, 0.06);
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 11px;
+      color: rgba(244, 63, 94, 0.7);
+      margin: 0.5rem 1rem 0;
+    }
+
+    /* ---- Settings page ---- */
+    .settings-card {
+      border: 1px solid #27272a;
+      border-radius: 0.625rem;
+      background: rgba(24, 24, 27, 0.5);
+      overflow: hidden;
+    }
+    .settings-card-header {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid #27272a;
+    }
+    .backend-radio-card {
+      border: 1px solid #27272a;
+      border-radius: 0.5rem;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1;
+    }
+    .backend-radio-card:hover { border-color: rgba(196,154,108,0.25); background: rgba(196,154,108,0.03); }
+    .backend-radio-card.active {
+      border-color: rgba(196,154,108,0.4);
+      background: rgba(196,154,108,0.06);
+      box-shadow: 0 0 16px rgba(196,154,108,0.08);
+    }
+    .radio-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid #27272a;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .radio-dot.active {
+      border-color: #c49a6c;
+    }
+    .radio-dot.active::after {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #c49a6c;
+    }
+    .health-card {
+      border: 1px solid #27272a;
+      border-radius: 0.5rem;
+      padding: 1rem;
+    }
+
+    /* ---- Tabs for view switching ---- */
+    .view-tab {
+      padding: 0.5rem 0;
+      font-size: 13px;
+      color: rgba(232, 228, 224, 0.4);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: rgba(232, 228, 224, 0.6); }
+    .view-tab.active {
+      color: #c49a6c;
+      border-bottom-color: #c49a6c;
+    }
+
+    /* ---- Task row checkbox ---- */
+    input[type="checkbox"] {
+      accent-color: #c49a6c;
+      width: 14px;
+      height: 14px;
+    }
+  </style>
+</head>
+<body class="h-screen overflow-hidden">
+  <div class="flex h-full">
+
+    <!-- ================================================================== -->
+    <!-- SIDEBAR                                                             -->
+    <!-- ================================================================== -->
+    <div class="sidebar shrink-0">
+      <!-- Wordmark -->
+      <div class="flex items-center gap-2.5 px-3 py-4">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md" style="background: linear-gradient(135deg, #d4a574, #c49a6c);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2 2 2-4 4 4 4-2 2"/><path d="m17 10 2 2-4 4 4 4-2 2"/></svg>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm leading-tight tracking-tight" style="font-family: Georgia, serif;">Sherpa</span>
+          <span class="text-[10px] uppercase leading-tight tracking-[0.25em]" style="font-family: ui-monospace; color: rgba(232,228,224,0.35);">Studio</span>
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <div class="flex-1 overflow-y-auto">
+        <div class="sidebar-group-label">Operations</div>
+        <a class="sidebar-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          Process
+        </a>
+        <a class="sidebar-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+          Tasks
+        </a>
+        <a class="sidebar-item active" href="#" onclick="showView('dispatch'); return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/></svg>
+          Dispatch
+        </a>
+        <a class="sidebar-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
+          Workflow
+        </a>
+
+        <div class="sidebar-group-label mt-2">Knowledge</div>
+        <a class="sidebar-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg> Docs</a>
+        <a class="sidebar-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg> Conventions</a>
+        <a class="sidebar-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m13 2 2 2-4 4 4 4-2 2"/></svg> Skills</a>
+        <a class="sidebar-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg> Playbooks</a>
+
+        <div class="sidebar-group-label mt-2">System</div>
+        <a class="sidebar-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Workforce</a>
+        <a class="sidebar-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Sessions</a>
+        <a class="sidebar-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z"/><path d="M12 6v6l4 2"/></svg> MCP</a>
+        <a class="sidebar-item" href="#" onclick="showView('settings'); return false;" id="settings-nav">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </a>
+
+        <div class="sidebar-group-label mt-2">Activity</div>
+        <a class="sidebar-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg> Activity</a>
+      </div>
+
+      <!-- Footer -->
+      <div class="border-t px-3 py-2.5" style="border-color: #1e1e22;">
+        <div class="flex items-center gap-2">
+          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-dark-bronze text-[11px] font-medium text-copper">R</div>
+          <div class="flex flex-col">
+            <span class="text-xs">Rob</span>
+            <span class="text-[10px]" style="color: rgba(232,228,224,0.35);">r.abby@icloud.com</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MAIN CONTENT                                                        -->
+    <!-- ================================================================== -->
+    <div class="flex flex-1 flex-col overflow-hidden">
+
+      <!-- Breadcrumb bar -->
+      <div class="flex items-center gap-2 px-4 py-3 text-sm" style="color: rgba(232,228,224,0.5);">
+        <span>Studio</span>
+        <span style="color: rgba(232,228,224,0.2);">›</span>
+        <span id="breadcrumb-page" class="text-[#e8e4e0]">Dispatch</span>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- DISPATCH VIEW                                                   -->
+      <!-- ============================================================== -->
+      <div id="dispatch-view" class="flex flex-1 flex-col overflow-hidden border-t" style="border-color: #27272a;">
+
+        <!-- Toolbar -->
+        <div class="flex shrink-0 items-center justify-between px-4 py-2" style="border-bottom: 1px solid #27272a;">
+          <!-- Left: Autonomy selector -->
+          <div class="segment-control">
+            <button class="segment-btn active" onclick="setAutonomy(this, 'supervised')">
+              <span class="segment-dot"></span>
+              supervised
+            </button>
+            <button class="segment-btn" onclick="setAutonomy(this, 'autonomous')">
+              <span class="segment-dot"></span>
+              autonomous
+            </button>
+          </div>
+
+          <!-- Right: Stats -->
+          <div class="flex items-center gap-3 text-xs">
+            <span style="color: rgba(232,228,224,0.4);">
+              <span class="font-medium" style="color: #c49a6c;">2</span> active
+            </span>
+            <span style="color: rgba(232,228,224,0.4);">
+              <span class="font-medium" style="color: #f43f5e;">1</span> failed
+            </span>
+            <span style="color: rgba(232,228,224,0.4);">
+              <span class="font-medium" style="color: #e8e4e0;">3</span> today
+            </span>
+          </div>
+        </div>
+
+        <!-- Guard rail banner (hidden by default) -->
+        <div id="guard-rail" class="guard-rail" style="display: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          Autonomous mode: code-implementation and architect tasks require supervised mode
+        </div>
+
+        <!-- Two-panel grid -->
+        <div class="grid flex-1 grid-cols-12 gap-0 overflow-hidden">
+
+          <!-- ---- BACKLOG PANEL (5 cols) ---- -->
+          <div class="col-span-5 flex flex-col overflow-hidden" style="border-right: 1px solid #27272a;">
+            <div class="panel-header">
+              <span class="panel-label">Backlog</span>
+              <span class="panel-count">5 pending</span>
+            </div>
+
+            <!-- Task groups -->
+            <div class="flex-1 overflow-y-auto" id="backlog-list">
+              <!-- code-impl group -->
+              <div>
+                <button class="flex w-full items-center justify-between px-3 py-2 transition-colors hover:bg-white/[0.02]" style="border-bottom: 1px solid rgba(196,154,108,0.08);" onclick="toggleGroup(this)">
+                  <div class="flex items-center gap-2">
+                    <svg class="group-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: rgba(232,228,224,0.35); transform: rotate(90deg); transition: transform 0.15s;"><path d="m9 18 6-6-6-6"/></svg>
+                    <span class="badge badge-code-impl">code-impl</span>
+                  </div>
+                  <span class="text-xs" style="color: rgba(232,228,224,0.35);">2</span>
+                </button>
+                <div class="group-tasks">
+                  <label class="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-white/[0.02] cursor-pointer" style="border-bottom: 1px solid rgba(196,154,108,0.06);">
+                    <input type="checkbox" class="task-checkbox" data-type="code-impl" onchange="updateSelection()">
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-xs" style="color: #e8e4e0;">Build dispatch bar component with agent dropdown</div>
+                      <div class="text-[10px]" style="color: rgba(232,228,224,0.3);">dispatch-evolution · high</div>
+                    </div>
+                  </label>
+                  <label class="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-white/[0.02] cursor-pointer" style="border-bottom: 1px solid rgba(196,154,108,0.06);">
+                    <input type="checkbox" class="task-checkbox" data-type="code-impl" onchange="updateSelection()">
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-xs" style="color: #e8e4e0;">Implement two-panel layout for dispatch page</div>
+                      <div class="text-[10px]" style="color: rgba(232,228,224,0.3);">dispatch-evolution · high</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- research group -->
+              <div>
+                <button class="flex w-full items-center justify-between px-3 py-2 transition-colors hover:bg-white/[0.02]" style="border-bottom: 1px solid rgba(196,154,108,0.08);" onclick="toggleGroup(this)">
+                  <div class="flex items-center gap-2">
+                    <svg class="group-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: rgba(232,228,224,0.35); transform: rotate(90deg); transition: transform 0.15s;"><path d="m9 18 6-6-6-6"/></svg>
+                    <span class="badge badge-research">research</span>
+                  </div>
+                  <span class="text-xs" style="color: rgba(232,228,224,0.35);">2</span>
+                </button>
+                <div class="group-tasks">
+                  <label class="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-white/[0.02] cursor-pointer" style="border-bottom: 1px solid rgba(196,154,108,0.06);">
+                    <input type="checkbox" class="task-checkbox" data-type="research" onchange="updateSelection()">
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-xs" style="color: #e8e4e0;">Survey agent context portability patterns</div>
+                      <div class="text-[10px]" style="color: rgba(232,228,224,0.3);">agent-context-portability · medium</div>
+                    </div>
+                  </label>
+                  <label class="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-white/[0.02] cursor-pointer" style="border-bottom: 1px solid rgba(196,154,108,0.06);">
+                    <input type="checkbox" class="task-checkbox" data-type="research" onchange="updateSelection()">
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-xs" style="color: #e8e4e0;">Competitive analysis of AI gateway pricing models</div>
+                      <div class="text-[10px]" style="color: rgba(232,228,224,0.3);">ai-gateway-dispatch · medium</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- audit group -->
+              <div>
+                <button class="flex w-full items-center justify-between px-3 py-2 transition-colors hover:bg-white/[0.02]" style="border-bottom: 1px solid rgba(196,154,108,0.08);" onclick="toggleGroup(this)">
+                  <div class="flex items-center gap-2">
+                    <svg class="group-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: rgba(232,228,224,0.35); transform: rotate(90deg); transition: transform 0.15s;"><path d="m9 18 6-6-6-6"/></svg>
+                    <span class="badge badge-audit">audit</span>
+                  </div>
+                  <span class="text-xs" style="color: rgba(232,228,224,0.35);">1</span>
+                </button>
+                <div class="group-tasks">
+                  <label class="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-white/[0.02] cursor-pointer" style="border-bottom: 1px solid rgba(196,154,108,0.06);">
+                    <input type="checkbox" class="task-checkbox" data-type="audit" onchange="updateSelection()">
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-xs" style="color: #e8e4e0;">Audit initiative frontmatter consistency</div>
+                      <div class="text-[10px]" style="color: rgba(232,228,224,0.3);">decision-record-coherence · low</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dispatch Bar (always visible) -->
+            <div id="dispatch-bar" class="dispatch-bar">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium" style="color: rgba(232, 228, 224, 0.3);" id="selected-count">No tasks selected</span>
+                <span id="selected-badges"></span>
+              </div>
+              <select class="agent-select" id="agent-select">
+                <option value="none">Default (no role)</option>
+                <option disabled>──────────────</option>
+                <option value="engineer">Engineer</option>
+                <option value="researcher">Researcher</option>
+                <option value="judge">Judge</option>
+                <option value="frontend-dev">Frontend Developer</option>
+                <option value="infra-eng">Infrastructure Engineer</option>
+              </select>
+              <button class="dispatch-btn disabled" id="dispatch-btn" onclick="dispatchTasks()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                Dispatch
+              </button>
+              <div class="backend-chip">
+                <span class="health-dot up"></span>
+                via openclaw
+              </div>
+            </div>
+          </div>
+
+          <!-- ---- ASSIGNMENTS PANEL (7 cols) ---- -->
+          <div class="col-span-7 flex flex-col overflow-hidden">
+            <div class="panel-header">
+              <span class="panel-label">Assignments</span>
+              <span class="panel-count">2 active</span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-2">
+              <!-- Active assignments -->
+              <div class="rounded-lg p-3" style="border: 1px solid rgba(196,154,108,0.12); background: rgba(24,24,27,0.4);">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-xs font-medium" style="color: #e8e4e0;">Refactor dispatch routing to use AI Gateway models</span>
+                  <span class="badge status-dispatched" style="border-radius: 9999px; padding: 1px 8px; font-size: 10px;">dispatched</span>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="mono-badge">openclaw</span>
+                  <span class="mono-badge">claude-sonnet-4-6</span>
+                  <span class="badge badge-code-impl" style="font-size: 9px;">code-impl</span>
+                  <span class="text-[10px] ml-1" style="color: rgba(232,228,224,0.35);">Engineer</span>
+                  <span class="ml-auto text-[10px] tabular-nums" style="color: rgba(232,228,224,0.25);">12m</span>
+                </div>
+                <div class="mt-2 flex items-center gap-3 text-[10px]" style="color: rgba(232,228,224,0.3);">
+                  <span>1,240 tokens</span>
+                  <span>$0.02</span>
+                </div>
+              </div>
+
+              <div class="rounded-lg p-3" style="border: 1px solid rgba(196,154,108,0.12); background: rgba(24,24,27,0.4);">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-xs font-medium" style="color: #e8e4e0;">Research MCP delegation patterns across frameworks</span>
+                  <span class="badge status-dispatched" style="border-radius: 9999px; padding: 1px 8px; font-size: 10px;">dispatched</span>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="mono-badge">openclaw</span>
+                  <span class="badge badge-research" style="font-size: 9px;">research</span>
+                  <span class="text-[10px] ml-1" style="color: rgba(232,228,224,0.35);">Researcher</span>
+                  <span class="ml-auto text-[10px] tabular-nums" style="color: rgba(232,228,224,0.25);">45m</span>
+                </div>
+                <div class="mt-2 flex items-center gap-3 text-[10px]" style="color: rgba(232,228,224,0.3);">
+                  <span>8,420 tokens</span>
+                  <span>$0.11</span>
+                </div>
+              </div>
+
+              <!-- Failed divider -->
+              <div class="flex items-center gap-2 py-2">
+                <div class="h-px flex-1" style="background: rgba(244,63,94,0.15);"></div>
+                <span class="text-[10px] uppercase tracking-widest" style="color: rgba(244,63,94,0.5);">failed</span>
+                <div class="h-px flex-1" style="background: rgba(244,63,94,0.15);"></div>
+              </div>
+
+              <div class="rounded-lg p-3" style="border: 1px solid rgba(244,63,94,0.15); background: rgba(24,24,27,0.4);">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-xs font-medium" style="color: #e8e4e0;">Market landscape research and initiative discovery</span>
+                  <span class="badge status-failed" style="border-radius: 9999px; padding: 1px 8px; font-size: 10px;">failed</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="mono-badge">openclaw</span>
+                  <span class="badge badge-general" style="font-size: 9px;">general</span>
+                  <span class="ml-auto text-[10px] tabular-nums" style="color: rgba(232,228,224,0.25);">3d</span>
+                  <button class="flex items-center gap-1 rounded border px-2 py-0.5 text-[10px] transition-colors hover:bg-rose-500/15" style="border-color: rgba(244,63,94,0.2); background: rgba(244,63,94,0.08); color: #f87171;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    Reset
+                  </button>
+                </div>
+              </div>
+
+              <!-- Completed today divider -->
+              <div class="flex items-center gap-2 py-2">
+                <div class="h-px flex-1" style="background: rgba(232,228,224,0.08);"></div>
+                <span class="text-[10px] uppercase tracking-widest" style="color: rgba(232,228,224,0.25);">completed today</span>
+                <div class="h-px flex-1" style="background: rgba(232,228,224,0.08);"></div>
+              </div>
+
+              <div class="rounded-lg p-3 opacity-60" style="border: 1px solid rgba(16,185,129,0.12); background: rgba(24,24,27,0.4);">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-xs" style="color: rgba(232,228,224,0.6);">Audit behavioral agent constraint patterns</span>
+                  <span class="badge status-completed" style="border-radius: 9999px; padding: 1px 8px; font-size: 10px;">completed</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="mono-badge">openclaw</span>
+                  <span class="badge badge-audit" style="font-size: 9px;">audit</span>
+                  <span class="text-[10px] ml-1" style="color: rgba(232,228,224,0.25);">Judge</span>
+                  <span class="ml-auto text-[10px] tabular-nums" style="color: rgba(232,228,224,0.25);">2h</span>
+                </div>
+                <div class="mt-2 flex items-center gap-3 text-[10px]" style="color: rgba(232,228,224,0.2);">
+                  <span>12,800 tokens</span>
+                  <span>$0.18</span>
+                </div>
+              </div>
+
+              <div class="rounded-lg p-3 opacity-60" style="border: 1px solid rgba(16,185,129,0.12); background: rgba(24,24,27,0.4);">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-xs" style="color: rgba(232,228,224,0.6);">Review voice-and-tone guidelines proposal</span>
+                  <span class="badge status-completed" style="border-radius: 9999px; padding: 1px 8px; font-size: 10px;">completed</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="mono-badge">openclaw</span>
+                  <span class="badge badge-code-review" style="font-size: 9px;">code-review</span>
+                  <span class="text-[10px] ml-1" style="color: rgba(232,228,224,0.25);">Judge</span>
+                  <span class="ml-auto text-[10px] tabular-nums" style="color: rgba(232,228,224,0.25);">45m</span>
+                </div>
+                <div class="mt-2 flex items-center gap-3 text-[10px]" style="color: rgba(232,228,224,0.2);">
+                  <span>6,200 tokens</span>
+                  <span>$0.08</span>
+                </div>
+              </div>
+
+              <div class="rounded-lg p-3 opacity-60" style="border: 1px solid rgba(16,185,129,0.12); background: rgba(24,24,27,0.4);">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-xs" style="color: rgba(232,228,224,0.6);">Generate initiative activity summaries</span>
+                  <span class="badge status-completed" style="border-radius: 9999px; padding: 1px 8px; font-size: 10px;">completed</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="mono-badge">openclaw</span>
+                  <span class="badge badge-content" style="font-size: 9px;">content</span>
+                  <span class="text-[10px] ml-1" style="color: rgba(232,228,224,0.25);">Designer</span>
+                  <span class="ml-auto text-[10px] tabular-nums" style="color: rgba(232,228,224,0.25);">1h</span>
+                </div>
+                <div class="mt-2 flex items-center gap-3 text-[10px]" style="color: rgba(232,228,224,0.2);">
+                  <span>4,100 tokens</span>
+                  <span>$0.05</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- SETTINGS VIEW (hidden by default)                               -->
+      <!-- ============================================================== -->
+      <div id="settings-view" class="flex-1 overflow-y-auto border-t" style="border-color: #27272a; display: none;">
+        <div class="mx-auto max-w-2xl px-6 py-8 space-y-8">
+
+          <!-- Active Backend -->
+          <div>
+            <h2 class="text-sm font-medium mb-1" style="color: #e8e4e0;">Active Backend</h2>
+            <p class="text-xs mb-4" style="color: rgba(232,228,224,0.4);">The backend used for all task dispatch. Change this to switch between your agent harnesses.</p>
+
+            <div class="flex gap-3">
+              <!-- OpenClaw card -->
+              <div class="backend-radio-card active" onclick="selectBackend(this, 'openclaw')">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2.5">
+                    <div class="radio-dot active"></div>
+                    <span class="text-sm font-medium" style="color: #e8e4e0;">OpenClaw</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="health-dot up"></span>
+                    <span class="text-[10px]" style="color: rgba(52,211,153,0.8);">connected</span>
+                  </div>
+                </div>
+                <p class="text-[11px]" style="color: rgba(232,228,224,0.4);">Remote agent harness on VPS. Supports overnight autonomous dispatch and Telegram bot access.</p>
+              </div>
+
+              <!-- Claude card -->
+              <div class="backend-radio-card" onclick="selectBackend(this, 'claude')">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2.5">
+                    <div class="radio-dot"></div>
+                    <span class="text-sm font-medium" style="color: #e8e4e0;">Claude</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="health-dot down"></span>
+                    <span class="text-[10px]" style="color: rgba(248,113,113,0.8);">offline</span>
+                  </div>
+                </div>
+                <p class="text-[11px]" style="color: rgba(232,228,224,0.4);">Local CLI agent. Best for interactive supervised work requiring rapid iteration.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Backend Health -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-sm font-medium" style="color: #e8e4e0;">Backend Health</h2>
+                <p class="text-xs mt-0.5" style="color: rgba(232,228,224,0.4);">Connection status and available models for each backend.</p>
+              </div>
+              <button class="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] transition-colors hover:bg-white/[0.03]" style="border-color: #27272a; color: rgba(232,228,224,0.5);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                Check Health
+              </button>
+            </div>
+
+            <div class="space-y-3">
+              <!-- OpenClaw health -->
+              <div class="health-card">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <span class="health-dot up"></span>
+                    <span class="text-xs font-medium" style="color: #e8e4e0;">OpenClaw</span>
+                    <span class="mono-badge">gateway</span>
+                  </div>
+                  <span class="text-[10px]" style="color: rgba(232,228,224,0.3);">checked 2m ago</span>
+                </div>
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px]" style="color: rgba(232,228,224,0.4);">Status</span>
+                    <span class="text-[11px]" style="color: rgba(52,211,153,0.8);">Connected</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px]" style="color: rgba(232,228,224,0.4);">Endpoint</span>
+                    <span class="mono-badge">wss://openclaw.sherpa.solar</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px]" style="color: rgba(232,228,224,0.4);">Models</span>
+                    <span class="text-[11px]" style="color: rgba(232,228,224,0.5);">claude-sonnet-4-6, claude-haiku-4-5</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Claude health -->
+              <div class="health-card">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <span class="health-dot down"></span>
+                    <span class="text-xs font-medium" style="color: #e8e4e0;">Claude</span>
+                    <span class="mono-badge">cli</span>
+                  </div>
+                  <span class="text-[10px]" style="color: rgba(232,228,224,0.3);">checked 2m ago</span>
+                </div>
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px]" style="color: rgba(232,228,224,0.4);">Status</span>
+                    <span class="text-[11px]" style="color: rgba(248,113,113,0.8);">No active session</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px]" style="color: rgba(232,228,224,0.4);">Binary</span>
+                    <span class="mono-badge">/usr/local/bin/claude</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---- View switching ----
+    function showView(view) {
+      const dispatchView = document.getElementById('dispatch-view');
+      const settingsView = document.getElementById('settings-view');
+      const breadcrumb = document.getElementById('breadcrumb-page');
+      const settingsNav = document.getElementById('settings-nav');
+
+      // Update sidebar active states
+      document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+
+      if (view === 'settings') {
+        dispatchView.style.display = 'none';
+        settingsView.style.display = 'block';
+        breadcrumb.textContent = 'Settings';
+        settingsNav.classList.add('active');
+      } else {
+        dispatchView.style.display = 'flex';
+        settingsView.style.display = 'none';
+        breadcrumb.textContent = 'Dispatch';
+        // Find and activate the dispatch nav item
+        document.querySelectorAll('.sidebar-item').forEach(el => {
+          if (el.textContent.trim() === 'Dispatch') el.classList.add('active');
+        });
+      }
+    }
+
+    // ---- Autonomy selector ----
+    function setAutonomy(btn, level) {
+      document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const banner = document.getElementById('guard-rail');
+      banner.style.display = level === 'autonomous' ? 'flex' : 'none';
+
+      // Dim code-impl tasks in autonomous mode
+      const codeImplCheckboxes = document.querySelectorAll('[data-type="code-impl"]');
+      codeImplCheckboxes.forEach(cb => {
+        const row = cb.closest('label');
+        if (level === 'autonomous') {
+          row.style.opacity = '0.2';
+          row.style.pointerEvents = 'none';
+          cb.checked = false;
+        } else {
+          row.style.opacity = '1';
+          row.style.pointerEvents = 'auto';
+        }
+      });
+      updateSelection();
+    }
+
+    // ---- Group collapse ----
+    function toggleGroup(btn) {
+      const tasks = btn.nextElementSibling;
+      const chevron = btn.querySelector('.group-chevron');
+      if (tasks.style.display === 'none') {
+        tasks.style.display = 'block';
+        chevron.style.transform = 'rotate(90deg)';
+      } else {
+        tasks.style.display = 'none';
+        chevron.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // ---- Selection & dispatch bar ----
+    function updateSelection() {
+      const checked = document.querySelectorAll('.task-checkbox:checked');
+      const countEl = document.getElementById('selected-count');
+      const badgesEl = document.getElementById('selected-badges');
+
+      if (checked.length === 0) {
+        countEl.textContent = 'No tasks selected';
+        countEl.style.color = 'rgba(232, 228, 224, 0.3)';
+        badgesEl.innerHTML = '';
+        updateDispatchBtn();
+        return;
+      }
+
+      countEl.style.color = '#e8e4e0';
+      countEl.textContent = `${checked.length} selected`;
+
+      // Collect unique task types
+      const types = new Set();
+      checked.forEach(cb => types.add(cb.dataset.type));
+
+      // Render badges
+      const badgeMap = {
+        'code-impl': 'badge-code-impl',
+        'research': 'badge-research',
+        'audit': 'badge-audit',
+        'content': 'badge-content',
+      };
+      badgesEl.innerHTML = '';
+      types.forEach(t => {
+        const span = document.createElement('span');
+        span.className = `badge ${badgeMap[t] || 'badge-general'}`;
+        span.textContent = t;
+        badgesEl.appendChild(span);
+      });
+
+      // Agent stays at "Default (no role)" unless user changes it
+      // Dispatch button is immediately ready
+      updateDispatchBtn();
+    }
+
+    function updateDispatchBtn() {
+      const dispatchBtn = document.getElementById('dispatch-btn');
+      const checked = document.querySelectorAll('.task-checkbox:checked');
+
+      if (checked.length > 0) {
+        dispatchBtn.classList.remove('disabled');
+        dispatchBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg> Dispatch ${checked.length}`;
+      } else {
+        dispatchBtn.classList.add('disabled');
+        dispatchBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg> Dispatch`;
+      }
+    }
+
+    // Listen for agent dropdown changes
+    document.getElementById('agent-select').addEventListener('change', updateDispatchBtn);
+
+    function dispatchTasks() {
+      const btn = document.getElementById('dispatch-btn');
+      if (btn.classList.contains('disabled')) return;
+
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Dispatching...`;
+      btn.classList.add('disabled');
+
+      setTimeout(() => {
+        document.querySelectorAll('.task-checkbox:checked').forEach(cb => cb.checked = false);
+        updateSelection();
+      }, 1500);
+    }
+
+    // ---- Backend selector (settings page) ----
+    function selectBackend(card, backend) {
+      document.querySelectorAll('.backend-radio-card').forEach(c => {
+        c.classList.remove('active');
+        c.querySelector('.radio-dot').classList.remove('active');
+      });
+      card.classList.add('active');
+      card.querySelector('.radio-dot').classList.add('active');
+
+      // Update the dispatch bar backend chip
+      const chip = document.querySelector('.backend-chip');
+      if (chip) {
+        const dot = card.querySelector('.health-dot');
+        const isUp = dot.classList.contains('up');
+        chip.innerHTML = `<span class="health-dot ${isUp ? 'up' : 'down'}"></span> via ${backend}`;
+      }
+    }
+  </script>
+</body>
+</html>

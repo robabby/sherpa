@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Aggregate Views — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            display: ['Fraunces', 'Georgia', 'serif'],
+          },
+          colors: {
+            obsidian: '#08080a',
+            'warm-charcoal': '#18181b',
+            'dark-bronze': '#27272a',
+            gold: '#d4a574',
+            'gold-bright': '#e8c49a',
+            'gold-muted': '#b08a5e',
+            copper: '#c49a6c',
+            bronze: '#8b7355',
+            tarnished: '#6b5a42',
+            cream: '#f5f0e8',
+            'warm-gray': '#9a8e80',
+            dim: '#71665a',
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #08080a;
+      color: #e8e4e0;
+    }
+    /* shadcn Badge-like */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 0.375rem;
+      border: 1px solid;
+      padding: 0.125rem 0.5rem;
+      font-size: 0.625rem;
+      font-weight: 500;
+      white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-outline {
+      border-color: rgba(255,255,255,0.12);
+      color: #9a8e80;
+      background: transparent;
+    }
+    .badge-secondary {
+      border-color: transparent;
+      background: #1a1a1e;
+      color: #e8e4e0;
+    }
+    /* Status badge styles (from StatusBadge component) */
+    .badge-pending {
+      border-color: rgba(234,179,8,0.4);
+      color: #facc15;
+      background: rgba(234,179,8,0.1);
+    }
+    .badge-approved {
+      border-color: rgba(16,185,129,0.4);
+      color: #34d399;
+      background: rgba(16,185,129,0.1);
+    }
+    .badge-in-progress {
+      border-color: rgba(212,165,116,0.5);
+      color: #d4a574;
+      background: rgba(212,165,116,0.1);
+    }
+    .badge-integrated {
+      border-color: rgba(59,130,246,0.4);
+      color: #60a5fa;
+      background: rgba(59,130,246,0.1);
+    }
+    .badge-declined {
+      border-color: rgba(239,68,68,0.4);
+      color: #f87171;
+      background: rgba(239,68,68,0.1);
+    }
+    .badge-archived {
+      border-color: rgba(113,113,122,0.3);
+      color: #71717a;
+      background: rgba(113,113,122,0.1);
+    }
+    /* Task status variants */
+    .badge-dispatched {
+      border-color: transparent;
+      background: #e8e4e0;
+      color: #18181b;
+    }
+    .badge-failed {
+      border-color: transparent;
+      background: #ef4444;
+      color: white;
+    }
+    .badge-completed {
+      border-color: transparent;
+      background: #1a1a1e;
+      color: #e8e4e0;
+    }
+    /* LED dots */
+    .led {
+      display: inline-block;
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .led-amber { background: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,0.4); }
+    .led-emerald { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.4); }
+    .led-blue { background: #60a5fa; box-shadow: 0 0 6px rgba(96,165,250,0.4); }
+    .led-zinc { background: #71717a; box-shadow: 0 0 4px rgba(113,113,122,0.3); }
+    .led-rose { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,0.4); }
+    /* List row hover */
+    .list-row {
+      transition: background-color 150ms;
+      cursor: pointer;
+    }
+    .list-row:hover {
+      background-color: rgba(10,10,12,0.5);
+    }
+    /* Breadcrumb */
+    .breadcrumb-link {
+      color: #9a8e80;
+      font-size: 0.8125rem;
+      transition: color 150ms;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .breadcrumb-link:hover { color: #e8e4e0; }
+    .breadcrumb-sep {
+      color: #9a8e80;
+      opacity: 0.4;
+      font-size: 0.75rem;
+      margin: 0 0.25rem;
+    }
+    .breadcrumb-current {
+      color: #e8e4e0;
+      font-size: 0.8125rem;
+    }
+    /* Sidebar nav */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.8125rem;
+      color: #9a8e80;
+      transition: all 150ms;
+      cursor: pointer;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.03); color: #e8e4e0; }
+    .nav-active { background: rgba(212,165,116,0.08); color: #d4a574; }
+    /* Select mock */
+    .select-mock {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      font-size: 0.8125rem;
+      color: #e8e4e0;
+      cursor: pointer;
+    }
+    /* Project card */
+    .project-card {
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(10,10,12,0.3);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      transition: all 200ms;
+      cursor: pointer;
+    }
+    .project-card:hover {
+      border-color: rgba(212,165,116,0.2);
+      background: rgba(10,10,12,0.5);
+    }
+    .project-card:hover .project-name { color: #d4a574; }
+  </style>
+</head>
+<body class="min-h-screen flex">
+
+  <!-- Sidebar -->
+  <aside class="w-60 border-r border-[#1e1e22] bg-[#0e0e10] flex flex-col shrink-0" style="min-height:100vh">
+    <!-- Header -->
+    <div class="p-3 flex flex-col gap-2">
+      <div class="flex items-center gap-2.5 px-1 py-1.5">
+        <div class="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
+             style="background: linear-gradient(135deg, #d4a574, #c49a6c)">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-sans text-sm leading-tight tracking-tight text-[#e8e4e0]" style="letter-spacing:-0.01em">Sherpa</span>
+          <span class="font-mono text-[10px] uppercase leading-tight text-[#9a8e80]/60" style="letter-spacing:0.25em">Studio</span>
+        </div>
+      </div>
+      <!-- Project Switcher -->
+      <div class="select-mock" onclick="showTab('projects')">
+        <svg class="w-4 h-4 text-[#9a8e80]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+        <span>All Projects</span>
+        <svg class="w-3 h-3 ml-auto text-[#9a8e80]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-2 py-2 flex flex-col gap-4">
+      <div>
+        <div class="px-2 mb-1 font-mono text-[10px] uppercase text-[#9a8e80]/50" style="letter-spacing:0.25em">Operations</div>
+        <div class="nav-item" onclick="showTab('process')" id="nav-process"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 3v12M18 9a3 3 0 01-3 3H6m12-3a3 3 0 00-3-3H6"/></svg> Process</div>
+        <div class="nav-item" onclick="showTab('tasks')" id="nav-tasks"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg> Tasks</div>
+        <div class="nav-item"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Dispatch</div>
+      </div>
+      <div>
+        <div class="px-2 mb-1 font-mono text-[10px] uppercase text-[#9a8e80]/50" style="letter-spacing:0.25em">Knowledge</div>
+        <div class="nav-item" onclick="showTab('research')" id="nav-research"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg> Research</div>
+        <div class="nav-item"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Docs</div>
+      </div>
+      <div>
+        <div class="px-2 mb-1 font-mono text-[10px] uppercase text-[#9a8e80]/50" style="letter-spacing:0.25em">Activity</div>
+        <div class="nav-item"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg> Activity</div>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 overflow-auto">
+    <!-- Breadcrumb header (matches StudioShellHeader) -->
+    <header class="flex items-center gap-2 border-b border-[#1e1e22] px-4 py-3">
+      <!-- SidebarTrigger mock -->
+      <button class="p-1 rounded hover:bg-white/5 transition-colors -ml-1" title="Toggle sidebar">
+        <svg class="w-4 h-4 text-[#9a8e80]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <!-- Separator -->
+      <div class="w-px h-4 bg-[#1e1e22] mr-2"></div>
+      <!-- Breadcrumb -->
+      <nav id="breadcrumb" class="flex items-center">
+        <a class="breadcrumb-link" onclick="showTab('projects')">Studio</a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current" id="breadcrumb-end">Projects</span>
+      </nav>
+    </header>
+
+    <!-- Projects Landing -->
+    <div id="view-projects" class="mx-auto max-w-4xl px-6 py-8">
+      <h1 class="font-display text-2xl text-[#e8e4e0] mb-6">Projects</h1>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <!-- Sherpa -->
+        <div class="project-card" onclick="showTab('process')">
+          <h2 class="project-name font-display text-lg text-[#e8e4e0] transition-colors">Sherpa</h2>
+          <p class="mt-0.5 font-mono text-xs text-[#9a8e80]/60 truncate">github.com/robabby/sherpa</p>
+          <div class="mt-3 flex items-center gap-2 flex-wrap">
+            <span class="badge badge-secondary">61 initiatives</span>
+            <span class="badge badge-secondary">8 tasks</span>
+            <span class="badge badge-secondary">2 research</span>
+          </div>
+        </div>
+        <!-- WavePoint -->
+        <div class="project-card" onclick="showTab('process')">
+          <h2 class="project-name font-display text-lg text-[#e8e4e0] transition-colors">WavePoint</h2>
+          <p class="mt-0.5 font-mono text-xs text-[#9a8e80]/60 truncate">github.com/robabby/wavepoint</p>
+          <div class="mt-3 flex items-center gap-2 flex-wrap">
+            <span class="badge badge-secondary">3 initiatives</span>
+            <span class="badge badge-secondary">2 tasks</span>
+            <span class="badge badge-secondary">12 research</span>
+          </div>
+        </div>
+        <!-- robabby -->
+        <div class="project-card" onclick="showTab('process')">
+          <h2 class="project-name font-display text-lg text-[#e8e4e0] transition-colors">Rob Abby</h2>
+          <p class="mt-0.5 font-mono text-xs text-[#9a8e80]/60 truncate">github.com/robabby/robabby</p>
+          <div class="mt-3 flex items-center gap-2 flex-wrap">
+            <span class="badge badge-secondary">0 initiatives</span>
+            <span class="badge badge-secondary">0 tasks</span>
+            <span class="badge badge-secondary">14 research</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Research Feed -->
+    <div id="view-research" class="mx-auto max-w-4xl px-6 py-8 hidden">
+      <h1 class="font-display text-2xl text-[#e8e4e0] mb-6">Research</h1>
+      <div class="flex flex-col gap-8">
+        <!-- Job Market -->
+        <section>
+          <h2 class="font-mono text-xs uppercase text-[#9a8e80] mb-3" style="letter-spacing:0.15em">Job Market</h2>
+          <div class="flex flex-col gap-1">
+            <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-[#e8e4e0]">AI Engineering Market Landscape — Q1 2026</span>
+                <span class="badge badge-outline">robabby</span>
+              </div>
+              <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+            </a>
+            <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-[#e8e4e0]">Remote AI Infrastructure Roles — Weekly Scan</span>
+                <span class="badge badge-outline">robabby</span>
+              </div>
+              <span class="font-mono text-xs text-[#9a8e80]">2026-03-19</span>
+            </a>
+            <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-[#e8e4e0]">Federal AI Consulting RFPs — Active Opportunities</span>
+                <span class="badge badge-outline">robabby</span>
+              </div>
+              <span class="font-mono text-xs text-[#9a8e80]">2026-03-18</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- Competitive -->
+        <section>
+          <h2 class="font-mono text-xs uppercase text-[#9a8e80] mb-3" style="letter-spacing:0.15em">Competitive</h2>
+          <div class="flex flex-col gap-1">
+            <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-[#e8e4e0]">Agentic Framework Competitive Analysis</span>
+                <span class="badge badge-outline">Sherpa</span>
+              </div>
+              <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+            </a>
+            <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-[#e8e4e0]">Cursor / Windsurf Governance Comparison</span>
+                <span class="badge badge-outline">Sherpa</span>
+              </div>
+              <span class="font-mono text-xs text-[#9a8e80]">2026-03-19</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- Astrology -->
+        <section>
+          <h2 class="font-mono text-xs uppercase text-[#9a8e80] mb-3" style="letter-spacing:0.15em">Astrology</h2>
+          <div class="flex flex-col gap-1">
+            <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-[#e8e4e0]">Vedic Transit Calculation Accuracy Audit</span>
+                <span class="badge badge-outline">WavePoint</span>
+              </div>
+              <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+            </a>
+            <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-[#e8e4e0]">Planetary Period (Dasha) API Design Research</span>
+                <span class="badge badge-outline">WavePoint</span>
+              </div>
+              <span class="font-mono text-xs text-[#9a8e80]">2026-03-18</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- General -->
+        <section>
+          <h2 class="font-mono text-xs uppercase text-[#9a8e80] mb-3" style="letter-spacing:0.15em">General</h2>
+          <div class="flex flex-col gap-1">
+            <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-[#e8e4e0]">Morning Briefing — 2026-03-20</span>
+                <span class="badge badge-outline">robabby</span>
+              </div>
+              <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Process (Initiatives) -->
+    <div id="view-process" class="mx-auto max-w-4xl px-6 py-8 hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="font-display text-2xl text-[#e8e4e0]">Process</h1>
+        <div class="flex items-center gap-2">
+          <span class="badge badge-secondary">in-progress 12</span>
+          <span class="badge badge-secondary">approved 8</span>
+          <span class="badge badge-secondary">pending 15</span>
+          <span class="badge badge-secondary">integrated 26</span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-1">
+        <!-- In-progress items -->
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="led led-amber"></span>
+            <span class="badge badge-in-progress">in-progress</span>
+            <span class="text-sm text-[#e8e4e0]">Studio Aggregate Views</span>
+            <span class="badge badge-outline">Sherpa</span>
+          </div>
+          <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+        </a>
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="led led-amber"></span>
+            <span class="badge badge-in-progress">in-progress</span>
+            <span class="text-sm text-[#e8e4e0]">Agent Context Portability</span>
+            <span class="badge badge-outline">Sherpa</span>
+          </div>
+          <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+        </a>
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="led led-amber"></span>
+            <span class="badge badge-in-progress">in-progress</span>
+            <span class="text-sm text-[#e8e4e0]">Vedic Transit Content Pipeline</span>
+            <span class="badge badge-outline">WavePoint</span>
+          </div>
+          <span class="font-mono text-xs text-[#9a8e80]">2026-03-19</span>
+        </a>
+
+        <!-- Approved -->
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="led led-emerald"></span>
+            <span class="badge badge-approved">approved</span>
+            <span class="text-sm text-[#e8e4e0]">Dispatch Evolution</span>
+            <span class="badge badge-outline">Sherpa</span>
+          </div>
+          <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+        </a>
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="led led-emerald"></span>
+            <span class="badge badge-approved">approved</span>
+            <span class="text-sm text-[#e8e4e0]">GPU Inference Service</span>
+            <span class="badge badge-outline">Sherpa</span>
+          </div>
+          <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+        </a>
+
+        <!-- Pending -->
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="led led-amber"></span>
+            <span class="badge badge-pending">pending</span>
+            <span class="text-sm text-[#e8e4e0]">Studio Zero-Downtime Deploy</span>
+            <span class="badge badge-outline">Sherpa</span>
+          </div>
+          <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+        </a>
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="led led-amber"></span>
+            <span class="badge badge-pending">pending</span>
+            <span class="text-sm text-[#e8e4e0]">Planetary API v2 — Dasha Endpoints</span>
+            <span class="badge badge-outline">WavePoint</span>
+          </div>
+          <span class="font-mono text-xs text-[#9a8e80]">2026-03-18</span>
+        </a>
+
+        <!-- Integrated -->
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="led led-blue"></span>
+            <span class="badge badge-integrated">integrated</span>
+            <span class="text-sm text-[#e8e4e0]">Multi-Project Studio</span>
+            <span class="badge badge-outline">Sherpa</span>
+          </div>
+          <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+        </a>
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="led led-blue"></span>
+            <span class="badge badge-integrated">integrated</span>
+            <span class="text-sm text-[#e8e4e0]">Studio Production Auth</span>
+            <span class="badge badge-outline">Sherpa</span>
+          </div>
+          <span class="font-mono text-xs text-[#9a8e80]">2026-03-19</span>
+        </a>
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="led led-blue"></span>
+            <span class="badge badge-integrated">integrated</span>
+            <span class="text-sm text-[#e8e4e0]">VPS Remote Compute</span>
+            <span class="badge badge-outline">Sherpa</span>
+          </div>
+          <span class="font-mono text-xs text-[#9a8e80]">2026-03-18</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div id="view-tasks" class="mx-auto max-w-4xl px-6 py-8 hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="font-display text-2xl text-[#e8e4e0]">Tasks</h1>
+        <div class="flex items-center gap-2">
+          <span class="badge badge-secondary">dispatched 1</span>
+          <span class="badge badge-secondary">pending 3</span>
+          <span class="badge badge-secondary">completed 4</span>
+          <span class="badge badge-secondary">reviewed 2</span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-1">
+        <!-- Dispatched -->
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-dispatched">dispatched</span>
+            <span class="text-sm text-[#e8e4e0]">Research: Vedic dasha calculation methods</span>
+            <span class="badge badge-outline">WavePoint</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-mono text-xs text-[#9a8e80]">researcher</span>
+            <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+          </div>
+        </a>
+
+        <!-- Pending -->
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-pending">pending</span>
+            <span class="text-sm text-[#e8e4e0]">Audit: content quality gates on research output</span>
+            <span class="badge badge-outline">Sherpa</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-mono text-xs text-[#9a8e80]">auditor</span>
+            <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+          </div>
+        </a>
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-pending">pending</span>
+            <span class="text-sm text-[#e8e4e0]">Research: competitive landscape weekly scan</span>
+            <span class="badge badge-outline">robabby</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-mono text-xs text-[#9a8e80]">researcher</span>
+            <span class="font-mono text-xs text-[#9a8e80]">2026-03-19</span>
+          </div>
+        </a>
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-pending">pending</span>
+            <span class="text-sm text-[#e8e4e0]">Code review: transit calculation refactor PR</span>
+            <span class="badge badge-outline">WavePoint</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-mono text-xs text-[#9a8e80]">code-reviewer</span>
+            <span class="font-mono text-xs text-[#9a8e80]">2026-03-19</span>
+          </div>
+        </a>
+
+        <!-- Completed -->
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-completed">completed</span>
+            <span class="text-sm text-[#e8e4e0]">Research: job market weekly scan</span>
+            <span class="badge badge-outline">robabby</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-mono text-xs text-[#9a8e80]">researcher</span>
+            <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+          </div>
+        </a>
+        <a class="list-row flex items-center justify-between rounded-lg px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-completed">completed</span>
+            <span class="text-sm text-[#e8e4e0]">Research: multi-project studio iteration 2</span>
+            <span class="badge badge-outline">Sherpa</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-mono text-xs text-[#9a8e80]">researcher</span>
+            <span class="font-mono text-xs text-[#9a8e80]">2026-03-20</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const views = ['projects', 'research', 'process', 'tasks'];
+    const navMap = { research: 'nav-research', process: 'nav-process', tasks: 'nav-tasks' };
+    const breadcrumbLabels = {
+      projects: 'Projects',
+      research: 'Research',
+      process: 'Process',
+      tasks: 'Tasks',
+    };
+
+    function showTab(id) {
+      // Toggle views
+      views.forEach(v => {
+        document.getElementById('view-' + v).classList.toggle('hidden', v !== id);
+      });
+      // Toggle sidebar nav active state
+      Object.values(navMap).forEach(n => {
+        const el = document.getElementById(n);
+        if (el) el.classList.remove('nav-active');
+      });
+      if (navMap[id]) {
+        document.getElementById(navMap[id]).classList.add('nav-active');
+      }
+      // Update breadcrumb
+      const bc = document.getElementById('breadcrumb');
+      if (id === 'projects') {
+        bc.innerHTML = `
+          <a class="breadcrumb-link" onclick="showTab('projects')">Studio</a>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-current">Projects</span>`;
+      } else {
+        bc.innerHTML = `
+          <a class="breadcrumb-link" onclick="showTab('projects')">Studio</a>
+          <span class="breadcrumb-sep">/</span>
+          <a class="breadcrumb-link" onclick="showTab('projects')">Projects</a>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-current">${breadcrumbLabels[id]}</span>`;
+      }
+    }
+
+    // Start on projects landing
+    showTab('projects');
+  </script>
+</body>
+</html>

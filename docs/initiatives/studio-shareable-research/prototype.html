@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shareable Research Document — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Fraunces', 'Georgia', 'serif'],
+            heading: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['DM Sans', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: '#08080a',
+            'warm-charcoal': '#18181b',
+            'dark-bronze': '#27272a',
+            gold: { DEFAULT: '#d4a574', bright: '#e8c49a', muted: '#b08a5e' },
+            copper: '#c49a6c',
+            cream: '#e8e4e0',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #08080a;
+      color: #e8e4e0;
+    }
+
+    /* DocRenderer-equivalent styles for the prototype */
+    .doc h2 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #d4a574;
+      border-bottom: 1px solid rgba(212, 165, 116, 0.15);
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .doc h3 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: #e8c49a;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .doc p {
+      line-height: 1.625;
+      color: rgba(232, 228, 224, 0.9);
+      margin-bottom: 1rem;
+    }
+
+    .doc strong {
+      font-weight: 600;
+      color: #e8c49a;
+    }
+
+    .doc a {
+      color: #d4a574;
+      text-decoration: underline;
+      text-decoration-color: rgba(176, 138, 94, 0.5);
+      text-underline-offset: 2px;
+    }
+    .doc a:hover {
+      color: #e8c49a;
+      text-decoration-color: #d4a574;
+    }
+
+    .doc ul {
+      margin-bottom: 1rem;
+      margin-left: 0.25rem;
+    }
+    .doc ul li {
+      position: relative;
+      padding-left: 1.25rem;
+      line-height: 1.625;
+      margin-bottom: 0.375rem;
+      color: rgba(232, 228, 224, 0.9);
+    }
+    .doc ul li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.6em;
+      height: 4px;
+      width: 4px;
+      border-radius: 50%;
+      background: rgba(212, 165, 116, 0.6);
+    }
+
+    .doc blockquote {
+      border-left: 2px solid rgba(212, 165, 116, 0.4);
+      padding-left: 1rem;
+      font-style: italic;
+      color: rgba(232, 228, 224, 0.7);
+      margin: 1rem 0;
+    }
+
+    .doc code {
+      background: #18181b;
+      color: #d4a574;
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.125rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875em;
+    }
+
+    .doc pre {
+      background: #08080a;
+      border: 1px solid rgba(212, 165, 116, 0.1);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.625;
+      color: rgba(232, 228, 224, 0.8);
+      margin: 1rem 0;
+    }
+
+    .doc table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin: 1rem 0;
+    }
+    .doc table th {
+      text-align: left;
+      padding: 0.625rem 0.75rem;
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 600;
+      color: #d4a574;
+      border-bottom: 1px solid rgba(212, 165, 116, 0.3);
+      background: rgba(24, 24, 27, 0.5);
+    }
+    .doc table td {
+      padding: 0.5rem 0.75rem;
+      color: rgba(232, 228, 224, 0.8);
+      border-bottom: 1px solid rgba(212, 165, 116, 0.08);
+    }
+    .doc table tr:hover td {
+      background: rgba(24, 24, 27, 0.3);
+    }
+
+    .doc .table-wrap {
+      border: 1px solid rgba(212, 165, 116, 0.15);
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- ─── Main Content ─── -->
+  <main class="flex-1 mx-auto max-w-3xl w-full px-6 py-12">
+
+    <!-- Title block -->
+    <div class="mb-8">
+      <h1 class="font-display text-2xl font-semibold text-cream">
+        Competitive Landscape: Agentic Consulting Platforms Q1 2026
+      </h1>
+      <div class="mt-2 flex items-center gap-3">
+        <span class="font-mono text-xs text-gold-muted">2026-03-21</span>
+        <span class="text-gold-muted/40">·</span>
+        <span class="text-sm text-gold-muted/70">competitive-analysis</span>
+      </div>
+    </div>
+
+    <!-- Separator -->
+    <hr class="border-t border-gold/15 mb-8">
+
+    <!-- Document body (simulating DocRenderer output) -->
+    <div class="doc">
+
+      <h2>Executive Summary</h2>
+      <p>The agentic consulting landscape has shifted dramatically since Q4 2025. Three categories of players have emerged: <strong>platform vendors</strong> selling horizontal AI infrastructure, <strong>consulting-first firms</strong> packaging AI expertise as services, and <strong>hybrid operators</strong> combining framework IP with delivery capacity.</p>
+      <p>Sherpa occupies a unique position as a hybrid operator with <strong>open convention-layer IP</strong> — the framework is the differentiator, not the model or the infrastructure.</p>
+
+      <h2>Market Segments</h2>
+
+      <h3>Platform Vendors</h3>
+      <ul>
+        <li><strong>Deloitte AI Studio</strong> — Enterprise-scale, SOC2-certified, $50k minimum engagement. Targeting Fortune 500 with "AI transformation" packages that bundle consulting + platform access.</li>
+        <li><strong>Accenture myNav</strong> — Internal AI platform now being externalized. Strong on compliance verticals (healthcare, financial services). Pricing is opaque but estimated at $200-500/hr for consulting + platform fees.</li>
+        <li><strong>McKinsey Lilli</strong> — Knowledge management AI, not agentic orchestration. Relevant as a competitive reference but different category.</li>
+      </ul>
+
+      <h3>Framework-First Players</h3>
+      <ul>
+        <li><strong>LangChain / LangSmith</strong> — Developer-focused, open source framework + commercial observability. No consulting arm but strong community adoption. Risk: commoditizes the orchestration layer that Sherpa builds on.</li>
+        <li><strong>CrewAI</strong> — Multi-agent framework with "crews" concept. Growing enterprise interest but no governance or convention system. Complementary rather than competitive.</li>
+        <li><strong>AutoGen (Microsoft)</strong> — Research-oriented, strong on multi-agent conversation patterns. Enterprise adoption via Azure integration. Different positioning but overlapping mindshare.</li>
+      </ul>
+
+      <blockquote>
+        <p>Key insight: No player in the market combines a behavioral agent framework with a consulting delivery model. The closest comparisons are either pure-platform (LangChain) or pure-consulting (Deloitte). Sherpa's convention-layer approach is genuinely novel.</p>
+      </blockquote>
+
+      <h2>Competitive Matrix</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Type</th>
+              <th>Governance</th>
+              <th>Open Source</th>
+              <th>Threat Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Deloitte AI Studio</td>
+              <td>Consulting-first</td>
+              <td>Proprietary</td>
+              <td>No</td>
+              <td>Low (different market)</td>
+            </tr>
+            <tr>
+              <td>LangChain</td>
+              <td>Framework-first</td>
+              <td>None</td>
+              <td>Yes</td>
+              <td>Medium (commoditizes orchestration)</td>
+            </tr>
+            <tr>
+              <td>CrewAI</td>
+              <td>Framework-first</td>
+              <td>Minimal</td>
+              <td>Yes</td>
+              <td>Low (complementary)</td>
+            </tr>
+            <tr>
+              <td>Anthropic Claude Code</td>
+              <td>Platform</td>
+              <td>CLAUDE.md</td>
+              <td>Partial</td>
+              <td>High (defines conventions Sherpa extends)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Strategic Implications</h2>
+
+      <p>Three opportunities emerge from this analysis:</p>
+
+      <ul>
+        <li><strong>Convention portability</strong> — Sherpa's <code>defineConfig()</code> and behavioral agent definitions are platform-agnostic. Position the framework as the governance layer that works across any LLM backend, not tied to a single provider.</li>
+        <li><strong>SMB gap</strong> — Enterprise players price out small and mid-size organizations. Sherpa's "thumb drive test" (install and demo in 60 seconds) directly targets the underserved SMB segment.</li>
+        <li><strong>Proof through use</strong> — WavePoint as a live customer reference demonstrates that the framework works in production. No competitor has an equivalent public case study with this level of transparency.</li>
+      </ul>
+
+      <h3>Recommended Next Steps</h3>
+
+      <p>Prioritize the <a href="#">website content refresh</a> to communicate this positioning. The competitive landscape validates the "convention-first" narrative — the market is either all-platform or all-consulting, and Sherpa bridges both with the framework as the connective tissue.</p>
+
+      <pre><code>// The positioning in one line:
+"AI collaboration framework for organizations that want
+governance without giving up autonomy."</code></pre>
+
+    </div>
+
+    <!-- Separator -->
+    <hr class="border-t border-gold/15 mt-12 mb-6">
+
+    <!-- Footer -->
+    <footer class="flex items-center justify-center gap-2 pb-8">
+      <span class="text-gold-muted/50 text-sm">
+        <span class="font-display">Sherpa</span> Studio
+      </span>
+    </footer>
+  </main>
+
+  <!-- ─── Prototype Controls (not part of the design) ─── -->
+  <div class="fixed bottom-4 right-4 bg-warm-charcoal border border-gold/20 rounded-lg p-4 text-xs text-gold-muted/70 max-w-xs">
+    <div class="font-mono text-gold mb-1">Prototype Controls</div>
+    <div class="space-y-1">
+      <div>This is a static prototype of the share page.</div>
+      <div>URL would be: <code class="text-gold/80">studio.sherpa.solar/s/&lt;token&gt;</code></div>
+      <div class="mt-2">No sidebar. No header. No auth required.</div>
+      <div>Just the document.</div>
+    </div>
+  </div>
+
+</body>
+</html>

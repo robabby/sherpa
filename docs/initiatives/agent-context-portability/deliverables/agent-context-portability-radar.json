@@ -1,0 +1,33 @@
+{
+  "$schema": "wavepoint/chart@1",
+  "id": "agent-context-portability-radar",
+  "title": "Agent Context Portability Radar",
+  "description": "Technology radar for approaches to portable agent governance across heterogeneous AI coding agent backends",
+  "created": "2026-03-19",
+  "sourceIteration": 1,
+  "chartType": "radar",
+  "data": [
+    { "name": "AGENTS.md Symlink Convention", "adopt": 1, "trial": 0, "assess": 0, "hold": 0 },
+    { "name": "Full Prompt Injection (~5,500 tokens)", "adopt": 1, "trial": 0, "assess": 0, "hold": 0 },
+    { "name": "Regenerate-and-Diff + Embedded Hash", "adopt": 1, "trial": 0, "assess": 0, "hold": 0 },
+    { "name": "Governance-First Prompt Positioning", "adopt": 1, "trial": 0, "assess": 0, "hold": 0 },
+    { "name": "Tiered/Selective Injection", "adopt": 0, "trial": 1, "assess": 0, "hold": 0 },
+    { "name": "Judge-as-Governance-Enforcer (GaaS)", "adopt": 0, "trial": 1, "assess": 0, "hold": 0 },
+    { "name": "MCP Resources for Governance", "adopt": 0, "trial": 1, "assess": 0, "hold": 0 },
+    { "name": "Pre-Commit Hook for Staleness", "adopt": 0, "trial": 1, "assess": 0, "hold": 0 },
+    { "name": "AAIF Conditional Rule Standardization", "adopt": 0, "trial": 0, "assess": 1, "hold": 0 },
+    { "name": "Agent Constitution Framework (ACF)", "adopt": 0, "trial": 0, "assess": 1, "hold": 0 },
+    { "name": "Cross-Model Governance Format Testing", "adopt": 0, "trial": 0, "assess": 1, "hold": 0 },
+    { "name": "Multi-Level Value Alignment Mapping", "adopt": 0, "trial": 0, "assess": 1, "hold": 0 },
+    { "name": "RAG-Based Governance Loading", "adopt": 0, "trial": 0, "assess": 0, "hold": 1 },
+    { "name": "Per-Agent Config (CrewAI/AutoGen/Swarm)", "adopt": 0, "trial": 0, "assess": 0, "hold": 1 },
+    { "name": "LLM-Generated Context Files", "adopt": 0, "trial": 0, "assess": 0, "hold": 1 },
+    { "name": "Evolving Constitutions (Genetic Programming)", "adopt": 0, "trial": 0, "assess": 0, "hold": 1 }
+  ],
+  "series": [
+    { "key": "adopt", "label": "Adopt", "color": "var(--chart-1)" },
+    { "key": "trial", "label": "Trial", "color": "var(--chart-2)" },
+    { "key": "assess", "label": "Assess", "color": "var(--chart-3)" },
+    { "key": "hold", "label": "Hold", "color": "var(--chart-4)" }
+  ]
+}

@@ -3,8 +3,8 @@ doc-type: architecture
 maintained-by: self-documenting-system
 authored-by: ai
 reviewed-by: null
-last-updated: 2026-03-21
-last-verified: 2026-03-21
+last-updated: 2026-03-22
+last-verified: 2026-03-22
 source-initiatives:
   - studio-ux-patterns
   - studio-agent-missions
@@ -12,10 +12,12 @@ source-initiatives:
   - studio-production-auth
   - multi-project-studio
   - studio-research-dashboard
+  - studio-research-dashboard-v2
+  - studio-shareable-research
 ---
 
-> **AI-updated** 2026-03-21 · Awaiting human review
-> Sources: studio-ux-patterns, studio-agent-missions, agent-narrative-streaming, studio-production-auth, multi-project-studio, studio-research-dashboard
+> **AI-updated** 2026-03-22 · Awaiting human review
+> Sources: studio-ux-patterns, studio-agent-missions, agent-narrative-streaming, studio-production-auth, multi-project-studio, studio-research-dashboard, studio-research-dashboard-v2, studio-shareable-research
 
 # Studio Application
 
@@ -39,7 +41,7 @@ Better Auth (ADR 0012) provides dual-identity authentication:
 - **Humans** — email/password sign-in, session cookies. Middleware at `src/middleware.ts` redirects unauthenticated requests to `/auth/sign-in`. Layout at `(studio)/layout.tsx` validates sessions server-side.
 - **Agents** — API keys (`sk_sherpa_` prefix) for MCP server access. Keys validated via `@better-auth/api-key` plugin in `packages/studio-mcp/src/auth/middleware.ts`.
 
-Route group separation: `(studio)/` contains all authenticated routes with sidebar chrome. `auth/` contains the sign-in page with its own centered layout (no sidebar). Auth database at `.sherpa/auth.db` (SQLite WAL, shared between Studio and MCP server processes).
+Route group separation: `(studio)/` contains all authenticated routes with sidebar chrome. `(share)/` contains public share pages (no auth, no sidebar — see Share Links below). `auth/` contains the sign-in page with its own centered layout (no sidebar). Auth database at `.sherpa/auth.db` (SQLite WAL, shared between Studio and MCP server processes). Middleware at `src/middleware.ts` maintains a `PUBLIC_PATHS` whitelist (`/auth`, `/api/auth`, `/s`) — all other routes require a session cookie.
 
 User menu in sidebar footer shows avatar + email + sign-out. No self-registration — admin creates accounts via `scripts/seed-auth-user.ts`.
 
@@ -59,7 +61,9 @@ All domain functions accept an explicit `ProjectContext` object (ADR 0015) rathe
 
 **Path resolution** — `projects[].root` uses `${ENV_VAR}` interpolation in `sherpa.json` to resolve differently on local dev vs VPS. `loadJsonConfig()` in `packages/studio-core/src/config/load-json.ts` handles interpolation before JSON parsing.
 
-**Research dashboard** — Operational dashboard for the 24/7 autonomous research system. Server component loads all data via `await connection()` (dynamic rendering), passes to a client `ResearchDashboard` with URL-persisted view tabs (`?view=stream|timeline|table`). Three data sources: `scanResearchFiles()` reads research files from `.sherpa/research/`, `parseResearchState()` parses `RESEARCH_STATE.md` (dangling threads, queue, coverage map), `parseResearchPriorities()` parses `PRIORITIES.md` (narrative, priorities). Heartbeat indicator shows live status of Luna's 30-minute adaptive research cycles using `Intl.DateTimeFormat` with `America/Los_Angeles` timezone. Auto-refreshes every 5 minutes + on tab focus.
+**Research dashboard** — Operational dashboard for the 24/7 autonomous research system, styled with the warm spatial glass design language (gold/copper accents, glass surfaces, pulse-glow animations). Server component loads all data via `await connection()` (dynamic rendering), passes to a client `ResearchDashboard` with URL-persisted state (`?view=stream|timeline|table&q=search&categories=job-market,competitive`). Three data sources: `scanResearchFiles()` reads research files from `.sherpa/research/`, `parseResearchState()` parses `RESEARCH_STATE.md` (dangling threads, queue with completion bar, coverage map with staleness indicators), `parseResearchPriorities()` parses `PRIORITIES.md` (narrative in Fraunces italic, rail-node numbered priorities). Heartbeat indicator with glass surface and gold LED glow shows live status of Luna's 30-minute adaptive research cycles. Filter bar provides full-text search across title/summary/category with category toggle chips. Inline markdown rendering in summaries (bold, italic, code, links via regex — `apps/studio/src/lib/render-inline-markdown.tsx`). Coverage map rows show staleness dots (green <2d, amber 2-7d, red >7d) computed client-side from `nowISO` prop via `apps/studio/src/lib/staleness.ts`. Research detail pages include +1/-1 rating buttons that write back to file frontmatter via `POST /api/research/rate`. Auto-refreshes every 5 minutes + on tab focus.
+
+**Share links** — Research documents can be shared via public URLs at `/s/<token>`. Tokens are HMAC-SHA256 signed strings encoding the project slug and file path (`packages/studio-core/src/share-tokens.ts`), using `BETTER_AUTH_SECRET` as the signing key. The `(share)` route group provides a minimal layout (no sidebar, no header, branded footer) and renders documents with the same `DocRenderer` used in the authenticated viewer. The share page generates OG meta tags from frontmatter for rich link previews. Share pages are `noindex, nofollow` — discoverable only via direct link. A "Share" button in the authenticated research viewer (`ShareLinkButton`) copies the share URL to clipboard. Token generation is server-side (secret never reaches the client); the client component receives only the pre-computed URL.
 
 ## Route Structure
 
@@ -72,7 +76,9 @@ All domain functions accept an explicit `ProjectContext` object (ADR 0015) rathe
 | `/projects/[project]/process` | Project-scoped initiatives | Two-pane workspace |
 | `/projects/[project]/tasks` | Project-scoped tasks | Two-pane workspace |
 | `/projects/[project]/research` | Research dashboard | Three-view operational dashboard (stream, timeline, table) |
-| `/projects/[project]/research/[...slug]` | Research detail | Frontmatter + markdown body |
+| `/projects/[project]/research/[...slug]` | Research detail | Frontmatter + markdown body + rating buttons |
+| `/s/[token]` | Public share page | Standalone document view (no auth, no chrome) |
+| `/api/research/rate` | Rate research file | POST — writes rating to frontmatter |
 | `/process` | Initiative governance | Redirects to `/projects/{primary}/process` |
 | `/tasks` | Agent missions | Redirects to `/projects/{primary}/tasks` |
 | `/research` | Research | Redirects to `/projects/{primary}/research` |
@@ -135,6 +141,8 @@ Two-level layout with route group separation:
 
 **Studio layout** (`apps/studio/src/app/(studio)/layout.tsx`): Server-side session validation via Better Auth. Component hierarchy: `CommandPalette` → `SidebarProvider` → `StudioSidebar` (with `UserMenu` slot) + `SidebarInset` → `StudioShellHeader` → `main`.
 
+**Share layout** (`apps/studio/src/app/(share)/layout.tsx`): Minimal layout with no sidebar, no header, no auth. Background + branded "Sherpa Studio" footer. Used for public `/s/[token]` share pages.
+
 **Auth layout** (`apps/studio/src/app/auth/layout.tsx`): Centered card layout with Sherpa logo. No sidebar, no header. Used only for `/auth/sign-in`.
 
 ## Hooks
@@ -161,7 +169,7 @@ Two-level layout with route group separation:
 
 ## Current State
 
-**Implemented:** 15 route sections + project-scoped routes, 110+ components, multi-project federation with 3 projects (Sherpa, WavePoint, robabby), workspace pattern, hub dashboard, command palette (cross-project search), skeleton loading, empty states, tab status, URL filters, mission control, SSE event streaming, research viewer, project switcher.
+**Implemented:** 15 route sections + project-scoped routes, 110+ components, multi-project federation with 3 projects (Sherpa, WavePoint, robabby), workspace pattern, hub dashboard, command palette (cross-project search), skeleton loading, empty states, tab status, URL filters, mission control, SSE event streaming, research viewer, project switcher, shareable research links (public `/s/<token>` pages with HMAC-signed tokens).
 
 **In progress:** studio-state-machine (governance view models), studio-dashboard-sidenav (layout), design-system (component library formalization), studio-process-playbook-ui (process visualization).
 
