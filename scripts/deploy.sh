@@ -83,6 +83,12 @@ if [ "${1:-}" != "--skip-build" ]; then
 
   log "Building Studio..."
   pnpm build
+
+  # Restore ownership to node (UID 1000) so Luna can access the bind-mounted
+  # repo. pnpm install/build run as root and create root-owned files that
+  # block Luna's container process. Root can still access 1000-owned files.
+  log "Restoring file ownership..."
+  chown -R 1000:1000 "$REPO_DIR"
 fi
 
 # Copy standalone output to standby slot
