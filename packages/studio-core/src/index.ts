@@ -43,6 +43,7 @@ export * from "./velocity"
 export * from "./deliverables"
 export * from "./research-files"
 export * from "./research-report"
+export * from "./share-tokens"
 
 // Project registry
 export * from "./projects"
