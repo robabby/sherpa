@@ -2,7 +2,7 @@ import "@/styles/globals.css"
 
 import type { Metadata, Viewport } from "next"
 import { Fraunces, DM_Sans, JetBrains_Mono } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
+import { RootProvider } from "fumadocs-ui/provider/next"
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -45,9 +45,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body
         className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <RootProvider
+          theme={{
+            attribute: "class",
+            defaultTheme: "system",
+            enableSystem: true,
+            disableTransitionOnChange: true,
+          }}
+        >
           {children}
-        </ThemeProvider>
+        </RootProvider>
       </body>
     </html>
   )

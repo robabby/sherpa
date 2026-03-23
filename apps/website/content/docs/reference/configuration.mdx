@@ -1,0 +1,41 @@
+---
+title: Configuration
+description: Complete reference for sherpa.json — paths, vocabulary, dispatch, governance, and plugins.
+---
+
+import { SchemaReference } from "@/components/docs/schema-reference"
+import { userConfigSchema } from "@sherpa/studio-core/config"
+
+The central configuration file for a Sherpa project. Lives at `sherpa.json` in the project root, or `.sherpa/config.json` as a fallback.
+
+Created by `sherpa init`. Supports `${ENV_VAR}` interpolation for environment-specific values.
+
+## Schema
+
+<SchemaReference schema={userConfigSchema} />
+
+## Example
+
+```json
+{
+  "$schema": "https://sherpa.solar/schema.json",
+  "admin": {
+    "projectName": "My Project",
+    "projectDescription": "What this project does"
+  },
+  "paths": {
+    "initiatives": "docs/initiatives",
+    "agentRoles": "docs/agents/roles",
+    "rules": ".claude/rules",
+    "skills": ".claude/skills"
+  },
+  "governance": {
+    "approval": {
+      "agents": "never",
+      "requireAuthority": true
+    }
+  }
+}
+```
+
+See [Concepts: Conventions & Config](/docs/concepts/conventions-and-config) for how configuration fits into the broader system.

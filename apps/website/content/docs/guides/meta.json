@@ -1,0 +1,4 @@
+{
+  "title": "Guides",
+  "pages": ["index", "defining-agent-roles", "creating-conventions", "writing-skills", "dispatch-and-backends"]
+}

@@ -1,0 +1,128 @@
+---
+title: Quick Start
+description: Scaffold governance into your project and explore the generated structure.
+---
+
+This guide walks through adding Sherpa conventions to an existing project. By the end, you will have a working governance structure and understand how to dispatch your first task.
+
+## Install the CLI
+
+The `@sherpa/studio-cli` package is under active development. When available:
+
+```bash
+pnpm add -D @sherpa/studio-cli
+```
+
+Until then, you can set up the convention structure manually. The steps below cover both paths.
+
+## Scaffold governance
+
+### With the CLI (when available)
+
+```bash
+pnpm exec sherpa init
+```
+
+This creates the directory structure, a starter `sherpa.json`, and a set of default convention files.
+
+### Manual setup
+
+Create the directories and configuration file yourself:
+
+```bash
+mkdir -p .claude/rules .claude/skills docs/agents/roles docs/initiatives
+touch sherpa.json
+```
+
+Then populate `sherpa.json` with a minimal configuration:
+
+```json
+{
+  "$schema": "https://sherpa.solar/schema.json",
+  "admin": {
+    "projectName": "My Project",
+    "projectDescription": "What this project does"
+  },
+  "paths": {
+    "initiatives": "docs/initiatives",
+    "agentRoles": "docs/agents/roles",
+    "rules": ".claude/rules",
+    "skills": ".claude/skills"
+  }
+}
+```
+
+This tells Sherpa where to find your governance artifacts. All paths are relative to the project root and configurable — use whatever directory names fit your team's vocabulary.
+
+## Explore the config
+
+The `sherpa.json` file is the single entry point for all Sherpa configuration. The minimal version above covers paths, but the full schema supports additional sections:
+
+| Section | Purpose |
+|---------|---------|
+| `admin` | Project name, description, metadata |
+| `paths` | Where governance artifacts live |
+| `vocabulary` | Custom terminology mappings |
+| `entities` | Organizational context for agent prompts |
+| `knowledge` | Markdown corpus and search configuration |
+| `governance` | Initiative lifecycle policy |
+| `mcp` | MCP server configuration |
+| `projects` | Multi-project workspace definitions |
+
+You do not need all of these to start. Add sections as your practice grows.
+
+## Add a convention file
+
+Convention files are markdown documents in `.claude/rules/` that auto-load based on file glob patterns. Create your first one:
+
+```bash
+touch .claude/rules/code-conventions.md
+```
+
+Add content describing how your team writes code — naming patterns, test expectations, architectural constraints. When an AI assistant opens a file matching the rule's glob pattern, the convention loads automatically as context.
+
+## Run your first dispatch
+
+Dispatch is how Sherpa routes work to agent sessions. The `dispatch.sh` script launches an interactive session with a specific agent role:
+
+```bash
+./scripts/dispatch.sh architect
+```
+
+This requires two things in place:
+
+1. **Dispatch scripts** — the shell scripts that handle role routing and backend selection
+2. **At least one agent role** — a markdown file in `docs/agents/roles/` defining behavioral constraints for the role
+
+An agent role file looks like this:
+
+```markdown
+---
+slug: architect
+disposition: analytical, scope-conscious
+quality-bar: All proposals include rationale and trade-offs
+---
+
+Focus on system boundaries, data flow, and integration points.
+Default to asking clarifying questions before proposing changes.
+Evaluate proposals against existing architectural constraints.
+```
+
+Notice there are no identity claims — no "you are an expert architect." The role defines behavioral constraints that guide how the agent approaches work. See [Behavioral Agents](/docs/concepts/behavioral-agents) for the reasoning behind this pattern.
+
+## What just happened
+
+When you run a dispatch command, three things happen:
+
+1. **Role resolution** — Sherpa reads the agent role file and loads its behavioral constraints
+2. **Backend selection** — The dispatch system routes to the configured backend (CLI tool, API, or remote agent)
+3. **Task execution** — The agent session starts with the role's constraints, relevant convention files, and the task context
+
+This is the core loop: define roles with behavioral constraints, write conventions that load automatically, and dispatch work through a structured pipeline.
+
+## Next steps
+
+- [Project Structure](/docs/getting-started/project-structure) — Understand the three-directory model
+- [Behavioral Agents](/docs/concepts/behavioral-agents) — Why constraints work better than identity claims
+- [Defining Agent Roles](/docs/guides/defining-agent-roles) — Write your first role definition
+- [Convention Files](/docs/guides/convention-files) — Create rules that auto-load for your team

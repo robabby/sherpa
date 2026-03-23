@@ -3,10 +3,17 @@ import { Separator } from "@/components/ui/separator"
 
 const footerLinks = [
   {
+    title: "Documentation",
+    links: [
+      { title: "Getting Started", href: "/docs/getting-started" },
+      { title: "Concepts", href: "/docs/concepts" },
+      { title: "Reference", href: "/docs/reference" },
+    ],
+  },
+  {
     title: "Framework",
     links: [
       { title: "Overview", href: "/framework" },
-      { title: "Documentation", href: "/framework/docs" },
     ],
   },
   {

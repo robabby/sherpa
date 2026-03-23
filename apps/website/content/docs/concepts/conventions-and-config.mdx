@@ -1,0 +1,160 @@
+---
+title: Conventions and Config
+description: Executable rules, skills, and project configuration that encode process knowledge as runnable artifacts — not documentation about process, but the process itself.
+---
+
+Sherpa's conventions are code. A rule file with glob frontmatter auto-loads when an agent touches matching files. A skill file defines a structured workflow invocable by name. A JSON config file tells the framework how your project is organized. Together, they form the behavioral substrate that makes agents productive without per-session instruction.
+
+## Convention rules
+
+Rules live in `.claude/rules/` and auto-load via glob patterns in their frontmatter. When an agent works in a directory matching a rule's glob pattern, the rule loads into context automatically — no manual inclusion required.
+
+| Rule | Scope | Purpose |
+|------|-------|---------|
+| Initiative convention | Initiative directories | Proposal format, lifecycle stages, seeds |
+| Behavioral engineering | Global | Constraints over identity for agent roles |
+| Worktree conventions | Global | Isolation model, naming, lifecycle |
+| Content quality | Template directories | 8-criterion quality scorecard |
+| Effort estimation | Global | Sessions as unit of effort, not calendar time |
+| CLAUDE.md standards | Global | Authoring rules: 30-100 lines, the Mistake Test |
+| Directoturtle convention | Documentation directories | Recursive self-similar directory structure |
+| Provenance convention | Architecture and decision docs | Documentation authorship tracking |
+
+The glob-based loading is the key pattern. An agent editing initiative files automatically sees the initiative convention. An agent writing architecture docs automatically sees the provenance convention. The right guidance appears at the right time without anyone needing to remember to include it.
+
+## Skills
+
+Sixteen skills span the full initiative lifecycle. Each skill is a structured protocol — not a single prompt, but a multi-step workflow with defined inputs, checkpoints, and outputs.
+
+### Lifecycle sequence
+
+Skills map to the initiative lifecycle in a natural progression:
+
+```
+/rr (discover) → /propose (create) → /shape (scope) → /stake (commit)
+  → /design (architecture) → /spike (validate) → /stress-test (assumptions)
+  → /premortem (risks) → /plan-tasks (dispatch) → /integrate (document)
+  → /retro (calibrate)
+```
+
+### Lifecycle skills
+
+| Skill | Phase | Purpose |
+|-------|-------|---------|
+| `/rr` | Discovery | Recursive research — orient, focus, fan out, converge, propose, seed |
+| `/propose` | Creation | Scaffold an initiative from user intent |
+| `/shape` | Scoping | Define appetite, boundaries, rabbit holes, no-gos |
+| `/stake` | Commitment | Establish walk-away conditions and direction lock |
+| `/design` | Architecture | Component boundaries, data flow, prototype |
+| `/spike` | Validation | Timeboxed feasibility proof |
+| `/stress-test` | Assumptions | Extract assumptions, classify risk, design falsification tests |
+| `/premortem` | Risk | Imagine failure, work backward to mitigations |
+| `/plan-tasks` | Dispatch | Break initiative into dispatchable tasks for the [execution pipeline](/docs/concepts/execution-pipeline) |
+| `/integrate` | Documentation | Post-initiative document updates with provenance tracking |
+| `/retro` | Calibration | Surface patterns from completed work, produce calibration updates |
+
+### Supporting skills
+
+| Skill | Purpose |
+|-------|---------|
+| `/integration-review` | Batch review of pending proposals across initiatives |
+| `/memo` | Strategic attention when 3+ initiatives converge on shared concerns |
+| `/radar` | Technology classification (Adopt / Trial / Assess / Hold) |
+| `/doc-bootstrap` | Generate documentation surface from project history |
+| `/ui-review` | Visual verification via automated screenshots |
+
+### The self-improvement loop
+
+Skills produce artifacts: estimates, decisions, outcomes. The `/retro` skill reads completed initiatives, surfaces patterns with evidence, and produces calibration updates to skill defaults. The next time a skill runs, it benefits from the calibration. This is a concrete feedback loop, not an aspiration — each cycle through the system tightens the accuracy of future cycles.
+
+```
+Skills produce artifacts (estimates, decisions, outcomes)
+  → /retro reads completed initiatives
+  → /retro surfaces patterns with evidence
+  → Patterns produce calibration updates to skill defaults
+  → Next skill invocation is better calibrated
+```
+
+## Content standards
+
+A quality scorecard gates all published content with eight criteria:
+
+1. **Sourced claims** — factual claims have a source or are marked as project experience
+2. **Headline test** — no headline could appear in a generic AI pitch deck
+3. **Depth test** — a senior engineering leader would find this useful, not just familiar
+4. **Avoid-list clean** — zero words from the "words we avoid" list
+5. **Structure** — clear heading hierarchy, answer-first pattern in each section
+6. **Evidence separated** — "what we know" vs "our analysis" are clearly distinguishable
+7. **Readability** — meets target for content type
+8. **Persona-aligned** — content speaks to a specific audience, not to everyone generically
+
+Three or more criteria marked "needs work" blocks publication. This maps directly to the [execution pipeline](/docs/concepts/execution-pipeline): the Worker uses the scorecard as a checklist during drafting, and the Judge evaluates each criterion when reviewing.
+
+## Self-documenting system
+
+Documentation that maintains itself as initiatives complete:
+
+- **Provenance metadata** — every maintained document carries `authored-by`, `reviewed-by`, and `last-verified` frontmatter fields
+- **Four review states** — AI-generated awaiting review, AI-generated human-verified, human-authored, human-authored AI-verified. All states are "live" — provenance tells you how much to trust the content, not whether it is published.
+- **`/integrate`** — a post-initiative skill that updates architecture and decision documents from initiative artifacts, resetting review state when content changes
+- **`/doc-bootstrap`** — crawls project history to generate the initial documentation surface for new projects
+
+## Config-as-code
+
+Project configuration lives in `sherpa.json` at the project root. This file tells the framework how your project is organized:
+
+| Section | Purpose |
+|---------|---------|
+| `admin` | Project name and description |
+| `theme` | Visual customization (accent color, logo) |
+| `paths` | Directory locations for initiatives, roles, rules, skills |
+| `vocabulary` | UI terminology overrides for lifecycle stages |
+| `entities` | References to skills, CLAUDE.md locations |
+| `agents` | Agent role catalog configuration |
+| `mcp` | MCP server settings |
+| `knowledge` | Search backend selection (algorithmic, API-backed) |
+| `governance` | Approval policy for agent autonomy |
+| `dispatch` | Task-type to backend routing |
+| `plugins` | Extensibility hooks applied in order |
+
+### Plugin system
+
+Plugins are functions that receive the current config and return a modified version. They are applied in order during config resolution:
+
+```typescript
+type SherpaPlugin = (config: SherpaConfig) => SherpaConfig
+```
+
+This pattern supports vocabulary overrides, custom dispatch routes, and project-specific extensions without forking the framework configuration.
+
+### Multi-project federation
+
+The `projects` array in `sherpa.json` registers additional projects for [Studio](/docs/concepts/studio) to federate. Each entry points to a project root that contains its own config, and environment variable interpolation handles the difference between local development and production paths.
+
+### The `.sherpa/` dotfolder
+
+Every project that adopts the framework gets a `.sherpa/` directory with a standard schema:
+
+```
+.sherpa/
+  config.json        # Project identity and config overrides
+  initiatives/       # Project-specific initiatives
+  tasks/             # Project-specific tasks
+  research/          # Research output
+  rules/             # Convention overrides
+  skills/            # Project-specific skills
+  agents/            # Agent role definitions
+  db/                # Databases (gitignored)
+```
+
+### Three-directory model
+
+Sherpa uses three directories with distinct purposes:
+
+| Directory | Contents | Git status |
+|-----------|----------|------------|
+| `.sherpa/` | Runtime data, databases, project-local config | Gitignored (except config) |
+| `.claude/` | Convention rules, skills, CLAUDE.md files | Committed |
+| `docs/` | Governance artifacts — initiatives, decisions, architecture | Committed |
+
+This separation keeps runtime state out of version control while ensuring all governance and convention artifacts are tracked, reviewable, and auditable through git history.

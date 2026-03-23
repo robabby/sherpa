@@ -1,0 +1,121 @@
+---
+title: Execution Pipeline
+description: The Planner/Worker/Judge pipeline that decomposes initiatives into tasks, dispatches them across nine backends, and reviews the output.
+---
+
+The execution pipeline converts approved initiatives into completed work through three roles: the **Planner** decomposes work into tasks, the **Worker** executes tasks in isolated environments, and the **Judge** evaluates output against acceptance criteria. Each role can be filled by a human or an AI agent — the pipeline does not assume which.
+
+## Planner / Worker / Judge
+
+The trifecta pattern separates concerns that are often tangled together in ad-hoc workflows:
+
+- **Planner** — reads an approved initiative and breaks it into discrete, dispatchable tasks. Each task has a type, acceptance criteria, and an assigned role. The planner considers dependencies between tasks and sequences them accordingly.
+- **Worker** — receives a single task with its context, executes the work, and produces output (code, documents, analysis). Workers operate in isolated worktrees so concurrent tasks cannot interfere with each other.
+- **Judge** — receives the original task definition (including acceptance criteria), the worker's output, and the git diff. Evaluates each criterion independently and renders a verdict.
+
+This separation means you can swap any role without changing the others. A human can plan while agents execute and judge. An agent can plan while a human executes and another agent judges. The pipeline adapts to your team's trust level and the nature of the work.
+
+## Task types
+
+Eight task types determine how work is routed to backends:
+
+| Task Type | Default Backend | Description |
+|-----------|----------------|-------------|
+| `code-implementation` | claude | Feature development, bug fixes, refactoring |
+| `code-review` | claude | Peer review of code changes |
+| `architect` | claude | Design decisions, architecture proposals |
+| `research` | groq / google-ai | Discovery, analysis, market research |
+| `content-generation` | opencode | Documentation, copy, reports |
+| `audit` | claude | Compliance, security, convention review |
+| `embeddings` | lm-studio | Vectorization, indexing operations |
+| `general` | opencode | Uncategorized work |
+
+Task types are not just labels — they drive routing decisions, overnight eligibility, and quality evaluation. A `code-implementation` task routes to a different backend than a `research` task, and the judge applies different criteria when evaluating the output.
+
+## Dispatch modes
+
+Three modes control how much human involvement a dispatch requires:
+
+| Mode | Human Involvement | Overnight Eligible |
+|------|------------------|-------------------|
+| `interactive` | Human drives the session with real-time feedback | No |
+| `supervised` | Agent runs autonomously, human reviews output when complete | No |
+| `overnight` | Fully autonomous, no human in the loop | Yes — except `code-implementation` and `architect` tasks |
+
+The overnight restriction on code-implementation and architect tasks is deliberate. These task types modify shared code and make structural decisions that are expensive to reverse. Research, content generation, audits, and reviews are safe for overnight execution because their output is additive — a bad research report does not break the build.
+
+## Backend architecture
+
+Nine backends organized into three categories:
+
+**CLI backends** (5) — wrap existing AI coding tools as dispatch targets:
+- **claude** — Claude Code CLI, the primary backend for code and architecture tasks
+- **opencode** — OpenCode CLI for content and general tasks
+- **codex** — OpenAI Codex CLI
+- **gemini** — Google Gemini CLI
+- **lm-studio** — Local inference via OpenAI-compatible API
+
+**API backends** (3) — direct API calls for tasks that do not need a CLI environment:
+- **groq** — Fast inference for research and analysis
+- **google-ai** — Google AI for research tasks
+- **lm-studio-api** — Local model API for embeddings and lightweight tasks
+
+**Gateway backend** (1) — remote agent delegation:
+- **openclaw** — dispatches work to a remote agent over WebSocket, enabling persistent agents on separate infrastructure
+
+Each backend responds to a health check, so the system knows which backends are available before attempting dispatch. If a backend is down, the route resolution falls through to alternatives.
+
+## Route resolution
+
+When a task is dispatched, the system determines which backend handles it through a priority chain:
+
+1. **Governance guard** — files matching governance paths (conventions, agent roles, CLAUDE.md) always route to `claude` regardless of task type. This ensures governance artifacts are only modified by the most capable backend.
+2. **Explicit override** — a task can specify its backend directly in its definition, bypassing all routing logic.
+3. **Task-type lookup** — the [configuration](/docs/concepts/conventions-and-config) maps each task type to a backend. This is the normal path.
+4. **Fallback** — if no route matches, a configured default backend handles the task.
+
+This layered approach means governance is always protected, explicit choices are always honored, and the common case (task-type routing) works without any per-task configuration.
+
+## Judge workflow
+
+After a worker completes a task, the judge evaluates the output:
+
+1. **Input** — the judge receives the task definition (including acceptance criteria), the worker's output, and the git diff showing what changed
+2. **Evaluation** — each acceptance criterion is assessed independently with a pass/fail determination and evidence
+3. **Verdict** — one of three outcomes:
+   - `approved` — all criteria met, work is complete
+   - `needs-changes` — specific issues identified, worker can iterate
+   - `rejected` — fundamental problems, task needs replanning
+
+The judge can run on any backend, not just the one that executed the task. This separation means you can use a capable model for judging even when the worker used a lightweight backend.
+
+## Agent event system
+
+Every dispatch produces a stream of structured events in NDJSON format, providing real-time visibility into what agents are doing:
+
+| Event | When it fires |
+|-------|--------------|
+| `dispatch_requested` | A dispatch is initiated |
+| `worker_started` | The worker process begins |
+| `backend_delegating` | About to call the backend |
+| `dispatch_spawned` | Backend process is running |
+| `agent_output` | Batched text output from the agent |
+| `status_changed` | Task transitions between states |
+| `dispatch_failed` | Backend process failed to start |
+
+Events are append-only with monotonic timestamps. [Studio](/docs/concepts/studio) consumes these events via server-sent events (SSE) to show live agent activity — you can watch an agent work in real time rather than waiting for it to finish.
+
+Metrics are extracted from events automatically: duration, token usage (input and output), and cost. These feed into Studio's session tracking for understanding resource consumption across your agent workforce.
+
+## Knowledge engine
+
+The knowledge engine gives agents queryable access to your project's governance data — initiatives, decisions, research, architecture documents — without loading entire files into context.
+
+Key properties:
+
+- **SQLite-backed search index** — markdown files remain the source of truth; the database is a derived index that can be rebuilt from the filesystem
+- **Dual search modes** — full-text search (BM25 ranking) and semantic search (TF-IDF vectors with cosine similarity), plus a hybrid mode that fuses both
+- **Pluggable backend** — the embedding and summary engine is configurable. An algorithmic backend ships as the zero-dependency default (no external API calls, no GPU required). You can swap in an API-backed provider for higher-quality embeddings when available.
+- **Role-scaled context** — different agent roles get different views of the knowledge base. A worker gets deep scope context and shallow system context. A planner gets the inverse. A judge gets scope plus neighborhood. This means agents receive relevant context without token waste.
+
+The knowledge engine syncs incrementally — content-hash comparison means only changed files are reprocessed. A full re-sync takes under 250ms, making it practical to run on every MCP tool call without noticeable latency.

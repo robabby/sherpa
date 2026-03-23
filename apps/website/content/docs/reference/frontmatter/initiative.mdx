@@ -1,0 +1,32 @@
+---
+title: Initiative Frontmatter
+description: YAML frontmatter schema for initiative proposal files.
+---
+
+import { SchemaReference } from "@/components/docs/schema-reference"
+import { initiativeFrontmatterSchema } from "@sherpa/studio-core"
+
+Every initiative lives at `docs/initiatives/<slug>/proposal.md` with YAML frontmatter defining its metadata.
+
+<SchemaReference schema={initiativeFrontmatterSchema} />
+
+### Status Values
+
+| Status | Meaning |
+|--------|---------|
+| `pending` | Proposed, awaiting review |
+| `approved` | Reviewed and accepted, ready for planning |
+| `in-progress` | Actively being worked on |
+| `integrated` | Completed and merged into shared artifacts |
+| `declined` | Reviewed and rejected |
+| `archived` | No longer relevant |
+
+### Risk Levels
+
+| Risk | Meaning |
+|------|---------|
+| `additive` | New files only, no existing behavior changes |
+| `evolutionary` | Improves existing code, backwards-compatible |
+| `structural` | Changes foundations, may break consumers |
+
+See [Guide: Creating Conventions](/docs/guides/creating-conventions) for how conventions use frontmatter.

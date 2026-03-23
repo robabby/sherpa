@@ -195,7 +195,7 @@ export default function FrameworkPage() {
 
         <ScrollReveal delay={0.3}>
           <div className="mt-12">
-            <Link href="/framework/docs">
+            <Link href="/docs">
               <Button size="lg">
                 Documentation
                 <ArrowRight data-icon="inline-end" />

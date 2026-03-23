@@ -1,3 +1,8 @@
 .velite/
+.source/
 .next/
 .env.local
+
+# Auto-generated reference docs (rebuilt by pnpm generate-docs)
+content/docs/reference/components/
+content/docs/reference/mcp-tools/

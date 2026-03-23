@@ -17,24 +17,26 @@ import {
 } from "./types";
 
 export const initiativeFrontmatterSchema = z.object({
-  status: z.enum(INITIATIVE_STATUSES).default("pending"),
-  initiative: z.string(),
-  created: z.coerce.string(),
-  updated: z.coerce.string(),
+  status: z.enum(INITIATIVE_STATUSES).describe("Lifecycle status of the initiative").default("pending"),
+  initiative: z.string().describe("Unique slug identifier for this initiative"),
+  created: z.coerce.string().describe("Date the initiative was first proposed (YYYY-MM-DD)"),
+  updated: z.coerce.string().describe("Date the initiative was last modified (YYYY-MM-DD)"),
   type: z
     .enum(INITIATIVE_TYPES)
+    .describe("Classification: what kind of change this initiative makes")
     .nullable()
     .optional()
     .default(null),
   risk: z
     .enum(INITIATIVE_RISKS)
+    .describe("Blast radius: additive (new), evolutionary (improves), or structural (changes foundations)")
     .nullable()
     .optional()
     .default(null),
-  targets: z.array(z.string()).default([]),
-  dependencies: z.array(z.string()).optional().default([]),
-  informs: z.array(z.string()).optional().default([]),
-  "spawned-from": z.string().nullable().optional().default(null),
+  targets: z.array(z.string()).describe("File or directory paths this initiative will modify").default([]),
+  dependencies: z.array(z.string()).describe("Initiative slugs that must land before this one can proceed").optional().default([]),
+  informs: z.array(z.string()).describe("Initiative slugs this feeds intelligence or decisions into").optional().default([]),
+  "spawned-from": z.string().describe("Parent initiative slug if this was born from a seed").nullable().optional().default(null),
 });
 
 const workstreamRoleAssignmentSchema = z.object({
@@ -43,26 +45,26 @@ const workstreamRoleAssignmentSchema = z.object({
 });
 
 export const workstreamFrontmatterSchema = z.object({
-  status: z.enum(WORKSTREAM_STATUSES).default("active"),
-  started: z.coerce.string(),
-  worktree: z.string().nullable().optional().default(null),
-  focus: z.string().default(""),
-  initiative: z.string().nullable().optional().default(null),
-  roles: z.array(workstreamRoleAssignmentSchema).optional().default([]),
+  status: z.enum(WORKSTREAM_STATUSES).describe("Whether this workstream is active, paused, or completed").default("active"),
+  started: z.coerce.string().describe("Date work began on this workstream (YYYY-MM-DD)"),
+  worktree: z.string().describe("Git worktree path if work is isolated").nullable().optional().default(null),
+  focus: z.string().describe("Current focus area or task being worked on").default(""),
+  initiative: z.string().describe("Associated initiative slug").nullable().optional().default(null),
+  roles: z.array(workstreamRoleAssignmentSchema).describe("Agent roles assigned to this workstream").optional().default([]),
 });
 
 export const branchSeedFrontmatterSchema = z.object({
-  status: z.enum(BRANCH_SEED_STATUSES).default("seed"),
-  "source-iteration": z.coerce.number().default(0),
-  "spawned-from": z.string(),
-  created: z.coerce.string(),
-  priority: z.enum(BRANCH_PRIORITIES).default("medium"),
-  "sub-initiative": z.string().nullable().optional().default(null),
+  status: z.enum(BRANCH_SEED_STATUSES).describe("Seed lifecycle: seed, launched, or declined").default("seed"),
+  "source-iteration": z.coerce.number().describe("Research iteration number that produced this seed").default(0),
+  "spawned-from": z.string().describe("Parent initiative that generated this seed"),
+  created: z.coerce.string().describe("Date the seed was identified (YYYY-MM-DD)"),
+  priority: z.enum(BRANCH_PRIORITIES).describe("Urgency: high, medium, or low").default("medium"),
+  "sub-initiative": z.string().describe("Path to sub-initiative if this seed was launched").nullable().optional().default(null),
 });
 
 export const skillFrontmatterSchema = z.object({
-  name: z.string().default(""),
-  description: z.string().default(""),
+  name: z.string().describe("Skill identifier used in slash commands").default(""),
+  description: z.string().describe("When and why to invoke this skill").default(""),
 });
 
 // Deliverable schemas (charts + presentations)
@@ -162,36 +164,36 @@ export const agentRoleFrontmatterSchema = z.object({
 export const behavioralAgentFrontmatterSchema = z
   .object({
     // Required
-    name: z.string().optional(),
+    name: z.string().describe("Role identifier (kebab-case)").optional(),
     role: z.string().optional(), // legacy alias for name
-    "display-name": z.string(),
-    category: z.enum(AGENT_ROLE_CATEGORIES),
-    disposition: z.string(),
+    "display-name": z.string().describe("Human-readable role name for the UI"),
+    category: z.enum(AGENT_ROLE_CATEGORIES).describe("Role classification: engineering, design, strategy, or operations"),
+    disposition: z.string().describe("Behavioral posture — how this role approaches work"),
 
     // Behavioral (all optional)
-    "domain-scope": z.array(z.string()).optional().default([]),
-    "behavioral-constraints": z.array(z.string()).optional().default([]),
-    "quality-bar": z.array(z.string()).optional().default([]),
-    "fail-triggers": z.array(z.string()).optional().default([]),
-    "output-style": z.string().optional(),
+    "domain-scope": z.array(z.string()).describe("Technology or domain focus area").optional().default([]),
+    "behavioral-constraints": z.array(z.string()).describe("Specific behavioral rules the agent must follow").optional().default([]),
+    "quality-bar": z.array(z.string()).describe("Concrete acceptance criteria the Judge evaluates").optional().default([]),
+    "fail-triggers": z.array(z.string()).describe("Conditions that should cause the role to flag an issue").optional().default([]),
+    "output-style": z.string().describe("Expected output format (code, reports, reviews, etc.)").optional(),
 
     // Operational (all optional)
-    "model-tier": z.enum(AGENT_MODEL_TIERS).optional().default("medium"),
-    "tool-permissions": z.array(z.string()).optional().default([]),
-    escalation: z.array(z.string()).optional().default([]),
-    "context-packages": z.array(z.string()).optional().default([]),
-    rules: z.array(z.string()).optional().default([]),
-    skills: z.array(z.string()).optional().default([]),
-    patterns: z.array(z.enum(AGENT_PATTERNS)).optional().default([]),
-    structure: z.enum(AGENT_STRUCTURES).nullable().optional().default(null),
+    "model-tier": z.enum(AGENT_MODEL_TIERS).describe("Required model capability: high (Opus/Sonnet) or medium (local models)").optional().default("medium"),
+    "tool-permissions": z.array(z.string()).describe("Tools this role is allowed to use").optional().default([]),
+    escalation: z.array(z.string()).describe("When to hand off to another role").optional().default([]),
+    "context-packages": z.array(z.string()).describe("CLAUDE.md files to load for domain context").optional().default([]),
+    rules: z.array(z.string()).describe("Convention rules this role should follow").optional().default([]),
+    skills: z.array(z.string()).describe("Skills this role can invoke").optional().default([]),
+    patterns: z.array(z.enum(AGENT_PATTERNS)).describe("Prompt engineering patterns this role uses").optional().default([]),
+    structure: z.enum(AGENT_STRUCTURES).describe("Collaboration pattern for multi-agent workflows").nullable().optional().default(null),
 
     // Dispatch (all optional)
-    "task-type": z.string().optional(),
-    "eligible-task-types": z.array(z.string()).optional().default([]),
+    "task-type": z.string().describe("Primary task type this role handles").optional(),
+    "eligible-task-types": z.array(z.string()).describe("Additional task types this role can handle").optional().default([]),
 
     // Display (all optional)
-    vibe: z.string().optional(),
-    tags: z.array(z.string()).optional().default([]),
+    vibe: z.string().describe("One-line UI display text (never injected as prompt)").optional(),
+    tags: z.array(z.string()).describe("Categorization tags for filtering").optional().default([]),
     emoji: z.string().optional(),
   })
   .transform(({ role: _role, name, ...rest }) => ({
@@ -206,35 +208,36 @@ export const behavioralAgentFrontmatterSchema = z
 // Session manifest schemas
 
 export const sessionTokensSchema = z.object({
-  input: z.number().default(0),
-  output: z.number().default(0),
-  cacheRead: z.number().default(0),
-  cacheCreation: z.number().default(0),
+  input: z.number().describe("Input tokens consumed").default(0),
+  output: z.number().describe("Output tokens generated").default(0),
+  cacheRead: z.number().describe("Tokens read from cache").default(0),
+  cacheCreation: z.number().describe("Tokens written to cache").default(0),
 });
 
 export const sessionSchema = z.object({
   $schema: z.literal("wavepoint/session@1").optional(),
-  sessionId: z.string(),
-  startedAt: z.string(),
-  endedAt: z.string().nullable().default(null),
-  durationMinutes: z.number().nullable().default(null),
-  model: z.string().default("unknown"),
-  branch: z.string().default("unknown"),
-  initiative: z.string().nullable().default(null),
-  role: z.string().nullable().default(null),
-  tokens: sessionTokensSchema.default({}),
-  filesModified: z.array(z.string()).default([]),
-  toolsUsed: z.array(z.string()).default([]),
-  commits: z.array(z.string()).default([]),
-  outcome: z.enum(SESSION_OUTCOMES).default("in-progress"),
-  summary: z.string().nullable().default(null),
+  sessionId: z.string().describe("Unique session identifier"),
+  startedAt: z.string().describe("ISO timestamp when the session began"),
+  endedAt: z.string().describe("ISO timestamp when the session ended").nullable().default(null),
+  durationMinutes: z.number().describe("Total session duration in minutes").nullable().default(null),
+  model: z.string().describe("Model used during this session").default("unknown"),
+  branch: z.string().describe("Git branch the session operated on").default("unknown"),
+  initiative: z.string().describe("Associated initiative slug").nullable().default(null),
+  role: z.string().describe("Agent role active during this session").nullable().default(null),
+  tokens: sessionTokensSchema.describe("Token usage breakdown for this session").default({}),
+  filesModified: z.array(z.string()).describe("File paths modified during this session").default([]),
+  toolsUsed: z.array(z.string()).describe("Tools invoked during this session").default([]),
+  commits: z.array(z.string()).describe("Git commit SHAs created during this session").default([]),
+  outcome: z.enum(SESSION_OUTCOMES).describe("How the session ended").default("in-progress"),
+  summary: z.string().describe("Human-readable summary of what was accomplished").nullable().default(null),
 });
 
 export const ruleFrontmatterSchema = z.object({
-  description: z.string().optional().default(""),
+  description: z.string().describe("What this rule enforces or documents").optional().default(""),
   globs: z
     .union([z.array(z.string()), z.string().transform((s) => [s])])
+    .describe("File glob patterns that trigger this rule")
     .optional()
     .default([]),
-  alwaysApply: z.boolean().optional().default(false),
+  alwaysApply: z.boolean().describe("Whether this rule loads for every task regardless of globs").optional().default(false),
 });
