@@ -213,41 +213,6 @@ cat > /mnt/sherpa-data/data/openclaw/config/openclaw.json << EOF
     }
   },
 
-  "maxConcurrent": 2,
-  "subagents": {
-    "maxConcurrent": 4
-  },
-
-  "memory": {
-    "search": {
-      "enabled": true
-    },
-    "context": {
-      "cacheTTL": 21600,
-      "pruneStrategy": "relevance"
-    },
-    "compaction": {
-      "enabled": true,
-      "tokenThreshold": 40000,
-      "flushTo": "daily"
-    }
-  },
-
-  "toolPolicies": {
-    "defaults": {
-      "networkAccess": "restricted",
-      "fileSystemWrite": "workspace_only"
-    },
-    "overrides": {
-      "git": {
-        "allowPush": true,
-        "branches": ["main", "feat/*", "initiative/*"]
-      },
-      "shell": {
-        "blocked": ["rm -rf /", "curl | sh", "wget | sh"]
-      }
-    }
-  }
 }
 EOF
 chown -R 1000:1000 /mnt/sherpa-data/data/openclaw
@@ -357,10 +322,9 @@ OPENROUTER_API_KEY=<your-openrouter-key>
 |---------|---------|
 | `gateway` | Bind loopback only, Tailscale handles external TLS. Token auth + tailnet trust. |
 | `agents.defaults.model` | Primary + ordered fallback chain. Anthropic for quality, OpenRouter for budget. |
-| `maxConcurrent` / `subagents` | Prevents OOM on 8GB VPS. 2 top-level + 4 sub-agents max. |
-| `memory.context.cacheTTL` | 6 hours. Prunes stale context, fixes "why did it forget that" problems. |
-| `memory.compaction` | At 40K tokens, flush session to daily memory file. Prevents context bloat. |
-| `toolPolicies` | Restrict file writes to workspace, limit network access, allow git push to known branches only. |
+| `agents.list` | Named agents (orchestrator, coder, researcher) with per-agent model and tool overrides. |
+
+**Not yet supported** (validated by OpenClaw 2026.3.x schema): `maxConcurrent`, `subagents`, `memory.search/context/compaction`, `toolPolicies`. These are documented in the community runbook but rejected by the config validator. Revisit on future OpenClaw updates — security guardrails go in `AGENTS.md` instead (see Security Hardening below).
 
 ### Backup
 
