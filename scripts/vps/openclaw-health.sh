@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # OpenClaw gateway health check with rotating checks
 # Install: add to root crontab on VPS
-#   */5 * * * * /root/sherpa/scripts/vps/openclaw-health.sh
+#   */5 * * * * /home/openclaw/sherpa/scripts/vps/openclaw-health.sh
 #
 # Runs the most overdue check on each invocation.
 # Logs to /mnt/sherpa-data/data/openclaw/health.log
+#
+# Assumes native install: openclaw-gateway.service (systemd), user openclaw
 
 set -euo pipefail
 
 STATE_FILE="/mnt/sherpa-data/data/openclaw/health-state.json"
 LOG_FILE="/mnt/sherpa-data/data/openclaw/health.log"
 GATEWAY_URL="http://127.0.0.1:18789"
+SERVICE_NAME="openclaw-gateway"
+OPENCLAW_USER="openclaw"
 NOW=$(date +%s)
 
 log() {
@@ -22,7 +26,7 @@ if [ ! -f "$STATE_FILE" ]; then
   cat > "$STATE_FILE" << 'EOF'
 {
   "gateway_health": 0,
-  "docker_containers": 0,
+  "service_status": 0,
   "disk_usage": 0,
   "stale_sessions": 0,
   "config_ownership": 0
@@ -32,21 +36,21 @@ fi
 
 # Read last-run timestamps
 gateway_last=$(jq -r '.gateway_health // 0' "$STATE_FILE")
-docker_last=$(jq -r '.docker_containers // 0' "$STATE_FILE")
+service_last=$(jq -r '.service_status // 0' "$STATE_FILE")
 disk_last=$(jq -r '.disk_usage // 0' "$STATE_FILE")
 sessions_last=$(jq -r '.stale_sessions // 0' "$STATE_FILE")
 ownership_last=$(jq -r '.config_ownership // 0' "$STATE_FILE")
 
 # Cadences (seconds)
 GATEWAY_CADENCE=300       # 5 min
-DOCKER_CADENCE=900        # 15 min
+SERVICE_CADENCE=900       # 15 min
 DISK_CADENCE=3600         # 1 hr
 SESSIONS_CADENCE=21600    # 6 hr
 OWNERSHIP_CADENCE=43200   # 12 hr
 
 # Calculate overdue scores (higher = more overdue)
 gateway_overdue=$(( (NOW - gateway_last) - GATEWAY_CADENCE ))
-docker_overdue=$(( (NOW - docker_last) - DOCKER_CADENCE ))
+service_overdue=$(( (NOW - service_last) - SERVICE_CADENCE ))
 disk_overdue=$(( (NOW - disk_last) - DISK_CADENCE ))
 sessions_overdue=$(( (NOW - sessions_last) - SESSIONS_CADENCE ))
 ownership_overdue=$(( (NOW - ownership_last) - OWNERSHIP_CADENCE ))
@@ -55,9 +59,9 @@ ownership_overdue=$(( (NOW - ownership_last) - OWNERSHIP_CADENCE ))
 max_overdue=$gateway_overdue
 check="gateway_health"
 
-if [ $docker_overdue -gt $max_overdue ]; then
-  max_overdue=$docker_overdue
-  check="docker_containers"
+if [ $service_overdue -gt $max_overdue ]; then
+  max_overdue=$service_overdue
+  check="service_status"
 fi
 if [ $disk_overdue -gt $max_overdue ]; then
   max_overdue=$disk_overdue
@@ -85,7 +89,7 @@ case "$check" in
       log "OK gateway responding (HTTP $status)"
     else
       log "WARN gateway unhealthy (HTTP $status) — attempting restart"
-      cd /opt/openclaw && docker compose restart openclaw-gateway 2>/dev/null
+      systemctl restart "$SERVICE_NAME" 2>/dev/null
       sleep 5
       retry=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "$GATEWAY_URL/health" 2>/dev/null || echo "000")
       if [ "$retry" = "200" ]; then
@@ -96,14 +100,21 @@ case "$check" in
     fi
     ;;
 
-  docker_containers)
-    gateway_running=$(docker ps --filter "name=openclaw-gateway" --format "{{.Status}}" 2>/dev/null || echo "")
-    if echo "$gateway_running" | grep -q "Up"; then
-      log "OK openclaw-gateway container running: $gateway_running"
+  service_status)
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+      uptime=$(systemctl show "$SERVICE_NAME" --property=ActiveEnterTimestamp --value)
+      mem=$(systemctl show "$SERVICE_NAME" --property=MemoryCurrent --value)
+      mem_mb=$((mem / 1048576))
+      log "OK $SERVICE_NAME active since $uptime (${mem_mb}MB)"
     else
-      log "WARN openclaw-gateway not running — attempting restart"
-      cd /opt/openclaw && docker compose up -d openclaw-gateway 2>/dev/null
-      log "INFO restart attempted"
+      log "WARN $SERVICE_NAME not active — attempting restart"
+      systemctl start "$SERVICE_NAME" 2>/dev/null
+      sleep 3
+      if systemctl is-active --quiet "$SERVICE_NAME"; then
+        log "OK $SERVICE_NAME recovered after start"
+      else
+        log "CRIT $SERVICE_NAME failed to start"
+      fi
     fi
     ;;
 
@@ -119,7 +130,7 @@ case "$check" in
     ;;
 
   stale_sessions)
-    session_dir="/mnt/sherpa-data/data/openclaw/workspace/agents/main/sessions"
+    session_dir="/mnt/sherpa-data/data/openclaw/config/agents/main/sessions"
     if [ -d "$session_dir" ]; then
       stale=$(find "$session_dir" -name "*.jsonl" -mtime +1 2>/dev/null | wc -l)
       if [ "$stale" -gt 0 ]; then
@@ -135,12 +146,12 @@ case "$check" in
 
   config_ownership)
     config_dir="/mnt/sherpa-data/data/openclaw"
-    bad_owner=$(find "$config_dir" ! -user 1000 2>/dev/null | head -5)
+    bad_owner=$(find "$config_dir" ! -user "$OPENCLAW_USER" 2>/dev/null | head -5)
     if [ -z "$bad_owner" ]; then
-      log "OK config ownership correct (uid 1000)"
+      log "OK config ownership correct ($OPENCLAW_USER)"
     else
-      chown -R 1000:1000 "$config_dir"
-      log "WARN fixed config ownership drift — ran chown -R 1000:1000"
+      chown -R "$OPENCLAW_USER:$OPENCLAW_USER" "$config_dir"
+      log "WARN fixed config ownership drift — ran chown"
     fi
     ;;
 esac

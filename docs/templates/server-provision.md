@@ -370,10 +370,10 @@ Automated nightly backup of OpenClaw config and state. Script lives at `scripts/
 # Add to root crontab
 crontab -e
 # Add line:
-0 3 * * * /root/sherpa/scripts/vps/openclaw-backup.sh >> /mnt/sherpa-data/data/openclaw/backup.log 2>&1
+0 3 * * * /home/openclaw/sherpa/scripts/vps/openclaw-backup.sh >> /mnt/sherpa-data/data/openclaw/backup.log 2>&1
 ```
 
-Backs up `openclaw.json`, `.env`, and `docker-compose.override.yml` to `/mnt/sherpa-data/backups/openclaw/`. 30-day retention.
+Backs up `openclaw.json`, `.env`, agent personality files (`AGENTS.md`, `SOUL.md`, etc.), `memory/`, and the systemd unit to `/mnt/sherpa-data/backups/openclaw/`. 30-day retention.
 
 ### Health Monitoring
 
@@ -383,16 +383,16 @@ Rotating health check that runs every 5 minutes, checking the most overdue item 
 # Add to root crontab
 crontab -e
 # Add line:
-*/5 * * * * /root/sherpa/scripts/vps/openclaw-health.sh
+*/5 * * * * /home/openclaw/sherpa/scripts/vps/openclaw-health.sh
 ```
 
 | Check | Cadence | Action on Failure |
 |-------|---------|-------------------|
-| Gateway health | 5 min | Auto-restart, log CRIT if still down |
-| Docker containers | 15 min | Auto `docker compose up -d` |
+| Gateway health | 5 min | `systemctl restart openclaw-gateway`, log CRIT if still down |
+| Service status | 15 min | `systemctl start`, report memory usage |
 | Disk usage | 1 hr | WARN at 80%, CRIT at 90% |
 | Stale sessions | 6 hr | Auto-delete sessions >24hr old |
-| Config ownership | 12 hr | Auto `chown -R 1000:1000` |
+| Config ownership | 12 hr | Auto `chown -R openclaw:openclaw` |
 
 Logs to `/mnt/sherpa-data/data/openclaw/health.log`. State tracked in `health-state.json` (JSON with last-run timestamps per check).
 
