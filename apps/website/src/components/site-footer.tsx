@@ -35,7 +35,7 @@ export function SiteFooter() {
               Sherpa
             </Link>
             <p className="mt-2 text-sm text-muted-foreground">
-              A governance framework for agentic workflows.
+              A collaboration framework for agentic workflows with a focus on governance, research, and execution.
             </p>
           </div>
           <div className="flex flex-col gap-8">

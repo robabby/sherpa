@@ -10,7 +10,7 @@ export function WhatWeBuiltSection() {
             The framework
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-muted-foreground md:text-xl">
-            Sherpa Studio is a governance framework for agentic workflows.
+            Sherpa Studio is a collaboration framework for agentic workflows with a focus on governance, research, and execution.
             Behavioral agent definitions. A skills engine. A dispatch pipeline
             with nine backends. An initiative lifecycle that takes ideas from
             proposal to integration with review at every step.

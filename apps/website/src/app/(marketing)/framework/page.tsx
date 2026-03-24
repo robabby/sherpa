@@ -7,7 +7,7 @@ import { ScrollReveal } from "@/components/motion/scroll-reveal"
 export const metadata: Metadata = {
   title: "Framework",
   description:
-    "Sherpa Studio: a governance framework for agentic workflows. Multi-project federation, behavioral agents, dispatch pipelines, semantic knowledge, and initiative lifecycle management.",
+    "Sherpa Studio: a collaboration framework for agentic workflows with a focus on governance, research, and execution. Multi-project federation, behavioral agents, dispatch pipelines, semantic knowledge, and initiative lifecycle management.",
 }
 
 const pillars = [
@@ -101,7 +101,7 @@ export default function FrameworkPage() {
             The framework
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            A governance framework for agentic workflows. Multi-project
+            A collaboration framework for agentic workflows with a focus on governance, research, and execution. Multi-project
             federation, behavioral agent definitions, a 9-backend dispatch
             pipeline, semantic knowledge indexing, and an initiative lifecycle
             with MCP-exposed governance — infrastructure that lives in your
