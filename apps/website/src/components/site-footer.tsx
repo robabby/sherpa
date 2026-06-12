@@ -20,6 +20,9 @@ const footerLinks = [
     title: "Connect",
     links: [
       { title: "Rob Abby", href: "https://robabby.com", external: true },
+      { title: "GitHub", href: "https://github.com/robabby", external: true },
+      { title: "LinkedIn", href: "https://linkedin.com/in/robabby", external: true },
+      { title: "Contact", href: "/contact" },
     ],
   },
 ]

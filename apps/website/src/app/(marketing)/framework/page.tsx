@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { ScrollReveal } from "@/components/motion/scroll-reveal"
+import { FRAMEWORK_STATS as STATS } from "@/generated/framework-stats"
 
 export const metadata: Metadata = {
   title: "Framework",
@@ -13,13 +14,11 @@ export const metadata: Metadata = {
 const pillars = [
   {
     title: "Behavioral Agent System",
-    description:
-      "30 agent roles defined through behavioral constraints — disposition, quality bar, fail triggers, domain scope. Not identity claims. Research-validated against Anthropic and academic findings. 8 task types route work to eligible roles automatically.",
+    description: `${STATS.agentRoles} agent roles defined through behavioral constraints — disposition, quality bar, fail triggers, domain scope. Not identity claims. Research-validated against Anthropic and academic findings. 8 task types route work to eligible roles automatically.`,
   },
   {
     title: "Governance Engine",
-    description:
-      "72 initiatives tracked from proposal through integration with directoturtle directory structure. Dependencies, genealogy, and cross-initiative intelligence flows. External agents can propose and approve work via 7 MCP governance tools with policy-gated lifecycle transitions.",
+    description: `${STATS.initiatives} initiatives tracked from proposal through integration with directoturtle directory structure. Dependencies, genealogy, and cross-initiative intelligence flows. External agents can propose and approve work via 7 MCP governance tools with policy-gated lifecycle transitions.`,
   },
   {
     title: "Execution Pipeline",
@@ -28,13 +27,11 @@ const pillars = [
   },
   {
     title: "Studio Application",
-    description:
-      "18 routes, 118 React components. Multi-project federation — one Studio instance governs multiple codebases. Task boards, initiative trees, workforce management, workflow canvas, research dashboards, and mission control. Zero-downtime blue-green deploys.",
+    description: `${STATS.studioRoutes} routes, ${STATS.components} React components. Multi-project federation — one Studio instance governs multiple codebases. Task boards, initiative trees, workforce management, workflow canvas, research dashboards, and mission control. Zero-downtime blue-green deploys.`,
   },
   {
     title: "Executable Conventions",
-    description:
-      "17 skills with full step-by-step protocols — recursive research, integration review, stress-testing, design, task planning. 9 rules auto-loaded by glob pattern. Self-documenting system with provenance tracking and staleness detection across every maintained document.",
+    description: `${STATS.skills} skills with full step-by-step protocols — recursive research, integration review, stress-testing, design, task planning. ${STATS.rules} rules auto-loaded by glob pattern. Self-documenting system with provenance tracking and staleness detection across every maintained document.`,
   },
   {
     title: "Config-as-Code",
@@ -79,7 +76,7 @@ const packages = [
   },
   {
     name: "@sherpa/studio-ui",
-    description: "118 React components for governance visualization",
+    description: `${STATS.components} React components for governance visualization`,
   },
   {
     name: "@sherpa/studio-mcp",
@@ -180,16 +177,39 @@ export default function FrameworkPage() {
         <ScrollReveal delay={0.25}>
           <div className="mt-16 rounded-xl border border-border/60 bg-card p-8">
             <h2 className="font-heading text-xl tracking-tight">
-              Built by a practitioner
+              Built by Rob Abby
             </h2>
             <p className="mt-3 text-muted-foreground">
               This framework emerged from building agentic workflows and
-              discovering that the governance infrastructure didn&apos;t exist.
-              Every convention, every skill, every agent role was built because
-              it was needed. The system governs its own development — the same
-              initiative lifecycle, the same dispatch pipeline, the same
-              behavioral constraints you&apos;d adopt.
+              discovering the governance layer didn&apos;t exist. Every
+              convention and agent role here is in production, governing this
+              framework&apos;s own development. Source is private while
+              open-source prep completes — happy to walk through it.
             </p>
+            <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              <a
+                href="https://robabby.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary transition-colors hover:underline"
+              >
+                robabby.com →
+              </a>
+              <a
+                href="https://github.com/robabby"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary transition-colors hover:underline"
+              >
+                GitHub →
+              </a>
+              <Link
+                href="/contact"
+                className="text-primary transition-colors hover:underline"
+              >
+                Contact →
+              </Link>
+            </div>
           </div>
         </ScrollReveal>
 
