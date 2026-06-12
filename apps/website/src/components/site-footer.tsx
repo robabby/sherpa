@@ -21,8 +21,7 @@ const footerLinks = [
     links: [
       { title: "Rob Abby", href: "https://robabby.com", external: true },
       { title: "GitHub", href: "https://github.com/robabby", external: true },
-      // TODO(rob): confirm LinkedIn URL before enabling
-      // { title: "LinkedIn", href: "https://www.linkedin.com/in/TODO", external: true },
+      { title: "LinkedIn", href: "https://linkedin.com/in/robabby", external: true },
       { title: "Contact", href: "/contact" },
     ],
   },
