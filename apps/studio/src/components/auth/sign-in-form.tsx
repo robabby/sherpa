@@ -43,7 +43,16 @@ export function SignInForm() {
     <Card className="w-full max-w-sm">
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
-        <CardDescription>Enter your credentials to continue</CardDescription>
+        <CardDescription>
+          Sherpa Studio — the governance dashboard for the{" "}
+          <a
+            href="https://sherpa.solar"
+            className="underline underline-offset-4 hover:text-foreground"
+          >
+            Sherpa framework
+          </a>
+          . Enter your credentials to continue.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

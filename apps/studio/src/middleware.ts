@@ -6,21 +6,17 @@ const PUBLIC_PATHS = [
   "/s",
 ]
 
-/** Legacy unscoped routes that should redirect to /projects/{primary}/... */
+/**
+ * Legacy unscoped routes that redirect to /projects/{primary}/...
+ * Only routes with a project-scoped page under /projects/[project]/ belong
+ * here — redirecting a route without one produces a 404. Everything else
+ * (dispatch, workflow, conventions, skills, playbooks, workforce, sessions,
+ * mcp, activity, docs) is served by its top-level page.
+ */
 const LEGACY_ROUTE_PREFIXES = [
   "/process",
   "/tasks",
   "/research",
-  "/docs",
-  "/conventions",
-  "/skills",
-  "/playbooks",
-  "/workforce",
-  "/sessions",
-  "/mcp",
-  "/dispatch",
-  "/workflow",
-  "/activity",
 ]
 
 export function middleware(request: NextRequest) {

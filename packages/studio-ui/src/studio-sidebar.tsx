@@ -115,8 +115,13 @@ export function StudioSidebar({ userMenu, projects }: StudioSidebarProps) {
       ? matchedSlug
       : null
 
-  // In aggregate mode, nav links point to /projects/{section}.
-  // In project mode, nav links point to /projects/{slug}/{section}.
+  // Only these sections have pages under /projects/{slug}/ (project mode)
+  // and /projects/ (aggregate mode). All other sections link to their
+  // top-level pages — prefixing them produces 404s.
+  const projectScopedRoutes = ["/process", "/tasks", "/research"]
+
+  // In aggregate mode, scoped nav links point to /projects/{section}.
+  // In project mode, scoped nav links point to /projects/{slug}/{section}.
   const hrefPrefix = activeProject
     ? `/projects/${activeProject}`
     : "/projects"
@@ -159,7 +164,9 @@ export function StudioSidebar({ userMenu, projects }: StudioSidebarProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
-                  const fullHref = `${hrefPrefix}${item.href}`;
+                  const fullHref = projectScopedRoutes.includes(item.href)
+                    ? `${hrefPrefix}${item.href}`
+                    : item.href;
                   const active = isActive(pathname, fullHref);
                   return (
                     <SidebarMenuItem key={item.href}>
