@@ -27,3 +27,10 @@ worktree: .worktrees/website-studio-product
 - R7 (partial): Learn added to main nav
 - Verified: `pnpm check` ✓, website build ✓, link-crawl of 44 internal URLs ✓ zero 404s; after-screenshots in `research/screenshots/phase-1-after/`
 - Revision (same day): Rob has no Resend key — contact form cancelled. `/contact` is now a static page linking LinkedIn / GitHub / robabby.com; `/api/contact` and form component removed; blog CTA reads "get in touch". LinkedIn URL confirmed and enabled in footer.
+
+## 2026-06-12 — Hiring-manager audit, Phase 2 (hero + Studio bridge: R2, R1)
+
+- R2: hero replaced with audit §9-R2 copy — H1 "Governance for AI agents, built into your codebase." + sub + two CTAs (See it running → #see-it-running anchor; Read the docs → /docs, ghost). Motion/typography system preserved. 5-second test re-run on new fold: 4/4 questions answered, desktop and 390px mobile
+- R1: new `see-it-running.tsx` section on homepage (between framework paragraph and proof section) and embedded on /framework before the practitioner box. Three fresh 2× Studio captures in `apps/website/public/studio/` (process workspace with populated detail pane, task board, research dashboard), taken via throwaway auth user (deleted from auth.db after). Captions use generated stats (70 initiatives) + screenshot-verified numbers (100 missions / 9 backends / 38 shipped; nine research streams)
+- Studio capture notes for Phase 3: tasks page burned the entire Linear API hourly quota (2,500 requests) during captures — per-task fetches with no cache, confirms R8 root cause. Studio auth client pins `NEXT_PUBLIC_BETTER_AUTH_URL`; captures required env override to run on a non-default port
+- Verified: typecheck ✓, build ✓, 44-URL crawl zero 404s ✓; shots in `research/screenshots/phase-2-after/`

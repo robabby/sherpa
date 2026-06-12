@@ -28,21 +28,38 @@ export function HeroSection() {
           animate="visible"
           custom={0}
         >
-          Work as we know it is changing.{" "}
-          <span className="text-primary">What we build next matters.</span>
+          Governance for AI agents,{" "}
+          <span className="text-primary">built into your codebase.</span>
         </motion.h1>
+
+        <motion.p
+          className="mx-auto mt-8 max-w-2xl text-lg text-muted-foreground md:text-xl"
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          custom={1}
+        >
+          Sherpa gives Human+AI teams what code review gave engineering:
+          roles, quality gates, and an audit trail for every decision. Watch
+          it run its own development.
+        </motion.p>
 
         <motion.div
           className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          custom={1}
+          custom={2}
         >
-          <Link href="/framework">
+          <Link href="#see-it-running">
             <Button size="lg">
-              See the framework
+              See it running
               <ArrowRight data-icon="inline-end" />
+            </Button>
+          </Link>
+          <Link href="/docs">
+            <Button size="lg" variant="ghost">
+              Read the docs
             </Button>
           </Link>
         </motion.div>
