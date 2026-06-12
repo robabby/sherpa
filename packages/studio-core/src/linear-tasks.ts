@@ -5,6 +5,13 @@
  * Mirrors the interface of `getTaskBoard()` and `getTaskDetail()`
  * from `tasks.ts`, but sources data from Linear issues instead of
  * local markdown files.
+ *
+ * Issues are fetched in a single GraphQL request (state, labels, and
+ * label groups included) — the SDK's lazy-loaded relations would issue
+ * hundreds of follow-up requests per board load and exhaust Linear's
+ * hourly rate limit. Results are cached with a short TTL; on fetch
+ * failure the most recent stale result is served so the board degrades
+ * instead of dying.
  */
 
 import type { LinearClient } from "@linear/sdk"
@@ -21,52 +28,59 @@ export interface LinearTaskBoardOptions {
   teamKey?: string
 }
 
+interface RawIssueNode {
+  id: string
+  identifier: string
+  title: string
+  description?: string | null
+  priority: number
+  createdAt: string
+  state: { type: string }
+  labels: { nodes: Array<{ name: string; parent?: { name: string } | null }> }
+}
+
+interface IssuesQueryData {
+  issues: { nodes: RawIssueNode[] }
+}
+
 // ── Internals ──────────────────────────────────────────────────────
 
 function resolveClient(opts?: LinearTaskBoardOptions): LinearClient {
   return opts?.client ?? getLinearClient()
 }
 
-/**
- * Resolve a Linear SDK issue node (with lazy-loaded relations)
- * into a flat LinearIssueShape suitable for mapping.
- */
-async function issueToShape(issue: {
-  id: string
-  identifier: string
-  title: string
-  description?: string | null
-  priority: number
-  createdAt: Date
-  state: Promise<{ type: string }> | { type: string }
-  labels: () => Promise<{
-    nodes: Array<{
-      name: string
-      parent: Promise<{ name: string } | undefined | null> | { name: string } | undefined | null
-    }>
-  }>
-}): Promise<LinearIssueShape> {
-  const state = await issue.state
-  const labelsConnection = await issue.labels()
-  const labels = await Promise.all(
-    labelsConnection.nodes.map(async (l) => {
-      const parent = await l.parent
-      return {
-        name: l.name,
-        groupName: parent?.name,
-      }
-    })
-  )
+const ISSUE_FIELDS = `
+  id
+  identifier
+  title
+  description
+  priority
+  createdAt
+  state { type }
+  labels(first: 25) { nodes { name parent { name } } }
+`
 
+const BOARD_QUERY = `
+  query StudioTaskBoard($first: Int!, $filter: IssueFilter) {
+    issues(first: $first, filter: $filter) {
+      nodes { ${ISSUE_FIELDS} }
+    }
+  }
+`
+
+function nodeToShape(node: RawIssueNode): LinearIssueShape {
   return {
-    id: issue.id,
-    identifier: issue.identifier,
-    title: issue.title,
-    description: issue.description,
-    priority: issue.priority,
-    state: { type: state.type },
-    labels,
-    createdAt: issue.createdAt.toISOString(),
+    id: node.id,
+    identifier: node.identifier,
+    title: node.title,
+    description: node.description,
+    priority: node.priority,
+    state: { type: node.state.type },
+    labels: node.labels.nodes.map((l) => ({
+      name: l.name,
+      groupName: l.parent?.name,
+    })),
+    createdAt: node.createdAt,
   }
 }
 
@@ -101,6 +115,24 @@ function shapeToEntry(shape: LinearIssueShape): TaskBoardEntry {
   }
 }
 
+// ── Cache ──────────────────────────────────────────────────────────
+
+const BOARD_TTL_MS = 60_000
+
+interface CacheEntry<T> {
+  at: number
+  data: T
+}
+
+const boardCache = new Map<string, CacheEntry<TaskBoardEntry[]>>()
+const detailCache = new Map<string, CacheEntry<TaskDetail | null>>()
+
+/** Test hook — clears the board/detail caches. */
+export function clearLinearTaskCache(): void {
+  boardCache.clear()
+  detailCache.clear()
+}
+
 // ── Public API ─────────────────────────────────────────────────────
 
 /**
@@ -112,38 +144,51 @@ function shapeToEntry(shape: LinearIssueShape): TaskBoardEntry {
 export async function getLinearTaskBoard(
   opts?: LinearTaskBoardOptions
 ): Promise<TaskBoardEntry[]> {
-  const client = resolveClient(opts)
-
-  // Build filter — optionally scope to a team
-  const filter: Record<string, unknown> = {}
-  if (opts?.teamKey) {
-    filter.team = { key: { eq: opts.teamKey } }
+  const cacheKey = opts?.teamKey ?? "*"
+  const cached = boardCache.get(cacheKey)
+  if (cached && Date.now() - cached.at < BOARD_TTL_MS) {
+    return cached.data
   }
 
-  const issuesConnection = await client.issues({
-    first: 100,
-    filter: Object.keys(filter).length > 0 ? filter : undefined,
-  })
+  try {
+    const client = resolveClient(opts)
+    const filter = opts?.teamKey
+      ? { team: { key: { eq: opts.teamKey } } }
+      : undefined
 
-  const entries: TaskBoardEntry[] = []
-  for (const issue of issuesConnection.nodes) {
-    const shape = await issueToShape(issue as any)
-    entries.push(shapeToEntry(shape))
+    const res = await client.client.rawRequest<
+      IssuesQueryData,
+      { first: number; filter?: Record<string, unknown> }
+    >(BOARD_QUERY, { first: 100, filter })
+
+    const entries = (res.data?.issues.nodes ?? []).map((node) =>
+      shapeToEntry(nodeToShape(node))
+    )
+
+    // Sort by priority (same order as tasks.ts)
+    const priorityOrder: Record<string, number> = {
+      urgent: 0,
+      high: 1,
+      medium: 2,
+      low: 3,
+    }
+    entries.sort(
+      (a, b) =>
+        (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9)
+    )
+
+    boardCache.set(cacheKey, { at: Date.now(), data: entries })
+    return entries
+  } catch (err) {
+    if (cached) {
+      console.warn(
+        `[linear-tasks] board fetch failed, serving stale cache (${Math.round((Date.now() - cached.at) / 1000)}s old):`,
+        err instanceof Error ? err.message : err
+      )
+      return cached.data
+    }
+    throw err
   }
-
-  // Sort by priority (same order as tasks.ts)
-  const priorityOrder: Record<string, number> = {
-    urgent: 0,
-    high: 1,
-    medium: 2,
-    low: 3,
-  }
-  entries.sort(
-    (a, b) =>
-      (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9)
-  )
-
-  return entries
 }
 
 /**
@@ -166,30 +211,51 @@ export async function getLinearTaskDetail(
   identifier: string,
   opts?: LinearTaskBoardOptions
 ): Promise<TaskDetail | null> {
-  const client = resolveClient(opts)
-
   const parsed = parseIdentifier(identifier)
   if (!parsed) return null
 
-  const issuesConnection = await client.issues({
-    first: 1,
-    filter: {
-      team: { key: { eq: parsed.teamKey } },
-      number: { eq: parsed.number },
-    },
-  })
+  const cached = detailCache.get(identifier)
+  if (cached && Date.now() - cached.at < BOARD_TTL_MS) {
+    return cached.data
+  }
 
-  if (issuesConnection.nodes.length === 0) return null
+  try {
+    const client = resolveClient(opts)
+    const res = await client.client.rawRequest<
+      IssuesQueryData,
+      { first: number; filter: Record<string, unknown> }
+    >(BOARD_QUERY, {
+      first: 1,
+      filter: {
+        team: { key: { eq: parsed.teamKey } },
+        number: { eq: parsed.number },
+      },
+    })
 
-  const issue = issuesConnection.nodes[0]!
-  const shape = await issueToShape(issue as any)
-  const entry = shapeToEntry(shape)
+    const node = res.data?.issues.nodes[0]
+    if (!node) {
+      detailCache.set(identifier, { at: Date.now(), data: null })
+      return null
+    }
 
-  return {
-    ...entry,
-    body: shape.description ?? "",
-    reportContent: null,
-    verdictContent: null,
-    blockerContent: null,
+    const shape = nodeToShape(node)
+    const detail: TaskDetail = {
+      ...shapeToEntry(shape),
+      body: shape.description ?? "",
+      reportContent: null,
+      verdictContent: null,
+      blockerContent: null,
+    }
+    detailCache.set(identifier, { at: Date.now(), data: detail })
+    return detail
+  } catch (err) {
+    if (cached) {
+      console.warn(
+        `[linear-tasks] detail fetch failed for ${identifier}, serving stale cache:`,
+        err instanceof Error ? err.message : err
+      )
+      return cached.data
+    }
+    throw err
   }
 }
