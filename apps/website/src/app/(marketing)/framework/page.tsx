@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { ScrollReveal } from "@/components/motion/scroll-reveal"
+import { SeeItRunningSection } from "@/components/sections/see-it-running"
 import { FRAMEWORK_STATS as STATS } from "@/generated/framework-stats"
 
 export const metadata: Metadata = {
@@ -173,6 +174,8 @@ export default function FrameworkPage() {
             </div>
           </div>
         </ScrollReveal>
+
+        <SeeItRunningSection embedded />
 
         <ScrollReveal delay={0.25}>
           <div className="mt-16 rounded-xl border border-border/60 bg-card p-8">
