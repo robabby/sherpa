@@ -26,3 +26,4 @@ worktree: .worktrees/website-studio-product
 - R4: footer Connect = Rob Abby · GitHub · Contact (LinkedIn pending Rob's URL); practitioner box rewritten — names Rob, links robabby.com/GitHub/contact, includes R12 stop-short copy ("source is private while open-source prep completes")
 - R7 (partial): Learn added to main nav
 - Verified: `pnpm check` ✓, website build ✓, link-crawl of 44 internal URLs ✓ zero 404s; after-screenshots in `research/screenshots/phase-1-after/`
+- Revision (same day): Rob has no Resend key — contact form cancelled. `/contact` is now a static page linking LinkedIn / GitHub / robabby.com; `/api/contact` and form component removed; blog CTA reads "get in touch". LinkedIn URL confirmed and enabled in footer.
