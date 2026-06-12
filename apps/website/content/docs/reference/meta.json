@@ -1,4 +1,4 @@
 {
   "title": "Reference",
-  "pages": ["configuration", "frontmatter", "cli", "mcp-tools", "components"]
+  "pages": ["index", "configuration", "frontmatter", "cli", "mcp-tools", "components"]
 }

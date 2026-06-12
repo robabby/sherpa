@@ -24,7 +24,7 @@ export default defineConfig({
             "governance-patterns",
           ]),
           tags: s.array(s.string()).default([]),
-          author: s.string().default("Rob Hamilton"),
+          author: s.string().default("Rob Abby"),
           slug: s.slug("posts"),
           body: s.mdx(),
           toc: s.toc(),

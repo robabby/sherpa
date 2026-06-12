@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url"
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const WEBSITE_ROOT = path.resolve(__dirname, "..")
 const CONTENT_ROOT = path.join(WEBSITE_ROOT, "content/docs/reference")
+const REPO_ROOT = path.resolve(WEBSITE_ROOT, "../..")
 
 // ── Component Catalog Generation ──────────────────────────────────────
 
@@ -287,6 +288,65 @@ ${toolBlocks}`,
   console.log(`[generate-docs] MCP tools: ${tools.length} tools → ${domainSlugs.length} domain pages`)
 }
 
+// ── Framework Stats Generation ────────────────────────────────────────
+
+function countMdFiles(dir: string): number {
+  return fs.readdirSync(dir).filter((n) => n.endsWith(".md")).length
+}
+
+function countDirsContaining(dir: string, marker: string): number {
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && fs.existsSync(path.join(dir, e.name, marker)))
+    .length
+}
+
+function countPageRoutes(dir: string): number {
+  let count = 0
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) count += countPageRoutes(path.join(dir, entry.name))
+    else if (entry.name === "page.tsx") count += 1
+  }
+  return count
+}
+
+/**
+ * Counts the real governance artifacts in the repository so marketing copy
+ * can never drift from reality. Output is committed (src/generated/) so
+ * typechecking works without a prior generate run; every dev/build refreshes it.
+ */
+async function generateFrameworkStats() {
+  const catalogModule = await import("@sherpa/studio-ui/catalog")
+
+  const stats = {
+    agentRoles: countMdFiles(path.join(REPO_ROOT, "docs/agents/roles")),
+    skills: countDirsContaining(path.join(REPO_ROOT, ".claude/skills"), "SKILL.md"),
+    rules: countMdFiles(path.join(REPO_ROOT, ".claude/rules")),
+    components: (catalogModule.COMPONENT_CATALOG as CatalogEntry[]).length,
+    studioRoutes: countPageRoutes(path.join(REPO_ROOT, "apps/studio/src/app")),
+    initiatives: countDirsContaining(path.join(REPO_ROOT, "docs/initiatives"), "proposal.md"),
+  }
+
+  const zeroes = Object.entries(stats).filter(([, v]) => v === 0)
+  if (zeroes.length > 0) {
+    throw new Error(
+      `[generate-docs] Framework stats counted 0 for: ${zeroes.map(([k]) => k).join(", ")} — refusing to publish a zero count`,
+    )
+  }
+
+  const outDir = path.join(WEBSITE_ROOT, "src/generated")
+  fs.mkdirSync(outDir, { recursive: true })
+  fs.writeFileSync(
+    path.join(outDir, "framework-stats.ts"),
+    `// AUTO-GENERATED — do not edit. Source: apps/website/scripts/generate-reference-docs.ts
+// Counts measured from the repository at build time.
+export const FRAMEWORK_STATS = ${JSON.stringify(stats, null, 2)} as const
+`,
+  )
+
+  console.log(`[generate-docs] Framework stats: ${JSON.stringify(stats)}`)
+}
+
 // ── Main ──────────────────────────────────────────────────────────────
 
 async function main() {
@@ -294,6 +354,7 @@ async function main() {
 
   await generateComponentDocs()
   await generateMcpToolDocs()
+  await generateFrameworkStats()
 
   console.log("[generate-docs] Done.")
 }
