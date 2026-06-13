@@ -1,0 +1,58 @@
+---
+title: "What 100 dispatched agent missions taught me about agent reliability"
+description: "After about a hundred headless agent missions across nine backends, the failures clustered in places I didn't expect — credentials, exit codes, and trust — not model capability."
+date: 2026-06-13
+published: true
+topic: governance-patterns
+tags: ["agent-reliability", "dispatch", "governance-patterns", "failure-modes"]
+author: Rob Abby
+slug: 100-dispatched-missions
+---
+
+By the time I captured Sherpa's task board for the website, it had run roughly a hundred dispatched agent missions across nine backends, with 38 shipped. Those are point-in-time board numbers. The more useful record is smaller and more honest: the execution logs in `docs/tasks/logs/` — NDJSON event streams, worker reports, and blocker notes from the missions that actually left a trace. Nine backends are defined; six show up in those logs with real work behind them: Claude, Codex, Gemini, Google AI, Groq, and OpenClaw.
+
+Here's what surprised me, reading back through them. Almost none of the failures were about whether the model could do the task. They clustered somewhere else entirely.
+
+## Lesson 1: Credentials fail more often than capability
+
+The single most instructive mission was an agent's first attempt to open a pull request. The task was small — add an operational-notes section to a server-provisioning template. The agent (running on the OpenClaw backend) read the template, wrote a genuine contribution, committed it, and pushed the branch to GitHub successfully over an SSH deploy key.
+
+Then it stopped. PR creation failed, and the blocker note it left is precise about why: the SSH deploy key authorizes git operations but not GitHub's REST API, which needs an OAuth token or PAT — and none was provisioned anywhere the agent could reach. It checked the environment variables, the OpenClaw config, the credential store, the dotfiles. All absent. It documented three ways to unblock it and stopped.
+
+The capability was never the bottleneck. The model wrote the content and drove git fine. What broke was a credential boundary I hadn't thought through: "can push" and "can open a PR" are different permissions, and I'd granted one. Most of my early failures looked like this — environment and access, not intelligence.
+
+## Lesson 2: Exit code 0 lies
+
+That same PR mission, in an earlier run, *succeeded* by every cheap measure. The worker exited 0. The board marked it completed in one minute and fifty seconds. The event log shows a clean `dispatched → completed` transition with `exitCode: 0`.
+
+The PR did not exist.
+
+The process had finished without error; the deliverable was never produced. This is the failure mode that taught me to stop trusting exit codes as proxies for done. A clean exit means the script ran, not that the task succeeded. It's the entire reason I review the *artifact* — the diff, the PR, the file that was supposed to change — and treat the exit code as telemetry, not a verdict.
+
+## Lesson 3: Agents will find your infrastructure bugs — if you dispatch the review
+
+I dispatched a code review of `worker.sh`, the script that runs every mission. It came back with two correctness bugs I'd missed. One was a duration calculation using `date -j` — BSD syntax absent on the Linux containers the script runs on — silently producing garbage. The other was an error-swallowing `|| true` that could route a task to the wrong model without any signal.
+
+The proof that the first one was real was already in my logs: a mission had recorded `durationSeconds: -24827`. A negative runtime, sitting there for weeks. The dispatched review read the code and explained the negative number I'd been ignoring.
+
+The lesson isn't "agents are great reviewers." It's that the reliability of an agent system is mostly the reliability of the *plumbing around it* — and that plumbing is reviewable by the same agents, if you actually point them at it instead of assuming the harness is fine.
+
+## Lesson 4: Honest uncertainty beats a confident guess
+
+One research mission asked an agent to measure a coding gateway's free-tier rate limits with batch requests. It couldn't: the CLI wasn't installed in its environment. 
+
+What it did next is the behavior I most want from an agent. It said so, up front, in a "Blocker Notice" at the top of its report. It marked its confidence **medium**, explained that the findings came from public documentation and reading the backend script rather than direct measurement, and delivered that — clearly labeled — instead of inventing numbers that would look like measurements. An agent that fabricates a plausible benchmark is far more dangerous than one that admits it couldn't run the test. Getting that behavior reliably is a governance property, not a model property: you have to ask for confidence levels and reward the agent for separating what it measured from what it inferred.
+
+## Lesson 5: Route by task, and most work doesn't need the expensive model
+
+Not every mission deserves a frontier model. A benchmark mission comparing two models for content work — Sherpa's own dispatched research, so treat the figures as that — put one model ahead on creative writing and long-context retrieval, and the other ahead on structured output, throughput, and cost, at roughly 4–10× cheaper. That turned into routing rules: send creative and long-context work one way, structured high-volume work the cheaper way. Across a hundred missions, paying frontier prices for tasks that a cheaper model handles as well is the difference between a pipeline you run constantly and one you ration.
+
+## The guard rails that came out of this
+
+These lessons hardened into rules the dispatcher enforces before any mission runs:
+
+- **Governance files force the Claude backend.** Edits to `CLAUDE.md`, `.claude/`, or agent role definitions route to Claude no matter what — those files steer every other agent.
+- **High-stakes task types can't run unattended.** Code-implementation and architect tasks are blocked in overnight mode; they need a human in the loop.
+- **Every mission emits structured events**, so the board reflects what actually happened, and a failed credential check or a wrong-model dispatch leaves a trace I can read later.
+
+A hundred missions in, my mental model flipped. I started out worried about whether agents were *capable* enough. The logs say the capability was rarely the problem. Reliability lived in the boring layer — credentials, exit codes, error handling, and whether I'd asked the agent to be honest about what it didn't know. That's the layer governance is for.

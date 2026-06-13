@@ -15,34 +15,34 @@ export const metadata: Metadata = {
 const pillars = [
   {
     title: "Behavioral Agent System",
-    description: `${STATS.agentRoles} agent roles defined through behavioral constraints — disposition, quality bar, fail triggers, domain scope. Not identity claims. Research-validated against Anthropic and academic findings. 8 task types route work to eligible roles automatically.`,
+    description: `Agent roles define what an agent does — its defaults, quality bar, and fail triggers — not who it pretends to be. That keeps behavior predictable and reviewable. ${STATS.agentRoles} roles run in production this way, each scoped to the task types it can take, an approach validated against Anthropic and academic research.`,
   },
   {
     title: "Governance Engine",
-    description: `${STATS.initiatives} initiatives tracked from proposal through integration with directoturtle directory structure. Dependencies, genealogy, and cross-initiative intelligence flows. External agents can propose and approve work via 7 MCP governance tools with policy-gated lifecycle transitions.`,
+    description: `Every piece of work moves through proposal → review → integration, so nothing ships without a decision trail. ${STATS.initiatives} real initiatives have run through this lifecycle. External agents participate through 7 policy-gated MCP tools.`,
   },
   {
     title: "Execution Pipeline",
     description:
-      "9 dispatch backends — 5 CLI, 3 API, 1 remote gateway. Task-type routing with overnight restrictions. Authority leases with monotonic fencing tokens for multi-agent coordination. Real-time agent narrative streaming for mission visibility.",
+      "Describe a task once and the pipeline routes it to the right agent and backend, logs every event, and brings the result back for review. 9 dispatch backends — 5 CLI, 3 API, 1 remote gateway. Authority leases with fencing tokens mean two agents can never write the same artifact at once.",
   },
   {
     title: "Studio Application",
-    description: `${STATS.studioRoutes} routes, ${STATS.components} React components. Multi-project federation — one Studio instance governs multiple codebases. Task boards, initiative trees, workforce management, workflow canvas, research dashboards, and mission control. Zero-downtime blue-green deploys.`,
+    description: `One dashboard shows the whole system — task boards, initiative trees, research feeds, and workforce views over live governance data. ${STATS.studioRoutes} routes and ${STATS.components} React components, with one Studio instance able to govern multiple codebases. Deploys blue-green with zero downtime.`,
   },
   {
     title: "Executable Conventions",
-    description: `${STATS.skills} skills with full step-by-step protocols — recursive research, integration review, stress-testing, design, task planning. ${STATS.rules} rules auto-loaded by glob pattern. Self-documenting system with provenance tracking and staleness detection across every maintained document.`,
+    description: `Conventions here are protocols agents run, not documents people forget. ${STATS.skills} skills define step-by-step workflows for research, review, and planning. ${STATS.rules} rules load automatically by file pattern, and provenance tracking records who wrote each document and when it was last verified.`,
   },
   {
     title: "Config-as-Code",
     description:
-      "sherpa.json as canonical config with environment variable interpolation. Three-directory model: .sherpa/ (tool state), .claude/ (agent config), docs/ (human prose). 9 config domains including dispatch routing, knowledge backends, governance policy, and vocabulary. Type-safe with JSON schema and plugin architecture.",
+      "One config file declares how your team works — dispatch routing, governance policy, knowledge backends, vocabulary — and versions with git like everything else. Three directories keep concerns separate: .sherpa/ for tool state, .claude/ for agent config, docs/ for human prose. Type-safe with JSON schema.",
   },
   {
     title: "Convention Sync CLI",
     description:
-      "sherpa init scaffolds governance structure into any project. sherpa sync keeps conventions current across codebases. Provenance frontmatter tracks authorship, review state, and verification date for every maintained document.",
+      "Any project can adopt the framework in one command. sherpa init scaffolds the governance structure; sherpa sync keeps conventions current as they evolve. Provenance frontmatter tracks authorship, review state, and verification date for every maintained document.",
   },
 ]
 
@@ -50,22 +50,22 @@ const infrastructure = [
   {
     title: "Multi-Project Federation",
     description:
-      "Project registry with cross-project data merging. Aggregate views across task boards, research feeds, and initiative trees. One governance substrate, many codebases.",
+      "Run one governance substrate across many codebases and see them all in one place. A project registry merges task boards, research feeds, and initiative trees into aggregate views, so a team adopting Sherpa on five repos still has one place to look.",
   },
   {
     title: "Semantic Knowledge Engine",
     description:
-      "Pluggable backend architecture with zero-dependency algorithmic default. TF-IDF indexing, extractive summaries, agglomerative clustering. Queryable search over governance artifacts via MCP.",
+      "Search and cluster everything the framework has produced — without standing up a vector database. The default backend is zero-dependency and algorithmic (TF-IDF indexing, extractive summaries, agglomerative clustering); swap in another backend when you need one. Queryable over MCP.",
   },
   {
     title: "SQLite State Layer",
     description:
-      "Three embedded databases — coordination (authority leases, sessions), events (audit trail), knowledge (semantic index). Markdown stays canonical; SQLite provides derived queryable state. WAL mode for concurrent read safety.",
+      "Markdown stays the source of truth; SQLite gives you fast, queryable state derived from it. Three embedded databases handle coordination (authority leases, sessions), events (the audit trail), and the knowledge index. WAL mode keeps concurrent reads safe.",
   },
   {
     title: "MCP Coordination",
     description:
-      "HTTP Streamable transport replacing stdio. Multi-client session manager with authority enforcement. Fencing tokens prevent concurrent mutation. TTL reaper for expired leases. Governance scoped to autonomous agents — never constrains human+AI sessions.",
+      "Multiple agents can work the same project at once without stepping on each other. An HTTP Streamable transport and session manager enforce authority leases, and fencing tokens prevent concurrent mutation of the same artifact. Governance applies only to autonomous agents — it never constrains a human+AI session.",
   },
 ]
 

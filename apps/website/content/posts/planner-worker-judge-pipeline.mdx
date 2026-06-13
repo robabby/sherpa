@@ -1,0 +1,63 @@
+---
+title: "How a one-person team ships with a Planner/Worker/Judge pipeline"
+description: "Splitting agentic work into three roles — one that plans, one that executes, one that refuses to rubber-stamp — is how I get review discipline without a second engineer."
+date: 2026-06-13
+published: true
+topic: agentic-workflows
+tags: ["agentic-workflows", "dispatch", "code-review", "planner-worker-judge"]
+author: Rob Abby
+slug: planner-worker-judge-pipeline
+---
+
+I build Sherpa alone. The thing I miss most from working on a team isn't the extra hands — agents can supply those. It's the second pair of eyes. The reviewer who reads your diff and says "this is wrong, and here's why."
+
+So I built that reviewer into the pipeline. Work moves through three roles: a **Planner** that breaks an initiative into tasks, a **Worker** that executes one task headlessly, and a **Judge** that reviews the result against the acceptance criteria and is built to say no. The point isn't to replace a teammate with one big autonomous agent. It's to get the *discipline* a team gives you — planning, execution, and independent review as separate steps — when there's only one of you.
+
+## Why three roles instead of one agent
+
+A single agent that plans, codes, and grades its own work has an obvious problem: it grades its own work. It will tell you the task is done because finishing is what it was asked to do. The interesting failures — half-met criteria, an exit code of 0 on a deliverable that never materialized — are exactly the ones a self-assessing agent waves through.
+
+Separating the roles forces a handoff at each boundary. The Worker produces an artifact. The Judge evaluates that artifact cold, against criteria it didn't write, with the actual diff in front of it. That separation is the whole point — it's the structure that makes the review mean something.
+
+## The Planner: initiatives become tasks
+
+Planning starts from an approved initiative, not a vague prompt. A `/plan-tasks` skill turns the initiative's plan into discrete task files, each with a task type, a target backend, and — the part that matters — explicit acceptance criteria. The criteria are what the Judge will grade against later, so writing them is the real work of planning.
+
+This is also where routing gets decided. Each task carries a task type (`code-implementation`, `code-review`, `research`, `audit`, and a few others). The pipeline maps the type to one of nine dispatch backends — five CLI agents, three API backends, and one remote gateway — so a research task and a code task don't have to run on the same model.
+
+## The Worker: one task, headless, logged
+
+`scripts/worker.sh` is the Worker. Hand it a task slug and it reads the task file, resolves which backend and model to use, runs guard-rail checks, then delegates to the backend and records what happened. Every run emits an NDJSON event stream — `worker_started`, `status_changed`, `backend_delegating` — and the task moves `pending → dispatched → completed` (or `failed`). The board never shows a status that didn't come from an event.
+
+Two guard rails run before any backend is touched, and both encode lessons I'd rather not relearn:
+
+- **Governance files force the Claude backend.** Anything that touches `CLAUDE.md`, `.claude/`, or `docs/agents/roles/` routes to Claude regardless of the task's normal routing. These files steer every other agent; I don't want them edited by whichever model happened to be cheapest that night.
+- **Some task types can't run overnight.** `code-implementation` and `architect` tasks are blocked in overnight mode. They need interactive oversight, and the guard rail refuses to dispatch them unattended rather than trusting me to remember.
+
+## The Judge: built to default to "no"
+
+The Judge is `scripts/auto-judge.sh`. It gathers the Worker's report plus the git diff (truncated to 500 lines), and asks a review model to evaluate each acceptance criterion as met, partially met, or unmet — with evidence — then render a structured verdict: `approved`, `needs-changes`, or `rejected`.
+
+What makes it a Judge and not a cheerleader is its role definition. Sherpa defines agent roles by behavioral constraints — what the agent *does* — not identity claims like "you are a senior reviewer." (That choice is research-backed: identity prompts produce largely random effects, per Zheng et al., EMNLP 2024.) The Judge role's disposition is one line:
+
+> skeptical — defaults to NEEDS WORK, requires evidence for every criterion marked "met"
+
+And its fail triggers are explicit. Any "no issues found" without citing the files checked, any "production ready" on a first submission, any claim that doesn't match the diff — each one flips the verdict. The Judge starts from distrust and makes the Worker earn approval. There are eleven other roles defined the same way, each scoped to the task types it can take.
+
+## What it looks like when it works
+
+The most convincing test I've run was pointing the pipeline at itself: I dispatched a code review of `worker.sh` — the Worker script — to an agent.
+
+It came back NEEDS WORK, with two genuine bugs I hadn't seen. The duration calculation used `date -j`, BSD syntax that doesn't exist on the Linux containers the script actually runs in; it was silently producing wrong numbers. And a `|| true` in the routing branch was swallowing route-resolution errors, so a misconfigured task could dispatch to the wrong model with no signal.
+
+Here's the part that sold me. One of my own dispatch logs had recorded a mission's duration as `durationSeconds: -24827` — a negative runtime. That nonsense number was the date bug, sitting in my logs the whole time, and the review caught the cause from reading the code. A self-grading agent would have reported "review complete, no blocking issues." The Judge structure is what turned "I read it" into "here are two bugs and the evidence."
+
+## What's still hard
+
+I don't want to oversell this. Three honest limits:
+
+- **Exit code 0 is not success.** Early on, a mission to open my first agent-authored PR exited cleanly and the board marked it completed in under two minutes — but the PR was never created (the agent could push over SSH but had no GitHub API token). Process success and task success are different things. The Judge has to read the *deliverable*, never the exit code.
+- **The Judge is only as good as the criteria.** Vague acceptance criteria produce vague verdicts. The discipline the pipeline enforces is real, but it's enforcing whatever the Planner wrote down.
+- **It's not hands-off.** Guard rails block the riskiest work from running unattended on purpose. This is a pipeline for shipping *with* review, not for walking away.
+
+That's the trade I want. Not an autonomous coder I have to trust blindly — a planning, execution, and review loop that behaves like a small team with good habits, run by one person.
