@@ -1,12 +1,12 @@
 ---
 type: ux-guide
-updated: 2026-03-14
-version: 0.1
+updated: 2026-06-13
+version: 0.2
 ---
 
 # Personas
 
-Three Jobs-to-Be-Done personas. No demographics — just situations, needs, and decision patterns. Common thread: people who value competence over performance.
+Four Jobs-to-Be-Done personas. No demographics — just situations, needs, and decision patterns. Common thread: people who value competence over performance. The first three are the consulting-adoption funnel; the fourth, the Evaluating Hiring Manager, sits outside it — someone assessing the builder rather than the framework.
 
 ---
 
@@ -73,6 +73,30 @@ Three Jobs-to-Be-Done personas. No demographics — just situations, needs, and 
 **Content that resonates:** Short-form thought leadership grounded in data. Workshop formats they can preview before buying. Anti-hype positioning that matches their own skepticism.
 
 **Path to Sherpa:** Introduced by a Technical Leader with internal credibility. Reads the product positioning. Appreciates that the framework is open source — nothing hidden. Approves consulting engagement because the pitch was honest about scope and limits.
+
+---
+
+## The Evaluating Hiring Manager
+
+| | |
+|---|---|
+| **Type** | Evaluator Persona |
+| **JTBD** | When I'm assessing a candidate's portfolio, help me verify they designed and shipped a real system, so I can advocate for an interview. |
+
+**Time budget:** 3–5 minutes, 2–3 clicks. They are skimming many candidates; the bar is "is this worth a conversation," decided fast.
+
+**Pain points**
+- Most portfolios are tutorials, clones, or landing pages with nothing running behind them.
+- Claims of scale and sophistication are rarely backed by anything inspectable.
+- It's hard to tell, quickly, whether a candidate *designed* a system or just *used* one.
+
+**Evaluation criteria:** Evidence over assertion — something running, a real decision trail, shipped output. Signals of systems thinking (architecture, trade-offs, failure handling) over feature lists. A clear, honest account of what's real and what's still in progress. Numbers that reconcile with what's shown.
+
+**Objections:** "Is this a real system or a demo?" "Did they build the hard parts or wire together libraries?" "Every solo project claims to be production — show me." "Why can't I see the code?"
+
+**Content that resonates:** A screenshot or recording of the system actually running. A case study that walks one real piece of work end to end. Posts that show the thinking and the failures, not just the wins. A direct, human path to contact — name, GitHub, a way to reach out. Honesty about what isn't public yet beats silence.
+
+**Path to Sherpa:** Arrives from a job application, referral, or Rob's profile. Lands on the homepage or framework page with minutes to spend. Converts to "I want to talk to this person" when they see the system governing its own development — not when they read another feature bullet. Leaves via the contact channels or bounces if the "wow" never arrives within their budget.
 
 ---
 
