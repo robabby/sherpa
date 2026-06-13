@@ -6,5 +6,5 @@ export const FRAMEWORK_STATS = {
   "rules": 8,
   "components": 104,
   "studioRoutes": 32,
-  "initiatives": 70
+  "initiatives": 71
 } as const
