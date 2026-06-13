@@ -1,5 +1,5 @@
 ---
-status: pending
+status: integrated
 initiative: website-studio-product
 created: 2026-06-13
 updated: 2026-06-13
@@ -12,8 +12,8 @@ spawned-from: website-studio-product
 
 # Proposal: Add "The Evaluating Hiring Manager" persona
 
-> **Needs Rob's explicit approval before merging into `docs/ux/personas.md`.** This is a
-> shared artifact. The proposal is written; the merge is held pending sign-off (Phase 4, R10).
+> **Approved by Rob 2026-06-13 and integrated into `docs/ux/personas.md`** (version 0.2).
+> The persona was added after "The Honest Executive"; the intro count was bumped to four.
 
 ## Summary
 
