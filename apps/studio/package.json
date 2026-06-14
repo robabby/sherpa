@@ -3,6 +3,26 @@
   "version": "2026.3.13",
   "private": true,
   "type": "module",
+  "description": "Sherpa Studio — Next.js application that visualizes agentic Human+AI governance workflows.",
+  "keywords": [
+    "sherpa",
+    "studio",
+    "nextjs",
+    "agentic",
+    "governance"
+  ],
+  "homepage": "https://sherpa.solar",
+  "bugs": "https://github.com/robabby/sherpa/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robabby/sherpa.git",
+    "directory": "apps/studio"
+  },
+  "license": "MIT",
+  "author": "Sherpa Consulting (https://sherpa.solar)",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",

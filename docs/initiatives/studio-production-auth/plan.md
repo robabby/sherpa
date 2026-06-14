@@ -1247,13 +1247,13 @@ If any CAA records exist, ensure `letsencrypt.org` is allowed. If no records, pr
 **Step 2: Add A record in Vercel DNS**
 
 ```bash
-vercel dns add sherpa.solar studio A 5.78.128.178
+vercel dns add sherpa.solar studio A <VPS_IP>
 ```
 
 Or via Vercel dashboard: Domains → sherpa.solar → DNS Records → Add A record:
 - Name: `studio`
 - Type: `A`
-- Value: `5.78.128.178`
+- Value: `<VPS_IP>`
 
 **Step 3: Verify DNS propagation**
 
@@ -1261,7 +1261,7 @@ Or via Vercel dashboard: Domains → sherpa.solar → DNS Records → Add A reco
 dig studio.sherpa.solar +short
 ```
 
-Expected: `5.78.128.178`. May take up to 5 minutes.
+Expected: `<VPS_IP>`. May take up to 5 minutes.
 
 ---
 
@@ -1270,7 +1270,7 @@ Expected: `5.78.128.178`. May take up to 5 minutes.
 **Step 1: Install Caddy**
 
 ```bash
-ssh sherpa-hetzner 'apt install -y debian-keyring debian-archive-keyring apt-transport-https curl && \
+ssh <SSH_HOST> 'apt install -y debian-keyring debian-archive-keyring apt-transport-https curl && \
   curl -1sLf "https://dl.cloudsmith.io/public/caddy/stable/gpg.key" | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && \
   curl -1sLf "https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt" | tee /etc/apt/sources.list.d/caddy-stable.list && \
   apt update && apt install -y caddy'
@@ -1279,7 +1279,7 @@ ssh sherpa-hetzner 'apt install -y debian-keyring debian-archive-keyring apt-tra
 **Step 2: Configure Caddyfile**
 
 ```bash
-ssh sherpa-hetzner 'cat > /etc/caddy/Caddyfile << '\''EOF'\''
+ssh <SSH_HOST> 'cat > /etc/caddy/Caddyfile << '\''EOF'\''
 studio.sherpa.solar {
     # Studio app
     reverse_proxy localhost:3000
@@ -1298,7 +1298,7 @@ EOF'
 **Step 3: Open HTTP/HTTPS ports and restart Caddy**
 
 ```bash
-ssh sherpa-hetzner 'ufw allow 80/tcp && ufw allow 443/tcp && systemctl restart caddy && systemctl status caddy'
+ssh <SSH_HOST> 'ufw allow 80/tcp && ufw allow 443/tcp && systemctl restart caddy && systemctl status caddy'
 ```
 
 **Step 4: Verify TLS**
@@ -1318,8 +1318,8 @@ Expected: HTTP 302 redirect to `/auth/sign-in` with valid TLS certificate.
 The local `.env.production` (gitignored) already has the auth secret and URLs. Push it:
 
 ```bash
-scp .env.production sherpa-hetzner:/root/sherpa/.env.production
-ssh sherpa-hetzner 'chmod 600 /root/sherpa/.env.production'
+scp .env.production <SSH_HOST>:/root/sherpa/.env.production
+ssh <SSH_HOST> 'chmod 600 /root/sherpa/.env.production'
 ```
 
 **Step 2: Add EnvironmentFile to both systemd services**
@@ -1327,19 +1327,19 @@ ssh sherpa-hetzner 'chmod 600 /root/sherpa/.env.production'
 Currently the services use inline `Environment=` directives only. Add the shared env file:
 
 ```bash
-ssh sherpa-hetzner 'sed -i "/\[Service\]/a EnvironmentFile=/root/sherpa/.env.production" /etc/systemd/system/sherpa-studio.service /etc/systemd/system/sherpa-mcp.service && systemctl daemon-reload'
+ssh <SSH_HOST> 'sed -i "/\[Service\]/a EnvironmentFile=/root/sherpa/.env.production" /etc/systemd/system/sherpa-studio.service /etc/systemd/system/sherpa-mcp.service && systemctl daemon-reload'
 ```
 
 **Step 3: Restart services**
 
 ```bash
-ssh sherpa-hetzner 'systemctl restart sherpa-studio sherpa-mcp'
+ssh <SSH_HOST> 'systemctl restart sherpa-studio sherpa-mcp'
 ```
 
 **Step 3: Seed admin user on VPS**
 
 ```bash
-ssh sherpa-hetzner 'cd /root/sherpa && source .env.production && pnpm exec tsx scripts/seed-auth-user.ts --email "$AUTH_ADMIN_EMAIL" --password "$AUTH_ADMIN_PASSWORD" --name Rob'
+ssh <SSH_HOST> 'cd /root/sherpa && source .env.production && pnpm exec tsx scripts/seed-auth-user.ts --email "$AUTH_ADMIN_EMAIL" --password "$AUTH_ADMIN_PASSWORD" --name Rob'
 ```
 
 Note: `AUTH_ADMIN_EMAIL` is in `.env.production`. Pass `AUTH_ADMIN_PASSWORD` at the command line (never stored in files).
@@ -1347,7 +1347,7 @@ Note: `AUTH_ADMIN_EMAIL` is in `.env.production`. Pass `AUTH_ADMIN_PASSWORD` at 
 **Step 4: Generate Luna's API key on VPS**
 
 ```bash
-ssh sherpa-hetzner 'cd /root/sherpa && source .env.production && pnpm exec tsx scripts/generate-api-key.ts --email "$AUTH_ADMIN_EMAIL" --name Luna'
+ssh <SSH_HOST> 'cd /root/sherpa && source .env.production && pnpm exec tsx scripts/generate-api-key.ts --email "$AUTH_ADMIN_EMAIL" --name Luna'
 ```
 
 Store the returned key in Luna's OpenClaw environment.
@@ -1359,14 +1359,14 @@ Store the returned key in Luna's OpenClaw environment.
 **Step 1: Install CrowdSec engine**
 
 ```bash
-ssh sherpa-hetzner 'curl -s https://install.crowdsec.net | bash && \
+ssh <SSH_HOST> 'curl -s https://install.crowdsec.net | bash && \
   apt install -y crowdsec crowdsec-firewall-bouncer-iptables'
 ```
 
 **Step 2: Set memory limit**
 
 ```bash
-ssh sherpa-hetzner 'mkdir -p /etc/systemd/system/crowdsec.service.d && \
+ssh <SSH_HOST> 'mkdir -p /etc/systemd/system/crowdsec.service.d && \
   echo -e "[Service]\nMemoryMax=512M" > /etc/systemd/system/crowdsec.service.d/memory.conf && \
   systemctl daemon-reload && systemctl restart crowdsec'
 ```
@@ -1374,7 +1374,7 @@ ssh sherpa-hetzner 'mkdir -p /etc/systemd/system/crowdsec.service.d && \
 **Step 3: Verify CrowdSec is running**
 
 ```bash
-ssh sherpa-hetzner 'cscli metrics'
+ssh <SSH_HOST> 'cscli metrics'
 ```
 
 Expected: Shows acquisition metrics and parsed log lines.
@@ -1386,7 +1386,7 @@ Expected: Shows acquisition metrics and parsed log lines.
 **Step 1: Install and run Lynis**
 
 ```bash
-ssh sherpa-hetzner 'apt install -y lynis && lynis audit system --quick'
+ssh <SSH_HOST> 'apt install -y lynis && lynis audit system --quick'
 ```
 
 **Step 2: Review findings**
@@ -1407,7 +1407,7 @@ Common fixes:
 **Step 1: Review current UFW rules**
 
 ```bash
-ssh sherpa-hetzner 'ufw status verbose'
+ssh <SSH_HOST> 'ufw status verbose'
 ```
 
 **Step 2: Verify OpenClaw gateway is NOT exposed on public IP**
@@ -1416,12 +1416,12 @@ The OpenClaw gateway (port 18790) should only be reachable via Tailscale. Verify
 
 ```bash
 # From your local machine (not on Tailscale):
-curl -m 5 http://5.78.128.178:18790
+curl -m 5 http://<VPS_IP>:18790
 ```
 
 Expected: Connection timeout or refused. If accessible, add UFW rule:
 ```bash
-ssh sherpa-hetzner 'ufw deny 18790/tcp'
+ssh <SSH_HOST> 'ufw deny 18790/tcp'
 ```
 
 **Step 3: Close any stale ports**

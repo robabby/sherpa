@@ -3,6 +3,26 @@
   "version": "2026.3.13",
   "private": true,
   "type": "module",
+  "description": "sherpa.solar — the Sherpa Studio product site and Fumadocs documentation.",
+  "keywords": [
+    "sherpa",
+    "website",
+    "nextjs",
+    "fumadocs",
+    "documentation"
+  ],
+  "homepage": "https://sherpa.solar",
+  "bugs": "https://github.com/robabby/sherpa/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robabby/sherpa.git",
+    "directory": "apps/website"
+  },
+  "license": "MIT",
+  "author": "Sherpa Consulting (https://sherpa.solar)",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "postinstall": "fumadocs-mdx",
     "generate-docs": "tsx scripts/generate-reference-docs.ts",

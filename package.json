@@ -3,6 +3,27 @@
   "version": "2026.3.13",
   "private": true,
   "type": "module",
+  "description": "Behavioral agentic collaboration framework — filesystem-based governance, behavioral agent definitions, and a Planner/Worker/Judge dispatch pipeline for Human+AI development workflows.",
+  "keywords": [
+    "ai-agents",
+    "agentic-workflows",
+    "governance",
+    "human-in-the-loop",
+    "mcp",
+    "developer-tools",
+    "monorepo"
+  ],
+  "homepage": "https://sherpa.solar",
+  "bugs": "https://github.com/robabby/sherpa/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robabby/sherpa.git"
+  },
+  "license": "MIT",
+  "author": "Sherpa Consulting (https://sherpa.solar)",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "concurrently --names mcp,studio --prefix-colors blue,green \"pnpm mcp\" \"pnpm --filter @sherpa/studio-app dev\"",
     "dev:studio": "pnpm --filter @sherpa/studio-app dev",

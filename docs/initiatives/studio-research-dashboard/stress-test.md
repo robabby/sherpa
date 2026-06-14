@@ -134,7 +134,7 @@ Note: the sister function `extractOpenQuestions()` at line 165 handles multi-lin
 
 **Suggested test:** SSH to VPS and verify:
 ```bash
-ssh sherpa-hetzner "ls -la /root/sherpa/.sherpa/research/RESEARCH_STATE.md /root/sherpa/.sherpa/research/PRIORITIES.md"
+ssh <SSH_HOST> "ls -la /root/sherpa/.sherpa/research/RESEARCH_STATE.md /root/sherpa/.sherpa/research/PRIORITIES.md"
 ```
 
 **Why human:** Files live on VPS, not locally. Need to confirm exact filenames and paths.
@@ -143,8 +143,8 @@ ssh sherpa-hetzner "ls -la /root/sherpa/.sherpa/research/RESEARCH_STATE.md /root
 
 **Suggested test:** SSH to VPS and check section headings:
 ```bash
-ssh sherpa-hetzner "grep '^## ' /root/sherpa/.sherpa/research/RESEARCH_STATE.md"
-ssh sherpa-hetzner "grep '^## ' /root/sherpa/.sherpa/research/PRIORITIES.md"
+ssh <SSH_HOST> "grep '^## ' /root/sherpa/.sherpa/research/RESEARCH_STATE.md"
+ssh <SSH_HOST> "grep '^## ' /root/sherpa/.sherpa/research/PRIORITIES.md"
 ```
 
 Expected headings in RESEARCH_STATE.md: `## Last Updated`, `## Coverage Map`, `## Dangling Threads`, `## Research Queue`, `## Notes for Future Me`.

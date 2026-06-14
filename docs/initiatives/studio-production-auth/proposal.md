@@ -39,7 +39,7 @@ Add authentication to the production Sherpa Studio instance and MCP server runni
 
 **MCP server** (`packages/studio-mcp/src/http-server.ts`, 142 lines) — HTTP server accepting any POST to `/mcp`. Sessions tracked by `mcp-session-id` header (randomUUID), no identity association. Health check at `/health` unauthenticated. Authority system constrains what agents do, not who connects.
 
-**VPS** (`5.78.128.178`, CPX31 8GB) — UFW (SSH/HTTP/HTTPS + Docker bridge), fail2ban (SSH), Tailscale mesh. Studio at port 3000, MCP at port 3100, OpenClaw gateway at 18790. No reverse proxy, no public TLS certificate, no intrusion detection beyond fail2ban.
+**VPS** (`<VPS_IP>`, CPX31 8GB) — UFW (SSH/HTTP/HTTPS + Docker bridge), fail2ban (SSH), Tailscale mesh. Studio at port 3000, MCP at port 3100, OpenClaw gateway at 18790. No reverse proxy, no public TLS certificate, no intrusion detection beyond fail2ban.
 
 **WavePoint auth** (`../wavepoint/apps/web/src/lib/supabase/`) — Production Supabase Auth with `@supabase/ssr` v0.8 + `@supabase/supabase-js` v2.95. Evaluated and passed over in favor of Better Auth (see ADR 0012). Key patterns that transfer: middleware-based route protection, dual auth paths (session + API key), `getUser()` with request-scoped caching.
 
@@ -84,7 +84,7 @@ Better Auth integration with the Studio Next.js app:
 
 Deploy Studio at `studio.sherpa.solar`:
 
-- **DNS via Vercel** — `sherpa.solar` domain DNS is managed in Vercel's domain settings. Add an A record for `studio.sherpa.solar` pointing to the VPS public IP (`5.78.128.178`). Vercel handles DNS resolution; the VPS handles all traffic for the subdomain. The marketing site (`sherpa.solar`) stays on Vercel's infrastructure.
+- **DNS via Vercel** — `sherpa.solar` domain DNS is managed in Vercel's domain settings. Add an A record for `studio.sherpa.solar` pointing to the VPS public IP (`<VPS_IP>`). Vercel handles DNS resolution; the VPS handles all traffic for the subdomain. The marketing site (`sherpa.solar`) stays on Vercel's infrastructure.
 - **Caddy** as reverse proxy on VPS — automatic Let's Encrypt TLS, simpler config than Nginx for this use case. Proxies `studio.sherpa.solar:443` → `localhost:3000` and routes MCP traffic to `localhost:3100`. Caddy handles the ACME challenge against the public DNS record.
 - Configure Better Auth with `studio.sherpa.solar` as the base URL for auth callbacks and cookie domain.
 - Tailscale access remains as internal/fallback path (agents on the tailnet can still use the `.ts.net` URL).

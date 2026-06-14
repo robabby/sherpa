@@ -3,6 +3,26 @@
   "version": "2026.3.13",
   "private": true,
   "type": "module",
+  "description": "React component library for Sherpa Studio — governance and agentic-workflow UX.",
+  "keywords": [
+    "sherpa",
+    "react",
+    "ui-components",
+    "design-system",
+    "agentic"
+  ],
+  "homepage": "https://sherpa.solar",
+  "bugs": "https://github.com/robabby/sherpa/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robabby/sherpa.git",
+    "directory": "packages/studio-ui"
+  },
+  "license": "MIT",
+  "author": "Sherpa Consulting (https://sherpa.solar)",
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./*": "./src/*.tsx",

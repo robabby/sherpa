@@ -58,7 +58,7 @@ Generate Luna's API key via the admin API or a setup script. Store the key in Lu
 
 ### Layer 3: Public URL + Hardening (Session 4)
 
-- Add DNS A record for `studio.sherpa.solar` → `5.78.128.178` in Vercel's domain settings
+- Add DNS A record for `studio.sherpa.solar` → `<VPS_IP>` in Vercel's domain settings
 - Install Caddy on VPS, configure reverse proxy: `studio.sherpa.solar` → `localhost:3000`, with a `/mcp` route to `localhost:3100`
 - Update Better Auth base URL to `https://studio.sherpa.solar`
 - Install CrowdSec with default scenarios

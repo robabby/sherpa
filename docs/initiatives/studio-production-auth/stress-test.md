@@ -87,7 +87,7 @@ human-required: 1
 **Evidence:**
 - Vercel KB article ["How do I point a subdomain to a service outside of Vercel?"](https://vercel.com/kb/guide/pointing-subdomains-to-external-services) documents exactly this use case
 - REST API schema: A record value is `format: ipv4` — any valid IPv4 accepted, no Vercel IP restriction
-- CLI command: `vercel dns add sherpa.solar studio A 5.78.128.178`
+- CLI command: `vercel dns add sherpa.solar studio A <VPS_IP>`
 - Vercel DNS is pure DNS (no proxy layer like Cloudflare) — traffic goes directly to VPS
 
 **Important caveat: TLS is our responsibility.** Vercel only auto-provisions certificates for domains resolving to Vercel infrastructure. Caddy on the VPS must handle Let's Encrypt for `studio.sherpa.solar`.
