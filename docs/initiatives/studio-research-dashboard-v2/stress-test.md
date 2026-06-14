@@ -159,7 +159,7 @@ The `formatDate()` function (line 17) exists in the file but is only used for `R
 
 **Suggested test:**
 ```bash
-ssh sherpa-hetzner "grep -A 20 '## Coverage Map' /root/sherpa/.sherpa/research/RESEARCH_STATE.md"
+ssh <SSH_HOST> "grep -A 20 '## Coverage Map' /root/sherpa/.sherpa/research/RESEARCH_STATE.md"
 ```
 
 **Why human:** The file lives on the VPS, not in the local repo. Need to confirm the exact date format used in the coverage map table rows (expected: ISO `YYYY-MM-DD`, but could be any text format Luna writes).

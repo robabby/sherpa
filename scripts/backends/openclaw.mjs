@@ -48,7 +48,7 @@ try {
 
 const GATEWAY_URL =
   process.env.OPENCLAW_GATEWAY_URL ||
-  "wss://sherpa-ubuntu-4gb-hil-1.tail384b2.ts.net:18790";
+  "wss://gateway.example.com:18790"; // example fallback — set OPENCLAW_GATEWAY_URL for real use
 const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || "";
 const SESSION_ID = process.env.OPENCLAW_SESSION_ID || "sherpa-dispatch";
 

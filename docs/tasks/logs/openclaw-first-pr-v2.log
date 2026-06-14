@@ -1,7 +1,7 @@
 # Worker Output
 
 **Backend:** openclaw (protocol v3)
-**Gateway:** wss://sherpa-ubuntu-4gb-hil-1.tail384b2.ts.net:18790
+**Gateway:** wss://<VPS_HOSTNAME>.<TAILNET_ID>.ts.net:18790
 **Session:** sherpa-dispatch
 **Duration:** 445.7s
 

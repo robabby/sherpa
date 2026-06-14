@@ -233,12 +233,12 @@ git commit -m "feat: add blue-green deploy script for Studio"
 
 ### Task 3: VPS — Create deploy directory structure
 
-**Requires:** SSH access to VPS (`ssh sherpa-hetzner`)
+**Requires:** SSH access to VPS (`ssh <SSH_HOST>`)
 
 **Step 1: Create directories and state file**
 
 ```bash
-ssh sherpa-hetzner << 'EOF'
+ssh <SSH_HOST> << 'EOF'
 mkdir -p /opt/sherpa/blue /opt/sherpa/green
 echo "blue" > /opt/sherpa/active
 EOF
@@ -247,7 +247,7 @@ EOF
 **Step 2: Create per-slot environment files**
 
 ```bash
-ssh sherpa-hetzner << 'EOF'
+ssh <SSH_HOST> << 'EOF'
 cat > /opt/sherpa/blue.env << 'SLOT'
 PORT=3000
 SLOT
@@ -261,7 +261,7 @@ EOF
 **Step 3: Create initial Caddy upstream snippet**
 
 ```bash
-ssh sherpa-hetzner << 'EOF'
+ssh <SSH_HOST> << 'EOF'
 echo "reverse_proxy localhost:3000" > /opt/sherpa/studio-upstream.caddy
 EOF
 ```
@@ -269,7 +269,7 @@ EOF
 **Step 4: Verify**
 
 ```bash
-ssh sherpa-hetzner "ls -la /opt/sherpa/ && cat /opt/sherpa/active && cat /opt/sherpa/blue.env && cat /opt/sherpa/green.env && cat /opt/sherpa/studio-upstream.caddy"
+ssh <SSH_HOST> "ls -la /opt/sherpa/ && cat /opt/sherpa/active && cat /opt/sherpa/blue.env && cat /opt/sherpa/green.env && cat /opt/sherpa/studio-upstream.caddy"
 ```
 
 Expected:
@@ -287,7 +287,7 @@ reverse_proxy localhost:3000
 **Step 1: Write the template unit**
 
 ```bash
-ssh sherpa-hetzner << 'REMOTE'
+ssh <SSH_HOST> << 'REMOTE'
 cat > /etc/systemd/system/sherpa-studio@.service << 'EOF'
 [Unit]
 Description=Sherpa Studio (%i slot)
@@ -315,7 +315,7 @@ REMOTE
 **Step 2: Verify template is recognized**
 
 ```bash
-ssh sherpa-hetzner "systemctl cat sherpa-studio@blue"
+ssh <SSH_HOST> "systemctl cat sherpa-studio@blue"
 ```
 
 Expected: Shows the unit file contents with `%i` replaced by `blue`.
@@ -323,7 +323,7 @@ Expected: Shows the unit file contents with `%i` replaced by `blue`.
 **Step 3: Disable the old non-templated service**
 
 ```bash
-ssh sherpa-hetzner << 'EOF'
+ssh <SSH_HOST> << 'EOF'
 systemctl stop sherpa-studio 2>/dev/null || true
 systemctl disable sherpa-studio 2>/dev/null || true
 EOF
@@ -338,7 +338,7 @@ Note: The old service may have a different name. Check with `systemctl list-unit
 **Step 1: Replace the hardcoded Studio upstream with an import**
 
 ```bash
-ssh sherpa-hetzner << 'REMOTE'
+ssh <SSH_HOST> << 'REMOTE'
 cat > /etc/caddy/Caddyfile << 'EOF'
 studio.sherpa.solar {
     @mcp_protocol {
@@ -362,7 +362,7 @@ REMOTE
 **Step 2: Validate Caddy config**
 
 ```bash
-ssh sherpa-hetzner "caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile"
+ssh <SSH_HOST> "caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile"
 ```
 
 Expected: `Valid configuration`
@@ -370,7 +370,7 @@ Expected: `Valid configuration`
 **Step 3: Reload Caddy**
 
 ```bash
-ssh sherpa-hetzner "systemctl reload caddy"
+ssh <SSH_HOST> "systemctl reload caddy"
 ```
 
 **Step 4: Verify Studio is still accessible**
@@ -403,7 +403,7 @@ This makes the changes available on the VPS via `git pull`.
 **Step 1: SSH in and pull the deploy script**
 
 ```bash
-ssh sherpa-hetzner << 'EOF'
+ssh <SSH_HOST> << 'EOF'
 cd /root/sherpa
 git pull --ff-only
 EOF
@@ -412,7 +412,7 @@ EOF
 **Step 2: Run the deploy script**
 
 ```bash
-ssh sherpa-hetzner "/root/sherpa/scripts/deploy.sh"
+ssh <SSH_HOST> "/root/sherpa/scripts/deploy.sh"
 ```
 
 Expected output (approximate):
@@ -436,7 +436,7 @@ Expected output (approximate):
 If the deploy fails because `apps/studio/server.js` doesn't exist in the standalone output, find the correct path:
 
 ```bash
-ssh sherpa-hetzner "find /opt/sherpa/green -name server.js -type f"
+ssh <SSH_HOST> "find /opt/sherpa/green -name server.js -type f"
 ```
 
 Then update the `ExecStart` path in the systemd template (Task 4) and the `WorkingDirectory` if needed. Run `systemctl daemon-reload` and retry.
@@ -444,7 +444,7 @@ Then update the `ExecStart` path in the systemd template (Task 4) and the `Worki
 **Step 4: Verify active slot**
 
 ```bash
-ssh sherpa-hetzner "cat /opt/sherpa/active"
+ssh <SSH_HOST> "cat /opt/sherpa/active"
 ```
 
 Expected: `green`
@@ -476,7 +476,7 @@ done
 In another terminal, trigger a deploy:
 
 ```bash
-ssh sherpa-hetzner "/root/sherpa/scripts/deploy.sh --skip-build"
+ssh <SSH_HOST> "/root/sherpa/scripts/deploy.sh --skip-build"
 ```
 
 Expected: The request loop shows uninterrupted `200` responses throughout the deploy. The `--skip-build` flag skips `git pull` and `pnpm build`, using the existing standalone output — this isolates the swap mechanism from build time.
@@ -484,7 +484,7 @@ Expected: The request loop shows uninterrupted `200` responses throughout the de
 **Step 3: Verify slot swapped back**
 
 ```bash
-ssh sherpa-hetzner "cat /opt/sherpa/active"
+ssh <SSH_HOST> "cat /opt/sherpa/active"
 ```
 
 Expected: `blue` (swapped back from green)
@@ -496,7 +496,7 @@ Expected: `blue` (swapped back from green)
 **Step 1: Roll back to the previous slot**
 
 ```bash
-ssh sherpa-hetzner "/root/sherpa/scripts/deploy.sh --rollback"
+ssh <SSH_HOST> "/root/sherpa/scripts/deploy.sh --rollback"
 ```
 
 Expected:
@@ -509,7 +509,7 @@ Expected:
 **Step 2: Verify**
 
 ```bash
-ssh sherpa-hetzner "cat /opt/sherpa/active"
+ssh <SSH_HOST> "cat /opt/sherpa/active"
 curl -sf https://studio.sherpa.solar > /dev/null && echo "OK" || echo "FAIL"
 ```
 
@@ -522,7 +522,7 @@ Expected: `green`, `OK`
 **Step 1: Check current cron**
 
 ```bash
-ssh sherpa-hetzner "crontab -l"
+ssh <SSH_HOST> "crontab -l"
 ```
 
 Find the line that runs `sherpa-sync.sh` or equivalent.
@@ -530,13 +530,13 @@ Find the line that runs `sherpa-sync.sh` or equivalent.
 **Step 2: Replace with deploy script**
 
 ```bash
-ssh sherpa-hetzner "crontab -l | sed 's|.*sherpa-sync.*|*/15 * * * * /root/sherpa/scripts/deploy.sh >> /var/log/sherpa-deploy.log 2>\&1|' | crontab -"
+ssh <SSH_HOST> "crontab -l | sed 's|.*sherpa-sync.*|*/15 * * * * /root/sherpa/scripts/deploy.sh >> /var/log/sherpa-deploy.log 2>\&1|' | crontab -"
 ```
 
 If the cron entry doesn't match, manually edit:
 
 ```bash
-ssh sherpa-hetzner "crontab -e"
+ssh <SSH_HOST> "crontab -e"
 ```
 
 Replace the sync line with:
@@ -547,7 +547,7 @@ Replace the sync line with:
 **Step 3: Verify**
 
 ```bash
-ssh sherpa-hetzner "crontab -l | grep deploy"
+ssh <SSH_HOST> "crontab -l | grep deploy"
 ```
 
 Expected: The deploy script runs every 15 minutes, logging to `/var/log/sherpa-deploy.log`.

@@ -278,7 +278,7 @@ packages/studio-mcp/src/index.ts                   # Re-export auth module
 ### Session 4: Domain + Security (VPS config, not codebase files)
 
 ```
-Vercel DNS: A record studio.sherpa.solar → 5.78.128.178
+Vercel DNS: A record studio.sherpa.solar → <VPS_IP>
 VPS /etc/caddy/Caddyfile                           # Reverse proxy config
 VPS CrowdSec install + default scenarios
 VPS Lynis scan + remediation

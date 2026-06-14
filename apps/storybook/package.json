@@ -3,6 +3,25 @@
   "version": "2026.3.13",
   "private": true,
   "type": "module",
+  "description": "Storybook workspace for Sherpa Studio UI components.",
+  "keywords": [
+    "sherpa",
+    "storybook",
+    "ui",
+    "components"
+  ],
+  "homepage": "https://sherpa.solar",
+  "bugs": "https://github.com/robabby/sherpa/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robabby/sherpa.git",
+    "directory": "apps/storybook"
+  },
+  "license": "MIT",
+  "author": "Sherpa Consulting (https://sherpa.solar)",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "storybook dev -p 6006",
     "build": "storybook build"

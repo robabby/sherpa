@@ -913,7 +913,7 @@ Create a new application:
 - Redirect URI: `http://localhost:3000/api/linear/callback` (dev)
 - Scopes: `read`, `write`, `app:assignable`, `app:mentionable`
 - Actor type: Application (for bot identity)
-- Webhook URL: `https://sherpa-hetzner:3000/api/linear/webhook` (production on VPS)
+- Webhook URL: `https://<SSH_HOST>:3000/api/linear/webhook` (production on VPS)
 
 **Step 2: Save credentials**
 

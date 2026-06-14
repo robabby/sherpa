@@ -3,6 +3,26 @@
   "version": "2026.3.13",
   "private": true,
   "type": "module",
+  "description": "Sherpa convention-sync CLI — `sherpa init` and `sherpa sync` with three-way merge and provenance tracking.",
+  "keywords": [
+    "sherpa",
+    "cli",
+    "conventions",
+    "developer-tools",
+    "codegen"
+  ],
+  "homepage": "https://sherpa.solar",
+  "bugs": "https://github.com/robabby/sherpa/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robabby/sherpa.git",
+    "directory": "packages/studio-cli"
+  },
+  "license": "MIT",
+  "author": "Sherpa Consulting (https://sherpa.solar)",
+  "engines": {
+    "node": ">=22"
+  },
   "bin": {
     "sherpa": "./src/index.ts"
   },
