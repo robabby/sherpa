@@ -19,6 +19,23 @@ const LEGACY_ROUTE_PREFIXES = [
   "/research",
 ]
 
+/**
+ * Resolve the public-facing origin of the request.
+ *
+ * Behind a reverse proxy (e.g. Caddy), the Next standalone server's
+ * `request.url` reflects its internal bind address (e.g. localhost:3001), so
+ * absolute redirects built from it leak the internal host to the browser. The
+ * real public origin comes from the forwarded/Host headers: the proxy sets
+ * `x-forwarded-proto` and preserves/sets the host. Falls back to `request.url`
+ * when not proxied.
+ */
+function publicOrigin(request: NextRequest): string {
+  const forwardedHost = request.headers.get("x-forwarded-host") ?? request.headers.get("host")
+  if (!forwardedHost) return new URL(request.url).origin
+  const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "")
+  return `${proto}://${forwardedHost}`
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -34,7 +51,7 @@ export function middleware(request: NextRequest) {
     request.cookies.get("__Secure-better-auth.session_token") ??
     request.cookies.get("better-auth.session_token")
   if (!sessionCookie) {
-    const signInUrl = new URL("/auth/sign-in", request.url)
+    const signInUrl = new URL("/auth/sign-in", publicOrigin(request))
     signInUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(signInUrl)
   }
@@ -44,8 +61,9 @@ export function middleware(request: NextRequest) {
   // or defaults to "sherpa" (the monorepo's own project name).
   if (!pathname.startsWith("/projects") && LEGACY_ROUTE_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
     const primarySlug = process.env.SHERPA_PRIMARY_SLUG ?? "sherpa"
-    const url = request.nextUrl.clone()
+    const url = new URL(publicOrigin(request))
     url.pathname = `/projects/${primarySlug}${pathname}`
+    url.search = request.nextUrl.search
     return NextResponse.redirect(url)
   }
 
