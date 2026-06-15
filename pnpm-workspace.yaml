@@ -1,3 +1,11 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# pnpm 11 build-script approval (replaces the legacy package.json `pnpm.onlyBuiltDependencies`).
+# Only better-sqlite3 needs a native compile; esbuild/msw/sharp ship prebuilt binaries.
+allowBuilds:
+  better-sqlite3: true
+  esbuild: false
+  msw: false
+  sharp: false

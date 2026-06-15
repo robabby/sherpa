@@ -24,6 +24,7 @@
   "engines": {
     "node": ">=22"
   },
+  "packageManager": "pnpm@11.7.0",
   "scripts": {
     "dev": "concurrently --names mcp,studio --prefix-colors blue,green \"pnpm mcp\" \"pnpm --filter @sherpa/studio-app dev\"",
     "dev:studio": "pnpm --filter @sherpa/studio-app dev",
@@ -47,8 +48,5 @@
     "@ai-sdk/groq": "^3.0.29",
     "@ai-sdk/openai-compatible": "^2.0.35",
     "ai": "^6.0.116"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": ["better-sqlite3"]
   }
 }
