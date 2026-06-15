@@ -9,3 +9,11 @@ allowBuilds:
   esbuild: false
   msw: false
   sharp: false
+
+# pnpm 11 hoist settings (relocated from .npmrc — pnpm 11 no longer reads `shamefully-hoist` there).
+# apps/studio imports better-sqlite3/better-auth without declaring them, so hoisting to the root
+# node_modules is what makes them resolvable to the Next/Turbopack build.
+shamefullyHoist: true
+publicHoistPattern:
+  - "*eslint*"
+  - "*prettier*"
