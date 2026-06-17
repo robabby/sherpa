@@ -5,13 +5,26 @@ import matter from "gray-matter"
 import { getDefaultContext } from "./config"
 import type { ProjectContext } from "./config/types"
 import { resolveCtxPath } from "./context"
-import { parseProvenance, computeState } from "./doc-tree-types"
-import { computeDocDrift } from "./doc-drift"
-import type { DocTreeNode, DocTreeSection, Provenance } from "./doc-tree-types"
+import { parseProvenance, computeState, collectStaleDocs } from "./doc-tree-types"
+import { computeDocDrift, buildInitiativeTargetIndex } from "./doc-drift"
+import type {
+  DocTreeNode,
+  DocTreeSection,
+  Provenance,
+  StaleDocsIndex,
+} from "./doc-tree-types"
 
 // Re-export types and pure functions so existing server-side imports still work
-export { parseProvenance, computeState } from "./doc-tree-types"
-export type { ProvenanceState, DocType, Provenance, DocTreeNode, DocTreeSection } from "./doc-tree-types"
+export { parseProvenance, computeState, collectStaleDocs } from "./doc-tree-types"
+export type {
+  ProvenanceState,
+  DocType,
+  Provenance,
+  DocTreeNode,
+  DocTreeSection,
+  StaleDoc,
+  StaleDocsIndex,
+} from "./doc-tree-types"
 
 // ---------------------------------------------------------------------------
 // Single node reading
@@ -184,6 +197,26 @@ export function getDocTree(
   }
 
   return sections
+}
+
+// ---------------------------------------------------------------------------
+// Stale-docs reverse mapping (node-only — composes the git-aware tree)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the reverse mapping (doc -> initiative) of git-aware doc drift: which
+ * initiatives source which "stale" docs, plus the distinct stale-doc list for a
+ * portfolio count. Composes `buildInitiativeTargetIndex` + the drift-folded
+ * `getDocTree` + the pure `collectStaleDocs` walker.
+ *
+ * Node-only (runs git via getDocTree -> computeDocDrift). Call server-side and
+ * pass the result to the client as plain serializable data.
+ */
+export function buildInitiativeStaleDocsIndex(ctx?: ProjectContext): StaleDocsIndex {
+  const c = ctx ?? getDefaultContext()
+  const targetIndex = buildInitiativeTargetIndex(c)
+  const sections = getDocTree(c, { targetIndex })
+  return collectStaleDocs(sections)
 }
 
 // ---------------------------------------------------------------------------

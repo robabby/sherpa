@@ -7,7 +7,13 @@ import "./init"
 export * from "@sherpa/studio-core"
 
 // Re-export fs-dependent doc-tree functions (server-only)
-export { getDocTree, getDocContent, readDocNode, scanDirectory } from "@sherpa/studio-core/doc-tree"
+export {
+  getDocTree,
+  getDocContent,
+  readDocNode,
+  scanDirectory,
+  buildInitiativeStaleDocsIndex,
+} from "@sherpa/studio-core/doc-tree"
 
 // Re-export WavePoint-specific stubs (types + empty functions)
 export * from "./types-extensions"

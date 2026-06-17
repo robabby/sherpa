@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { AlertTriangle } from "lucide-react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ProcessNode } from "@/lib/studio/process-nodes-shared";
+import type { StaleDoc } from "@sherpa/studio-core";
 import { cn } from "./lib/utils";
 
 import { ProcessKindIcon } from "./process-kind-icon";
@@ -16,6 +18,13 @@ interface ProcessItemListProps {
   onSelect: (id: string) => void;
   /** Map of node ID → depth for tree view indentation. Null = flat list. */
   depthMap?: Map<string, number> | null;
+  /** Initiative slug → its stale docs (git-aware drift). Drives the per-row indicator. */
+  staleDocsByInitiative?: Record<string, StaleDoc[]>;
+}
+
+/** A node's initiative slug, if it is an initiative node (id is `initiative/<slug>`). */
+function initiativeSlug(node: ProcessNode): string | null {
+  return node.kind === "initiative" ? node.id.replace(/^initiative\//, "") : null;
 }
 
 function formatDate(dateStr: string): string {
@@ -46,6 +55,7 @@ export function ProcessItemList({
   focusIndex,
   onSelect,
   depthMap,
+  staleDocsByInitiative,
 }: ProcessItemListProps) {
   const itemRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
@@ -74,6 +84,8 @@ export function ProcessItemList({
           const isSelected = node.id === selectedId;
           const isFocused = idx === focusIndex;
           const depth = depthMap?.get(node.id) ?? 0;
+          const slug = initiativeSlug(node);
+          const staleDocCount = slug ? (staleDocsByInitiative?.[slug]?.length ?? 0) : 0;
 
           return (
             <button
@@ -98,7 +110,20 @@ export function ProcessItemList({
                   <span className="truncate text-sm font-medium text-foreground/90">
                     {node.title}
                   </span>
-                  <StatusBadge status={node.status} className="shrink-0 text-[10px]" />
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {staleDocCount > 0 && (
+                      <span
+                        title={`${staleDocCount} maintained ${staleDocCount === 1 ? "doc" : "docs"} possibly stale (related code moved since verified)`}
+                        className="flex items-center gap-0.5 text-rose-400/80"
+                      >
+                        <AlertTriangle className="h-3 w-3" />
+                        <span className="text-[10px] font-medium tabular-nums">
+                          {staleDocCount}
+                        </span>
+                      </span>
+                    )}
+                    <StatusBadge status={node.status} className="text-[10px]" />
+                  </div>
                 </div>
                 <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/40">
                   {node.summary && (

@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest"
-import { computeState } from "../doc-tree-types"
-import type { Provenance, DocDrift } from "../doc-tree-types"
+import { computeState, collectStaleDocs } from "../doc-tree-types"
+import type {
+  Provenance,
+  DocDrift,
+  DocTreeNode,
+  DocTreeSection,
+  ProvenanceState,
+} from "../doc-tree-types"
 import { computeDocDrift } from "../doc-drift"
 
 const base: Provenance = {
@@ -75,5 +81,95 @@ describe("computeDocDrift — not-applicable guards (no git invoked)", () => {
         index,
       ),
     ).toBeNull()
+  })
+})
+
+describe("collectStaleDocs — reverse mapping (doc → initiative)", () => {
+  const drift = (commits: number): DocDrift => ({
+    relatedPaths: ["packages/studio-core/src/x.ts"],
+    commitsSinceVerified: commits,
+    isStale: commits > 0,
+  })
+
+  /** Build a DocTreeNode fixture; stale nodes carry drift, others don't. */
+  const mk = (
+    slug: string,
+    state: ProvenanceState,
+    sourceInitiatives: string[],
+    commits = 3,
+    children: DocTreeNode[] = [],
+  ): DocTreeNode => ({
+    slug,
+    title: `Title ${slug}`,
+    relativePath: `docs/${slug}/index.md`,
+    provenance: { ...base, sourceInitiatives },
+    state,
+    children,
+    lineCount: 42,
+    drift: state === "stale" ? drift(commits) : null,
+  })
+
+  it("collects a stale doc and indexes it under its source initiative", () => {
+    const sections: DocTreeSection[] = [
+      { label: "Architecture", nodes: [mk("a", "stale", ["init-a"], 5)] },
+    ]
+    const { byInitiative, staleDocs } = collectStaleDocs(sections)
+    expect(staleDocs).toHaveLength(1)
+    expect(staleDocs[0]).toMatchObject({
+      slug: "a",
+      title: "Title a",
+      relativePath: "docs/a/index.md",
+      commitsSinceVerified: 5,
+    })
+    expect(byInitiative.get("init-a")).toHaveLength(1)
+    expect(byInitiative.get("init-a")?.[0].slug).toBe("a")
+  })
+
+  it("indexes a two-source doc under both initiatives but counts it once", () => {
+    const sections: DocTreeSection[] = [
+      { label: "Architecture", nodes: [mk("a", "stale", ["init-a", "init-b"])] },
+    ]
+    const { byInitiative, staleDocs } = collectStaleDocs(sections)
+    expect(staleDocs).toHaveLength(1)
+    expect(byInitiative.get("init-a")?.[0].slug).toBe("a")
+    expect(byInitiative.get("init-b")?.[0].slug).toBe("a")
+  })
+
+  it("ignores docs that are not stale", () => {
+    const sections: DocTreeSection[] = [
+      {
+        label: "Architecture",
+        nodes: [
+          mk("v", "verified", ["init-a"]),
+          mk("aw", "awaiting-review", ["init-a"]),
+          mk("h", "human-owned", []),
+        ],
+      },
+    ]
+    const { byInitiative, staleDocs } = collectStaleDocs(sections)
+    expect(staleDocs).toHaveLength(0)
+    expect(byInitiative.size).toBe(0)
+  })
+
+  it("recurses into nested children", () => {
+    const child = mk("parent/child", "stale", ["init-c"], 7)
+    const parent = mk("parent", "verified", ["init-a"], 0, [child])
+    const sections: DocTreeSection[] = [{ label: "Architecture", nodes: [parent] }]
+    const { byInitiative, staleDocs } = collectStaleDocs(sections)
+    expect(staleDocs.map((d) => d.slug)).toEqual(["parent/child"])
+    expect(byInitiative.get("init-c")?.[0].commitsSinceVerified).toBe(7)
+    expect(byInitiative.has("init-a")).toBe(false)
+  })
+
+  it("groups multiple stale docs under a shared initiative", () => {
+    const sections: DocTreeSection[] = [
+      {
+        label: "Architecture",
+        nodes: [mk("a", "stale", ["shared"]), mk("b", "stale", ["shared"])],
+      },
+    ]
+    const { byInitiative, staleDocs } = collectStaleDocs(sections)
+    expect(staleDocs).toHaveLength(2)
+    expect(byInitiative.get("shared")?.map((d) => d.slug)).toEqual(["a", "b"])
   })
 })
