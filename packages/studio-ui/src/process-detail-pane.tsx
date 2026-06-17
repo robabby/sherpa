@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/tabs";
 import type { ProcessNode } from "@/lib/studio/process-nodes-shared";
 import type { AgentRole } from "@/lib/studio/types";
+import type { StaleDoc } from "@sherpa/studio-core";
 
 import { KIND_STATUSES, formatDate, sourceToHref, SourceLink } from "./lib/process-detail-helpers";
 import { ActionBar } from "./process-action-bar";
@@ -78,6 +79,8 @@ interface ProcessDetailPaneProps {
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   agentRoles?: AgentRole[];
+  /** Initiative slug → its stale docs (git-aware drift). Drives the detail-pane indicator. */
+  staleDocsByInitiative?: Record<string, StaleDoc[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,6 +106,7 @@ export function ProcessDetailPane({
   activeTab,
   onTabChange,
   agentRoles,
+  staleDocsByInitiative,
 }: ProcessDetailPaneProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -133,6 +137,11 @@ export function ProcessDetailPane({
       </div>
     );
   }
+
+  const staleDocs =
+    node.kind === "initiative" && staleDocsByInitiative
+      ? (staleDocsByInitiative[node.id.replace(/^initiative\//, "")] ?? [])
+      : [];
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -191,6 +200,37 @@ export function ProcessDetailPane({
           <span>·</span>
           <SourceLink source={node.source} />
         </div>
+
+        {/* Git-aware doc drift — read-only; mark-verified lives on the Docs surface */}
+        {staleDocs.length > 0 && (
+          <div className="rounded-md border border-rose-500/20 bg-rose-500/[0.04] px-3 py-2">
+            <div className="flex items-center gap-1.5 text-rose-400/80">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <span className="text-xs font-medium">
+                {staleDocs.length} {staleDocs.length === 1 ? "doc" : "docs"} possibly stale
+              </span>
+            </div>
+            <ul className="mt-1.5 space-y-1">
+              {staleDocs.map((d) => (
+                <li
+                  key={d.relativePath}
+                  className="flex items-baseline justify-between gap-2 text-[11px]"
+                >
+                  <Link
+                    href={`/docs?doc=${encodeURIComponent(d.slug)}`}
+                    className="truncate text-rose-400/70 underline decoration-rose-500/20 underline-offset-2 transition-colors hover:text-rose-300"
+                  >
+                    {d.title}
+                  </Link>
+                  <span className="shrink-0 font-mono text-rose-400/50">
+                    {d.commitsSinceVerified} {d.commitsSinceVerified === 1 ? "commit" : "commits"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <ActionBar node={node} agentRoles={agentRoles} />
       </div>
 

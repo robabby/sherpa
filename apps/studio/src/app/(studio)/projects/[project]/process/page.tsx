@@ -6,6 +6,7 @@ import { ProcessWorkspace } from "@/components/studio/process-workspace";
 import {
   buildBranchFileTree,
   buildInitiativeFileTree,
+  buildInitiativeStaleDocsIndex,
   detectLifecycle,
   getAgentRoles,
   getArchivedInitiatives,
@@ -98,6 +99,12 @@ export default async function ProjectProcessPage({
     ctx,
   );
 
+  // Git-aware doc-drift, reverse-mapped to initiatives (server-side: needs git).
+  // Scoped to this project's context. Serialize the Map for the client boundary.
+  const staleIndex = buildInitiativeStaleDocsIndex(ctx);
+  const staleDocsByInitiative = Object.fromEntries(staleIndex.byInitiative);
+  const staleDocCount = staleIndex.staleDocs.length;
+
   return (
     <ProcessWorkspace
       allNodes={allNodes}
@@ -108,6 +115,8 @@ export default async function ProjectProcessPage({
       initialSelectedId={sp.node ?? null}
       archivedCount={archivedCount}
       agentRoles={getAgentRoles(ctx)}
+      staleDocCount={staleDocCount}
+      staleDocsByInitiative={staleDocsByInitiative}
     />
   );
 }

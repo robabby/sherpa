@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { GitBranch, Search } from "lucide-react";
+import { AlertTriangle, GitBranch, Search } from "lucide-react";
+import type { StaleDoc } from "@sherpa/studio-core";
 
 /** Keep searchParams in a ref so callbacks that read it don't need it as a dep. */
 function useStableSearchParams() {
@@ -99,6 +100,10 @@ interface ProcessWorkspaceProps {
   onRestore?: (slug: string) => Promise<{ success: boolean; error?: string }>;
   archivedCount?: number;
   agentRoles?: AgentRole[];
+  /** Total distinct maintained docs that have drifted into the "stale" state. */
+  staleDocCount?: number;
+  /** Initiative slug -> the stale docs that list it in `source-initiatives`. */
+  staleDocsByInitiative?: Record<string, StaleDoc[]>;
 }
 
 export function ProcessWorkspace({
@@ -114,6 +119,8 @@ export function ProcessWorkspace({
   onRestore,
   archivedCount: _archivedCount,
   agentRoles,
+  staleDocCount = 0,
+  staleDocsByInitiative,
 }: ProcessWorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -456,6 +463,16 @@ export function ProcessWorkspace({
           </div>
         </div>
 
+        {/* Portfolio doc-drift stat — git-aware staleness, distinct from velocity momentum */}
+        {staleDocCount > 0 && (
+          <div className="flex shrink-0 items-center gap-1.5 border-b border-[var(--color-dark-bronze)] bg-rose-500/[0.04] px-2.5 py-1">
+            <AlertTriangle className="h-3 w-3 shrink-0 text-rose-400/80" />
+            <span className="text-[11px] text-rose-400/80">
+              {staleDocCount} {staleDocCount === 1 ? "doc" : "docs"} possibly stale
+            </span>
+          </div>
+        )}
+
         {/* Mobile kind pills — shown on small screens where rail is hidden */}
         <div className="flex shrink-0 items-center gap-0.5 overflow-x-auto border-b border-[var(--color-dark-bronze)] px-2 py-1 md:hidden">
           {PROCESS_VIEW_KINDS.map((kind) => {
@@ -487,6 +504,7 @@ export function ProcessWorkspace({
             focusIndex={focusIndex}
             onSelect={onSelect}
             depthMap={depthMap}
+            staleDocsByInitiative={staleDocsByInitiative}
           />
         </div>
       </div>
@@ -523,6 +541,7 @@ export function ProcessWorkspace({
           activeTab={activeTab}
           onTabChange={setActiveTab}
           agentRoles={agentRoles}
+          staleDocsByInitiative={staleDocsByInitiative}
         />
       </div>
     </div>

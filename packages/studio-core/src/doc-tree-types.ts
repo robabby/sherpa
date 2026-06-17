@@ -52,6 +52,23 @@ export interface DocTreeSection {
   nodes: DocTreeNode[]
 }
 
+/** A maintained doc that has drifted into the "stale" state. */
+export interface StaleDoc {
+  slug: string
+  title: string
+  relativePath: string
+  /** Commits touching related code since the doc's last-verified date. */
+  commitsSinceVerified: number
+}
+
+/** The reverse mapping: which initiatives source which stale docs. */
+export interface StaleDocsIndex {
+  /** Initiative slug -> stale docs that list it in `source-initiatives`. */
+  byInitiative: Map<string, StaleDoc[]>
+  /** Distinct stale docs (one entry per stale node) — portfolio count is `.length`. */
+  staleDocs: StaleDoc[]
+}
+
 // ---------------------------------------------------------------------------
 // Provenance parsing (pure — no Node.js dependencies)
 // ---------------------------------------------------------------------------
@@ -172,4 +189,47 @@ export function computeState(
     return "verified"
   }
   return "awaiting-review"
+}
+
+// ---------------------------------------------------------------------------
+// Stale-docs reverse mapping (pure — no Node.js dependencies)
+// ---------------------------------------------------------------------------
+
+/**
+ * Walk doc-tree sections and collect every doc whose `state === "stale"`,
+ * indexed by the initiatives that source it. The inverse of drift: drift maps
+ * an initiative's targets to a doc's freshness; this maps a stale doc back to
+ * the initiatives that own it, so the Process (governance) view can surface
+ * doc health per initiative and portfolio-wide.
+ *
+ * Pure: operates on an already-built (drift-folded) tree. The git-aware tree
+ * is produced server-side by `getDocTree(ctx, { targetIndex })`.
+ */
+export function collectStaleDocs(sections: DocTreeSection[]): StaleDocsIndex {
+  const byInitiative = new Map<string, StaleDoc[]>()
+  const staleDocs: StaleDoc[] = []
+
+  const visit = (node: DocTreeNode): void => {
+    if (node.state === "stale" && node.drift) {
+      const staleDoc: StaleDoc = {
+        slug: node.slug,
+        title: node.title,
+        relativePath: node.relativePath,
+        commitsSinceVerified: node.drift.commitsSinceVerified,
+      }
+      staleDocs.push(staleDoc)
+      for (const slug of node.provenance.sourceInitiatives) {
+        const existing = byInitiative.get(slug)
+        if (existing) existing.push(staleDoc)
+        else byInitiative.set(slug, [staleDoc])
+      }
+    }
+    for (const child of node.children) visit(child)
+  }
+
+  for (const section of sections) {
+    for (const node of section.nodes) visit(node)
+  }
+
+  return { byInitiative, staleDocs }
 }

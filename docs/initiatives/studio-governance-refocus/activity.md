@@ -25,7 +25,7 @@ worktree: .worktrees/studio-governance-refocus
 
 ## Seeds
 
-- **Process-view drift indicator** — surface per-initiative / portfolio doc staleness in the Process view (reverse doc→initiative mapping). Deferred per design Open Question 1 + the no-IA-redesign no-go.
+- **Process-view drift indicator** — surface per-initiative / portfolio doc staleness in the Process view (reverse doc→initiative mapping). Deferred per design Open Question 1 + the no-IA-redesign no-go. → initiative: studio-process-drift-spine
 - **Finish portfolio triage** — archive the *integrated* dispatch initiatives (dispatch-center, mcp-coordination-layer, sqlite-agentic-state, mcp-multi-backend-dispatch, parallel-workflow-governance, studio-agent-missions) and triage the *pending* ones (dispatch-idempotence, scheduled-dispatch, ai-gateway-dispatch, mmo-patterns-for-agents, agentic-organization-model, ledger-governance-rbac, distributed-agent-consistency, agent-cards, agent-context-portability). behavioral-agents + agent-framework-patterns kept (role conventions / cited research).
 - **db coordination-schema removal** — `studio-core/db` coordination-schema (agent_sessions, task_claims, authority_leases, state_versions) is now dead (only its own tests use it); remove in a focused db cleanup (left untouched this round as a no-go-adjacent area).
 - **MCP tab LM Studio/events cleanup** — the LmStudioCard + event-log sections are vestigial (render offline/empty); remove for a fully clean governance tab.

@@ -7,6 +7,7 @@ import { runPostApproval } from "./post-approval";
 import {
   buildBranchFileTree,
   buildInitiativeFileTree,
+  buildInitiativeStaleDocsIndex,
   detectLifecycle,
   getAgentRoles,
   getArchivedInitiatives,
@@ -82,6 +83,12 @@ export default async function ProcessPage({ searchParams }: ProcessPageProps) {
     getLifecycleInfo: detectLifecycle,
   });
 
+  // Git-aware doc-drift, reverse-mapped to initiatives (server-side: needs git).
+  // Serialize the Map to a plain object for the client boundary.
+  const staleIndex = buildInitiativeStaleDocsIndex();
+  const staleDocsByInitiative = Object.fromEntries(staleIndex.byInitiative);
+  const staleDocCount = staleIndex.staleDocs.length;
+
   return (
     <ProcessWorkspace
       allNodes={allNodes}
@@ -96,6 +103,8 @@ export default async function ProcessPage({ searchParams }: ProcessPageProps) {
       onRestore={restoreInitiative}
       archivedCount={archivedCount}
       agentRoles={getAgentRoles()}
+      staleDocCount={staleDocCount}
+      staleDocsByInitiative={staleDocsByInitiative}
     />
   );
 }
