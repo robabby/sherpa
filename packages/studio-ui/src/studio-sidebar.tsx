@@ -5,16 +5,13 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   BookOpen,
-  CheckSquare,
   Clock,
   FileText,
   FlaskConical,
   GitBranch,
   Play,
   Plug,
-  Send,
   Users,
-  Workflow,
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -52,35 +49,27 @@ interface NavGroup {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    title: "Operations",
-    items: [
-      { label: "Process", href: "/process", icon: GitBranch },
-      { label: "Tasks", href: "/tasks", icon: CheckSquare },
-      { label: "Dispatch", href: "/dispatch", icon: Send },
-      { label: "Workflow", href: "/workflow", icon: Workflow },
-    ],
+    title: "Govern",
+    items: [{ label: "Process", href: "/process", icon: GitBranch }],
   },
   {
-    title: "Knowledge",
+    title: "Author",
     items: [
-      { label: "Research", href: "/research", icon: FlaskConical },
-      { label: "Docs", href: "/docs", icon: FileText },
       { label: "Conventions", href: "/conventions", icon: BookOpen },
       { label: "Skills", href: "/skills", icon: Zap },
       { label: "Playbooks", href: "/playbooks", icon: Play },
+      { label: "Roles", href: "/roles", icon: Users },
+      { label: "Docs", href: "/docs", icon: FileText },
+      { label: "Research", href: "/research", icon: FlaskConical },
     ],
   },
   {
-    title: "System",
+    title: "Observe",
     items: [
-      { label: "Workforce", href: "/workforce", icon: Users },
       { label: "Sessions", href: "/sessions", icon: Clock },
+      { label: "Activity", href: "/activity", icon: Activity },
       { label: "MCP", href: "/mcp", icon: Plug },
     ],
-  },
-  {
-    title: "Activity",
-    items: [{ label: "Activity", href: "/activity", icon: Activity }],
   },
 ];
 
@@ -118,7 +107,7 @@ export function StudioSidebar({ userMenu, projects }: StudioSidebarProps) {
   // Only these sections have pages under /projects/{slug}/ (project mode)
   // and /projects/ (aggregate mode). All other sections link to their
   // top-level pages — prefixing them produces 404s.
-  const projectScopedRoutes = ["/process", "/tasks", "/research"]
+  const projectScopedRoutes = ["/process", "/research"]
 
   // In aggregate mode, scoped nav links point to /projects/{section}.
   // In project mode, scoped nav links point to /projects/{slug}/{section}.

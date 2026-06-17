@@ -949,6 +949,16 @@ export const COMPONENT_CATALOG: ComponentCatalogEntry[] = [
   },
 
   // ── Agents ─────────────────────────────────────────────────────
+  {
+    name: "RolesContent",
+    description:
+      "Read-only catalog of behavioral role definitions grouped by category.",
+    pattern: "card-list",
+    tokens: [],
+    isClient: false,
+    domain: "agents",
+    source: "roles-content",
+  },
 
   // ── Domain Panels ──────────────────────────────────────────────
   {

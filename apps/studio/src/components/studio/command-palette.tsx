@@ -4,14 +4,12 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
   GitBranch,
-  CheckSquare,
-  Send,
-  Workflow,
   FileText,
   BookOpen,
   Zap,
   Play,
   Users,
+  FlaskConical,
   Clock,
   Plug,
   Activity,
@@ -34,14 +32,12 @@ import { getCommandPaletteItems } from "@/app/(studio)/actions/command-palette-i
 
 const ROUTE_ICONS: Record<string, React.ElementType> = {
   "/process": GitBranch,
-  "/tasks": CheckSquare,
-  "/dispatch": Send,
-  "/workflow": Workflow,
-  "/docs": FileText,
   "/conventions": BookOpen,
   "/skills": Zap,
   "/playbooks": Play,
-  "/workforce": Users,
+  "/roles": Users,
+  "/docs": FileText,
+  "/research": FlaskConical,
   "/sessions": Clock,
   "/mcp": Plug,
   "/activity": Activity,

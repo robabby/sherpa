@@ -7,17 +7,15 @@ import { StudioBreadcrumb } from "./studio-breadcrumb";
 
 const sectionLabels: Record<string, string> = {
   process: "Process",
-  tasks: "Tasks",
-  dispatch: "Dispatch",
-  workflow: "Workflow",
-  docs: "Docs",
   conventions: "Conventions",
   skills: "Skills",
   playbooks: "Playbooks",
-  workforce: "Workforce",
+  roles: "Roles",
+  docs: "Docs",
+  research: "Research",
   sessions: "Sessions",
-  mcp: "MCP",
   activity: "Activity",
+  mcp: "MCP",
 };
 
 function buildSegments(pathname: string): { label: string; href?: string }[] {
