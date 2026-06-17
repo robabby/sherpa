@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Studio Governance Refocus — Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          gold: "#d8b25a",
+          ink: "#0b0b0d",
+          panel: "#141417",
+          panel2: "#1b1b1f",
+          edge: "#2a2a30",
+        },
+        fontFamily: { mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"] },
+      },
+    },
+  };
+</script>
+<style>
+  @keyframes pulse-led { 0%,100%{opacity:1} 50%{opacity:.35} }
+  .led-stale { animation: pulse-led 2s ease-in-out infinite; }
+  body { background: radial-gradient(1200px 600px at 70% -10%, #17171c 0%, #0b0b0d 60%); }
+</style>
+</head>
+<body class="text-zinc-300 font-sans min-h-screen">
+<div class="flex min-h-screen">
+
+  <!-- ============ SIDEBAR (the refocused nav) ============ -->
+  <aside class="w-60 shrink-0 border-r border-edge bg-panel/70 backdrop-blur px-3 py-4 flex flex-col">
+    <div class="flex items-center gap-2 px-2 mb-6">
+      <div class="h-7 w-7 rounded-md bg-gold/20 border border-gold/40 grid place-items-center text-gold">⚡</div>
+      <div>
+        <div class="text-sm font-semibold text-zinc-100 leading-none">Sherpa</div>
+        <div class="text-[10px] tracking-[0.2em] text-zinc-500">STUDIO</div>
+      </div>
+    </div>
+
+    <!-- GOVERN -->
+    <div class="px-2 text-[10px] tracking-widest text-zinc-500 mb-1">GOVERN</div>
+    <a class="nav-item active" data-active>📍 Process</a>
+
+    <!-- AUTHOR -->
+    <div class="px-2 text-[10px] tracking-widest text-zinc-500 mt-5 mb-1">AUTHOR</div>
+    <a class="nav-item">📐 Conventions</a>
+    <a class="nav-item">⚡ Skills</a>
+    <a class="nav-item">▶ Playbooks</a>
+    <a class="nav-item">👤 Roles <span class="ml-auto text-[9px] text-zinc-500 border border-edge rounded px-1">read-only</span></a>
+    <a class="nav-item">📄 Docs</a>
+    <a class="nav-item">🧪 Research</a>
+
+    <!-- OBSERVE -->
+    <div class="px-2 text-[10px] tracking-widest text-zinc-500 mt-5 mb-1">OBSERVE</div>
+    <a class="nav-item">🕐 Sessions</a>
+    <a class="nav-item">📈 Activity</a>
+    <a class="nav-item">🔌 MCP</a>
+
+    <div class="mt-auto px-2 pt-4 text-[10px] text-zinc-600 border-t border-edge/60">
+      <span class="line-through">Tasks · Dispatch · Workforce · Workflow</span><br/>removed
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="flex-1 min-w-0">
+    <!-- breadcrumb -->
+    <div class="h-12 border-b border-edge flex items-center px-6 text-sm text-zinc-400">
+      Studio <span class="mx-2 text-zinc-600">/</span> Sherpa <span class="mx-2 text-zinc-600">/</span>
+      <span class="text-zinc-200">Process</span>
+    </div>
+
+    <div class="p-6 max-w-5xl">
+      <!-- ===== provenance banner (the existing component; cycle states) ===== -->
+      <div class="mb-2 flex items-center gap-2 text-[11px] text-zinc-500">
+        <span>Banner state:</span>
+        <button onclick="setState('stale')" class="chip">stale</button>
+        <button onclick="setState('awaiting')" class="chip">awaiting-review</button>
+        <button onclick="setState('verified')" class="chip">verified</button>
+        <button onclick="setState('human')" class="chip">human-owned</button>
+      </div>
+      <div id="banner" class="rounded-lg border px-4 py-3 mb-8"></div>
+
+      <!-- ===== PROCESS = governance spine ===== -->
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-zinc-100 text-base font-semibold">Process</h2>
+        <div class="text-[11px] text-zinc-500"><span class="text-rose-400">3 docs possibly stale</span> · 14 maintained</div>
+      </div>
+
+      <div class="rounded-lg border border-edge overflow-hidden">
+        <div class="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2 text-[10px] tracking-wider text-zinc-500 bg-panel2 border-b border-edge">
+          <div>INITIATIVE / DOC</div><div>LIFECYCLE</div><div>PROVENANCE</div>
+        </div>
+        <div id="rows"></div>
+      </div>
+
+      <p class="mt-6 text-[11px] text-zinc-600">Prototype · static data · validates the GOVERN/AUTHOR/OBSERVE nav and provenance-as-spine. Real banner = <span class="font-mono">provenance-header.tsx</span>; real drift = <span class="font-mono">doc-drift.ts</span>.</p>
+    </div>
+  </main>
+</div>
+
+<style>
+  .nav-item{display:flex;align-items:center;gap:.5rem;width:100%;padding:.4rem .5rem;border-radius:.4rem;font-size:.82rem;color:#a1a1aa;cursor:pointer}
+  .nav-item:hover{background:#1f1f24;color:#e4e4e7}
+  .nav-item[data-active]{background:rgba(216,178,90,.12);color:#e8d9ad;border:1px solid rgba(216,178,90,.25)}
+  .chip{border:1px solid #2a2a30;border-radius:.3rem;padding:.05rem .4rem;color:#a1a1aa}
+  .chip:hover{border-color:rgba(216,178,90,.4);color:#e8d9ad}
+</style>
+
+<script>
+  // ---- provenance banner states (mirrors provenance-header.tsx) ----
+  const banners = {
+    stale:    {icon:"⚠", label:"Possibly stale", sub:"3 commits to related code since verified 2026-03-16", cls:"border-rose-500/30 bg-rose-500/[0.05] text-rose-300", action:"verify"},
+    awaiting: {icon:"🖥", label:"AI-generated", sub:"Awaiting human review", cls:"border-gold/25 bg-gold/[0.05] text-gold", action:"review"},
+    verified: {icon:"🛡", label:"AI-generated", sub:null, cls:"border-emerald-500/25 bg-emerald-500/[0.05] text-emerald-300", action:"verified"},
+    human:    {icon:"👤", label:"Human-authored", sub:null, cls:"border-edge bg-panel2 text-zinc-400", action:null},
+  };
+  function setState(k){
+    const b = banners[k];
+    const right =
+      b.action==="review" ? `<button class="rounded-md bg-gold/10 border border-gold/30 px-3 py-1 text-xs text-gold hover:bg-gold/20">🛡 Mark as Reviewed</button>` :
+      b.action==="verify" ? `<button class="rounded-md bg-gold/10 border border-gold/30 px-3 py-1 text-xs text-gold hover:bg-gold/20">🛡 Mark as Reviewed</button>` :
+      b.action==="verified" ? `<span class="rounded-md bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs text-emerald-300">🛡 Human-verified 2026-06-12</span>` : "";
+    document.getElementById("banner").className = "rounded-lg border px-4 py-3 mb-8 "+b.cls;
+    document.getElementById("banner").innerHTML = `
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2"><span>${b.icon}</span><span class="text-sm font-medium">${b.label}</span>
+          <span class="text-[11px] font-mono text-zinc-500">governance-engine/index.md</span></div>
+        ${right}
+      </div>
+      ${b.sub?`<div class="text-[11px] text-zinc-400 mt-1">${b.sub}</div>`:""}
+      <div class="flex items-center gap-1.5 mt-2"><span class="text-[10px] text-zinc-500 uppercase tracking-wider">Sources</span>
+        <span class="rounded-full bg-panel2 border border-edge px-2 py-0.5 text-[11px] font-mono text-zinc-400">self-documenting-system</span>
+        <span class="rounded-full bg-panel2 border border-edge px-2 py-0.5 text-[11px] font-mono text-zinc-400">studio-governance-refocus</span></div>`;
+  }
+
+  // ---- process rows: provenance is the spine ----
+  const rows = [
+    {name:"architecture/execution-pipeline", kind:"doc", life:"integrated", state:"stale", drift:"4 commits"},
+    {name:"architecture/governance-engine",  kind:"doc", life:"integrated", state:"stale", drift:"3 commits"},
+    {name:"architecture/studio-application",  kind:"doc", life:"integrated", state:"stale", drift:"1 commit"},
+    {name:"studio-governance-refocus",        kind:"init", life:"shaped",    state:"awaiting", drift:null},
+    {name:"architecture/platform-model",      kind:"doc", life:"integrated", state:"verified", drift:null},
+    {name:"foundation-stone",                 kind:"doc", life:"—",          state:"human", drift:null},
+  ];
+  const dot = {stale:"bg-rose-500 led-stale", awaiting:"bg-gold", verified:"bg-emerald-400", human:"bg-zinc-600"};
+  const lab = {stale:"Possibly stale", awaiting:"Awaiting review", verified:"Verified", human:"Human-owned"};
+  document.getElementById("rows").innerHTML = rows.map(r=>`
+    <div class="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-3 items-center border-b border-edge/50 hover:bg-panel2/60">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="text-[10px] ${r.kind==='init'?'text-gold':'text-zinc-500'}">${r.kind==='init'?'◎':'⌑'}</span>
+        <span class="truncate text-sm text-zinc-200 font-mono">${r.name}</span>
+      </div>
+      <div class="text-[11px] text-zinc-400 w-28">${r.life}</div>
+      <div class="flex items-center gap-2 w-44">
+        <span class="h-2 w-2 rounded-full ${dot[r.state]}"></span>
+        <span class="text-[11px] text-zinc-400">${lab[r.state]}</span>
+        ${r.drift?`<span class="text-[10px] text-rose-400/80 font-mono ml-auto">${r.drift}</span>`:""}
+      </div>
+    </div>`).join("");
+
+  setState("stale");
+</script>
+</body>
+</html>
