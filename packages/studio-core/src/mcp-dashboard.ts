@@ -17,7 +17,7 @@ export interface McpServerConfig {
 export interface McpToolInfo {
   name: string;
   description: string;
-  domain: "tasks" | "infrastructure";
+  domain: "knowledge" | "governance";
   paramCount: number;
   params: string[];
 }
@@ -59,72 +59,95 @@ export interface McpDashboardOptions {
 // ---------------------------------------------------------------------------
 
 const TOOL_CATALOG: McpToolInfo[] = [
+  // --- Governance: the initiative lifecycle Claude Code drives ---
   {
-    name: "task_list",
+    name: "initiative_list",
     description:
-      "List tasks from the task board, sorted by priority. Supports filtering by status, role, backend, and initiative.",
-    domain: "tasks",
-    paramCount: 4,
-    params: ["status", "role", "backend", "initiative"],
-  },
-  {
-    name: "task_get",
-    description:
-      "Get a single task by ID with full details: metadata, body content, output, blockers, and verdict.",
-    domain: "tasks",
-    paramCount: 1,
-    params: ["id"],
-  },
-  {
-    name: "task_create",
-    description:
-      "Create a new task on the task board. Only lm-studio backend is supported.",
-    domain: "tasks",
-    paramCount: 10,
-    params: [
-      "id",
-      "title",
-      "role",
-      "priority",
-      "initiative",
-      "model",
-      "objective",
-      "context",
-      "acceptance_criteria",
-      "constraints",
-    ],
-  },
-  {
-    name: "task_update",
-    description:
-      "Update a task's metadata field. Use for status changes, judge verdicts, or archiving.",
-    domain: "tasks",
+      "List initiatives with optional filters by status, type, or risk level.",
+    domain: "governance",
     paramCount: 3,
-    params: ["id", "field", "value"],
+    params: ["status", "type", "risk"],
   },
   {
-    name: "task_dispatch",
+    name: "initiative_get",
     description:
-      "Dispatch a pending task to LM Studio for execution. Runs as a detached background process.",
-    domain: "tasks",
+      "Get full detail for a single initiative: proposal, plan, activity, seeds, and lifecycle state.",
+    domain: "governance",
     paramCount: 1,
-    params: ["id"],
+    params: ["slug"],
   },
   {
-    name: "task_logs",
+    name: "initiative_seeds",
     description:
-      "Read logs for a task: NDJSON events (activity trail) and artifact logs (output, blockers, verdict).",
-    domain: "tasks",
+      "Get seeds (follow-on ideas) from an integrated initiative's activity log.",
+    domain: "governance",
+    paramCount: 1,
+    params: ["slug"],
+  },
+  {
+    name: "initiative_create",
+    description:
+      "Create a new initiative proposal directory with proposal.md.",
+    domain: "governance",
+    paramCount: 8,
+    params: ["slug", "title", "summary", "body", "type", "risk", "targets", "dependencies"],
+  },
+  {
+    name: "initiative_approve",
+    description:
+      "Approve a pending initiative. Enforces governance policy for agent actors; creates activity.md.",
+    domain: "governance",
+    paramCount: 2,
+    params: ["slug", "agent_id"],
+  },
+  {
+    name: "initiative_update_status",
+    description:
+      "Change initiative status with lifecycle transition validation.",
+    domain: "governance",
+    paramCount: 2,
+    params: ["slug", "status"],
+  },
+  {
+    name: "initiative_activity",
+    description:
+      "Append a timestamped entry to an initiative's activity log.",
+    domain: "governance",
+    paramCount: 2,
+    params: ["slug", "entry"],
+  },
+  // --- Knowledge: search & summarize the indexed corpus ---
+  {
+    name: "search_knowledge",
+    description:
+      "Full-text + semantic search across indexed markdown (initiatives, research, agents, rules, skills). BM25-ranked.",
+    domain: "knowledge",
+    paramCount: 5,
+    params: ["query", "limit", "kind", "initiative", "mode"],
+  },
+  {
+    name: "get_summary",
+    description:
+      "Structured summary at file, initiative, or portfolio zoom level.",
+    domain: "knowledge",
+    paramCount: 2,
+    params: ["target", "zoom"],
+  },
+  {
+    name: "get_context",
+    description:
+      "Session bootstrap — role-appropriate system state (scope, neighborhood, portfolio) in one call.",
+    domain: "knowledge",
     paramCount: 3,
-    params: ["id", "log_type", "tail"],
+    params: ["role", "initiative", "max_tokens"],
   },
   {
-    name: "lm_status",
+    name: "query_related",
     description:
-      "Check if LM Studio is running and which models are loaded.",
-    domain: "infrastructure",
-    paramCount: 0,
-    params: [],
+      "Find related initiatives: explicit frontmatter edges, emergent similarity, or creative cross-pollination.",
+    domain: "knowledge",
+    paramCount: 3,
+    params: ["source", "mode", "limit"],
   },
 ];
 

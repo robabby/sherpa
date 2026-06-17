@@ -1,10 +1,9 @@
 /**
- * Sherpa Studio MCP Server — development control plane for Claude Code.
+ * Sherpa Studio MCP Server — governance & knowledge API for Claude Code.
  *
  * Tool domains:
- *   Tasks: task_list, task_get, task_create, task_update, task_dispatch, task_logs
- *   Knowledge: search_knowledge, get_summary
- *   Infrastructure: lm_status
+ *   Knowledge: search_knowledge, get_summary, get_context, query_related
+ *   Governance: initiative_list/get/seeds/create/approve/update_status/activity
  *
  * Factory function creates an McpServer instance per client session.
  * See http-server.ts for the Streamable HTTP transport layer.
@@ -12,9 +11,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
-import fs from "node:fs"
-import path from "node:path"
-import { execSync, spawn } from "node:child_process"
+import { execSync } from "node:child_process"
 import {
   openDb,
   resolveDbPaths,
@@ -23,18 +20,7 @@ import {
   syncEmbeddings,
 } from "@sherpa/studio-core/db"
 import { AlgorithmicBackend } from "@sherpa/studio-core/knowledge"
-import { registerAuthorityTools } from "./authority/tools.js"
 import { registerInitiativeTools } from "./initiative/tools.js"
-import {
-  resolveRoute,
-  DEFAULT_DISPATCH,
-  BACKEND_META,
-  getLinearClient,
-  getLinearTaskBoard,
-  getLinearTaskDetail,
-  mapTaskToLinearInput,
-} from "@sherpa/studio-core"
-import type { Backend } from "@sherpa/studio-core"
 import { DEFAULT_PATHS } from "@sherpa/studio-core/config"
 import type { ProjectContext } from "@sherpa/studio-core/config"
 
@@ -45,24 +31,12 @@ import type { ProjectContext } from "@sherpa/studio-core/config"
 export interface StudioMcpOptions {
   /** Absolute path to the project root. */
   projectRoot?: string
-  /** Relative path from projectRoot to the tasks directory. */
-  tasksDir?: string
-  /** Relative path from projectRoot to the task logs directory. */
-  logsDir?: string
-  /** LM Studio base URL. */
-  lmStudioUrl?: string
   /** Server name shown in MCP handshake. */
   serverName?: string
-  /** Path to the task-logger module (relative to projectRoot). Null disables event logging. */
-  taskLoggerPath?: string | null
   /** Port for MCP Streamable HTTP server. Defaults to 3100. */
   port?: number
-  /** SQLite database for coordination. When provided, authority tools are registered. */
-  coordinationDb?: import("better-sqlite3").Database
   /** Governance approval policy for agent callers. Defaults to 'never'. */
   approvalPolicy?: "never" | "additive-only" | "always"
-  /** Whether authority is required for initiative mutations. Defaults to true. */
-  requireAuthority?: boolean
 }
 
 function findGitRoot(): string | null {
@@ -79,82 +53,9 @@ function resolveOptions(opts?: StudioMcpOptions) {
     ?? findGitRoot()
     ?? process.cwd()
 
-  const tasksDir = path.join(projectRoot, opts?.tasksDir ?? "docs/tasks")
-  const logsDir = path.join(projectRoot, opts?.logsDir ?? path.join(opts?.tasksDir ?? "docs/tasks", "logs"))
-  const lmStudioUrl = opts?.lmStudioUrl ?? process.env.LM_STUDIO_URL ?? "http://localhost:1234"
   const serverName = opts?.serverName ?? "sherpa-studio"
-  const taskLoggerPath = opts?.taskLoggerPath !== undefined ? opts.taskLoggerPath : "scripts/task-logger.mjs"
 
-  return { projectRoot, tasksDir, logsDir, lmStudioUrl, serverName, taskLoggerPath }
-}
-
-// ---------------------------------------------------------------------------
-// Linear state helpers
-// ---------------------------------------------------------------------------
-
-/** Pending state types in Linear that allow dispatch. */
-const PENDING_STATE_TYPES = new Set(["triage", "backlog", "unstarted"])
-
-/**
- * Parse a Linear identifier (e.g. "SG-306") into team key and issue number.
- */
-function parseLinearIdentifier(
-  identifier: string,
-): { teamKey: string; number: number } | null {
-  const match = identifier.match(/^([A-Za-z]+)-(\d+)$/)
-  if (!match) return null
-  return { teamKey: match[1]!, number: parseInt(match[2]!, 10) }
-}
-
-async function checkLmStudio(lmStudioUrl: string): Promise<{
-  available: boolean
-  models: string[]
-  error?: string
-}> {
-  try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 3000)
-    const res = await fetch(`${lmStudioUrl}/v1/models`, {
-      signal: controller.signal,
-    })
-    clearTimeout(timeout)
-
-    if (!res.ok) {
-      return { available: false, models: [], error: `HTTP ${res.status}` }
-    }
-
-    const data = (await res.json()) as { data?: Array<{ id: string }> }
-    const models = (data.data ?? []).map((m) => m.id)
-    return { available: true, models }
-  } catch (err) {
-    return {
-      available: false,
-      models: [],
-      error: err instanceof Error ? err.message : String(err),
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Event logging helper
-// ---------------------------------------------------------------------------
-
-async function logEvent(
-  projectRoot: string,
-  logsDir: string,
-  taskLoggerPath: string | null,
-  taskId: string,
-  event: string,
-  data: Record<string, unknown>,
-): Promise<void> {
-  if (!taskLoggerPath) return
-  try {
-    const fullPath = path.join(projectRoot, taskLoggerPath)
-    const { appendEvent } = await import(fullPath)
-    appendEvent(logsDir, taskId, event, data)
-  } catch {
-    // Logger not critical — continue
-  }
+  return { projectRoot, serverName }
 }
 
 // ---------------------------------------------------------------------------
@@ -162,512 +63,12 @@ async function logEvent(
 // ---------------------------------------------------------------------------
 
 export function createStudioMcpServer(opts?: StudioMcpOptions): McpServer {
-  const { projectRoot, logsDir, lmStudioUrl, serverName, taskLoggerPath } =
-    resolveOptions(opts)
+  const { projectRoot, serverName } = resolveOptions(opts)
 
   const server = new McpServer({
     name: serverName,
     version: "0.1.0",
   })
-
-  // --- Tool: task_list ---
-
-  server.tool(
-    "task_list",
-    "List tasks from the task board. Returns metadata for all matching tasks, sorted by priority.",
-    {
-      status: z
-        .enum(["pending", "dispatched", "completed", "failed", "reviewed", "archived"])
-        .optional()
-        .describe("Filter by task status"),
-      role: z.string().optional().describe("Filter by agent role"),
-      backend: z.enum(["lm-studio", "claude"]).optional().describe("Filter by execution backend"),
-      initiative: z.string().optional().describe("Filter by initiative slug"),
-    },
-    async ({ status, role, backend, initiative }) => {
-      try {
-        const tasks = await getLinearTaskBoard()
-        let filtered = tasks
-        if (status) filtered = filtered.filter((t) => t.status === status)
-        if (role) filtered = filtered.filter((t) => t.role === role)
-        if (backend) filtered = filtered.filter((t) => t.backend === backend)
-        if (initiative) filtered = filtered.filter((t) => t.initiative === initiative)
-
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text:
-                filtered.length === 0
-                  ? "No tasks found matching filters."
-                  : JSON.stringify(filtered, null, 2),
-            },
-          ],
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        return {
-          content: [{ type: "text" as const, text: `Error fetching tasks from Linear: ${message}` }],
-          isError: true,
-        }
-      }
-    },
-  )
-
-  // --- Tool: task_get ---
-
-  server.tool(
-    "task_get",
-    "Get a single task by ID with full details: metadata, body content, and output log if available.",
-    {
-      id: z.string().describe("Task slug/ID"),
-    },
-    async ({ id }) => {
-      try {
-        const detail = await getLinearTaskDetail(id)
-        if (!detail) {
-          return {
-            content: [{ type: "text" as const, text: `Error: Task not found: ${id}` }],
-            isError: true,
-          }
-        }
-
-        // Still read local logs (governance artifacts stay on disk)
-        const outputPath = path.join(logsDir, `${id}-output.md`)
-        let output: string | null = null
-        if (fs.existsSync(outputPath)) {
-          output = fs.readFileSync(outputPath, "utf-8")
-        }
-
-        const blockersPath = path.join(logsDir, `${id}-blockers.md`)
-        let blockers: string | null = null
-        if (fs.existsSync(blockersPath)) {
-          blockers = fs.readFileSync(blockersPath, "utf-8")
-        }
-
-        const verdictPath = path.join(logsDir, `${id}-verdict.md`)
-        let verdict: string | null = null
-        if (fs.existsSync(verdictPath)) {
-          verdict = fs.readFileSync(verdictPath, "utf-8")
-        }
-
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({ ...detail, output, blockers, verdict }, null, 2),
-            },
-          ],
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        return {
-          content: [{ type: "text" as const, text: `Error fetching task from Linear: ${message}` }],
-          isError: true,
-        }
-      }
-    },
-  )
-
-  // --- Tool: task_create ---
-
-  server.tool(
-    "task_create",
-    "Create a new task on the task board. Routes to the appropriate backend via dispatch config, or accepts an explicit backend override.",
-    {
-      id: z
-        .string()
-        .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens only")
-        .describe("Task slug — becomes the filename"),
-      title: z.string().describe("Human-readable task title"),
-      role: z
-        .enum(["engineer", "research-lead", "technical-writer", "code-reviewer", "designer"])
-        .describe("Agent role to execute this task"),
-      priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
-      initiative: z.string().optional().describe("Parent initiative slug"),
-      backend: z
-        .enum([
-          "claude", "opencode", "codex", "gemini", "lm-studio",
-          "groq", "google-ai", "lm-studio-api",
-          "openclaw",
-        ] as const)
-        .optional()
-        .describe("Target backend. When omitted, resolved from task_type via dispatch config"),
-      task_type: z
-        .enum([
-          "code-implementation", "code-review", "architect", "research",
-          "content-generation", "audit", "embeddings", "general",
-        ] as const)
-        .default("general")
-        .describe("Task type — used for backend routing when backend is omitted"),
-      model: z.string().optional().describe("Model override. When omitted, uses the backend's configured default"),
-      objective: z.string().describe("What the worker must accomplish"),
-      context: z.string().optional().describe("Files to read, initiative context"),
-      acceptance_criteria: z.array(z.string()).describe("List of acceptance criteria"),
-      constraints: z.string().optional().describe("What NOT to do, patterns to follow"),
-      deliverables: z.string().describe("Artifacts the worker must produce"),
-    },
-    async ({
-      id, title, role, priority, initiative, model,
-      backend, task_type,
-      objective, context, acceptance_criteria, constraints, deliverables,
-    }) => {
-      try {
-        const client = getLinearClient()
-        const teams = await client.teams()
-        const team = teams.nodes[0]
-        if (!team) {
-          return {
-            content: [{ type: "text" as const, text: "Error: No Linear team found" }],
-            isError: true,
-          }
-        }
-
-        // Resolve backend route for metadata tracking
-        const route = resolveRoute(
-          DEFAULT_DISPATCH,
-          task_type,
-          "interactive" as const,
-          backend ? { backend: backend as Backend } : undefined,
-        )
-        const resolvedBackend = route.backend
-        const resolvedModel = model ?? route.model ?? undefined
-
-        const criteriaList = acceptance_criteria.map((c: string) => `- [ ] ${c}`).join("\n")
-
-        const body = `# ${title}
-
-## Objective
-${objective}
-
-## Context
-${context ?? "No additional context provided."}
-
-## Acceptance Criteria
-${criteriaList}
-
-## Constraints
-${constraints ?? "None specified."}
-
-## Deliverables
-${deliverables}
-
----
-_Sherpa metadata: slug=${id} | role=${role} | task-type=${task_type} | backend=${resolvedBackend} | model=${resolvedModel ?? "default"} | initiative=${initiative ?? "none"}_`
-
-        const input = mapTaskToLinearInput({ title, priority })
-        const result = await client.createIssue({
-          teamId: team.id,
-          ...input,
-          description: body,
-        })
-        const issue = await result.issue
-
-        await logEvent(projectRoot, logsDir, taskLoggerPath, id, "task_created", {
-          role, backend: resolvedBackend, model: resolvedModel ?? null,
-          taskType: task_type, priority, initiative: initiative ?? null,
-          linearIdentifier: issue?.identifier ?? null,
-        })
-
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({
-                created: true,
-                identifier: issue?.identifier,
-                id: issue?.id,
-                slug: id,
-                status: "pending",
-              }),
-            },
-          ],
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        return {
-          content: [{ type: "text" as const, text: `Error creating task in Linear: ${message}` }],
-          isError: true,
-        }
-      }
-    },
-  )
-
-  // --- Tool: task_update ---
-
-  const UPDATABLE_FIELDS = [
-    "status", "priority", "judge-verdict", "model", "worktree",
-    "branch", "session-id", "dispatched-at", "completed-at", "initiative", "role",
-  ] as const
-
-  server.tool(
-    "task_update",
-    "Update a task's metadata field.",
-    {
-      id: z.string().describe("Task slug/ID"),
-      field: z.enum(UPDATABLE_FIELDS).describe("Frontmatter field to update"),
-      value: z.string().nullable().describe("New value (use null to clear)"),
-    },
-    async ({ id, field, value }) => {
-      try {
-        const client = getLinearClient()
-
-        // Resolve the Linear issue by identifier (e.g. "SHR-42")
-        const detail = await getLinearTaskDetail(id)
-        if (!detail) {
-          return {
-            content: [{ type: "text" as const, text: `Error: Task not found: ${id}` }],
-            isError: true,
-          }
-        }
-
-        // For priority, update the Linear issue directly
-        // For other fields, post as a structured comment (preserves data without complex label mutations)
-        const linearIssueId = detail.id
-        if (field === "priority" && value) {
-          const input = mapTaskToLinearInput({ priority: value as "low" | "medium" | "high" | "urgent" })
-          await client.updateIssue(linearIssueId, { priority: input.priority })
-        } else {
-          // TODO: Map status → Linear workflow state transitions
-          // TODO: Map judge-verdict → Verdict label group mutations
-          // For now, post field updates as a structured comment on the issue
-          await client.createComment({
-            issueId: linearIssueId,
-            body: `**Sherpa field update:** \`${field}\` → \`${value ?? "null"}\``,
-          })
-        }
-
-        if (field === "status") {
-          await logEvent(projectRoot, logsDir, taskLoggerPath, id, "task_status_changed", { field, to: value })
-        }
-
-        return {
-          content: [
-            { type: "text" as const, text: JSON.stringify({ updated: true, id, field, value }) },
-          ],
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        return {
-          content: [{ type: "text" as const, text: `Error updating task in Linear: ${message}` }],
-          isError: true,
-        }
-      }
-    },
-  )
-
-  // --- Tool: task_dispatch ---
-
-  server.tool(
-    "task_dispatch",
-    "Dispatch a pending task to its configured backend for execution. The worker runs as a detached background process. Supports all backends: claude, opencode, codex, gemini, lm-studio, groq, google-ai, lm-studio-api, openclaw.",
-    {
-      id: z.string().describe("Linear issue identifier (e.g. 'SG-306')"),
-    },
-    async ({ id }) => {
-      try {
-        const client = getLinearClient()
-        const parsed = parseLinearIdentifier(id)
-        if (!parsed) {
-          return {
-            content: [{ type: "text" as const, text: `Error: Invalid identifier format: ${id}. Expected format like 'SG-306'.` }],
-            isError: true,
-          }
-        }
-
-        // Query the issue from Linear
-        const issuesConnection = await client.issues({
-          first: 1,
-          filter: {
-            team: { key: { eq: parsed.teamKey } },
-            number: { eq: parsed.number },
-          },
-        })
-
-        const issue = issuesConnection.nodes[0]
-        if (!issue) {
-          return {
-            content: [{ type: "text" as const, text: `Error: Task not found: ${id}` }],
-            isError: true,
-          }
-        }
-
-        // Check the issue is in a pending (dispatchable) state
-        const issueState = await issue.state
-        if (!issueState || !PENDING_STATE_TYPES.has(issueState.type)) {
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: `Error: Task '${id}' has state '${issueState?.name ?? "unknown"}' (type: ${issueState?.type ?? "unknown"}) — only pending tasks (triage/backlog/unstarted) can be dispatched.`,
-              },
-            ],
-            isError: true,
-          }
-        }
-
-        // Transition to "started" state for immediate feedback
-        const team = await issue.team
-        if (!team) {
-          return {
-            content: [{ type: "text" as const, text: `Error: Could not resolve team for issue ${id}` }],
-            isError: true,
-          }
-        }
-        const states = await team.states()
-        const startedState = states.nodes.find((s) => s.type === "started")
-        if (startedState) {
-          await client.updateIssue(issue.id, { stateId: startedState.id })
-        }
-
-        // Delegate to worker.sh which handles all backend types
-        const workerShPath = path.join(projectRoot, "scripts/worker.sh")
-        const child = spawn("bash", [workerShPath, id], {
-          cwd: projectRoot,
-          detached: true,
-          stdio: "ignore",
-          env: { ...process.env },
-        })
-
-        const spawnError = await new Promise<Error | null>((resolve) => {
-          child.on("error", (err) => resolve(err))
-          setTimeout(() => resolve(null), 500)
-        })
-
-        if (spawnError || !child.pid) {
-          // Revert to canceled state on spawn failure
-          const canceledState = states.nodes.find((s) => s.type === "canceled")
-          if (canceledState) {
-            await client.updateIssue(issue.id, { stateId: canceledState.id })
-          }
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: `Error: Failed to spawn worker for '${id}': ${spawnError?.message ?? "no PID assigned"}`,
-              },
-            ],
-            isError: true,
-          }
-        }
-
-        child.unref()
-
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({
-                dispatched: true,
-                id,
-                pid: child.pid,
-                message: `Worker running as PID ${child.pid}. Use task_get or task_logs to check progress.`,
-              }),
-            },
-          ],
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        return {
-          content: [{ type: "text" as const, text: `Error dispatching task: ${message}` }],
-          isError: true,
-        }
-      }
-    },
-  )
-
-  // --- Tool: task_logs ---
-
-  server.tool(
-    "task_logs",
-    "Read logs for a task. Returns structured NDJSON events and/or artifact logs (output, blockers, verdict).",
-    {
-      id: z.string().describe("Task slug/ID"),
-      log_type: z
-        .enum(["events", "output", "blockers", "verdict", "all"])
-        .default("all")
-        .describe("Which log to read"),
-      tail: z
-        .number()
-        .optional()
-        .describe("Return only the last N events"),
-    },
-    async ({ id, log_type, tail }) => {
-      const parts: string[] = []
-
-      if (log_type === "events" || log_type === "all") {
-        const eventsPath = path.join(logsDir, `${id}-events.ndjson`)
-        if (fs.existsSync(eventsPath)) {
-          const lines = fs.readFileSync(eventsPath, "utf-8").split("\n").filter(Boolean)
-          const events: unknown[] = []
-          for (const line of lines) {
-            try { events.push(JSON.parse(line)) } catch { /* skip malformed */ }
-          }
-          const sliced = tail ? events.slice(-tail) : events
-          parts.push(
-            `## Events (${sliced.length}${tail ? ` of ${events.length}` : ""})\n\n${JSON.stringify(sliced, null, 2)}`,
-          )
-        } else {
-          parts.push("## Events\n\nNo event log found.")
-        }
-      }
-
-      const artifactTypes = log_type === "all"
-        ? ["output", "blockers", "verdict"]
-        : [log_type]
-
-      for (const type of artifactTypes) {
-        if (type === "events") continue
-        const filePath = path.join(logsDir, `${id}-${type}.md`)
-        if (fs.existsSync(filePath)) {
-          const content = fs.readFileSync(filePath, "utf-8")
-          parts.push(`## ${type.charAt(0).toUpperCase() + type.slice(1)}\n\n${content}`)
-        } else if (log_type !== "all") {
-          parts.push(`## ${type.charAt(0).toUpperCase() + type.slice(1)}\n\nNo ${type} log found for '${id}'.`)
-        }
-      }
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: parts.length > 0
-              ? parts.join("\n\n---\n\n")
-              : `No logs found for task '${id}'.`,
-          },
-        ],
-      }
-    },
-  )
-
-  // --- Tool: lm_status ---
-
-  server.tool(
-    "lm_status",
-    "Check if LM Studio is running and which models are loaded.",
-    {},
-    async () => {
-      const status = await checkLmStudio(lmStudioUrl)
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(
-              {
-                url: lmStudioUrl,
-                available: status.available,
-                models: status.models,
-                error: status.error ?? null,
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      }
-    },
-  )
 
   // =========================================================================
   // Knowledge Engine tools
@@ -1401,17 +802,10 @@ _Sherpa metadata: slug=${id} | role=${role} | task-type=${task_type} | backend=$
     },
   )
 
-  // --- Authority tools (only when coordination DB is provided) ---
-  if (opts?.coordinationDb) {
-    registerAuthorityTools(server, opts.coordinationDb, projectRoot)
-  }
-
   // --- Initiative tools ---
   registerInitiativeTools(server, {
     projectRoot,
     approvalPolicy: opts?.approvalPolicy ?? "never",
-    requireAuthority: opts?.requireAuthority ?? true,
-    coordinationDb: opts?.coordinationDb,
   })
 
   return server

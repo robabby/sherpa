@@ -1,8 +1,8 @@
 ---
-status: approved
+status: declined
 initiative: dispatch-evolution
 created: 2026-03-19
-updated: '2026-03-19'
+updated: '2026-06-17'
 type: new-plan
 risk: evolutionary
 targets:

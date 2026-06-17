@@ -5,21 +5,15 @@ export * from "./schemas"
 // Pure logic
 export * from "./lifecycle"
 export * from "./playbooks"
-export * from "./dispatch"
 export * from "./process-nodes-shared"
 
 // Workflow canvas
 export * from "./workflow"
 
 // Self-contained modules
-export * from "./tasks"
-export * from "./task-events"
 export * from "./mcp-dashboard"
 
 // Linear integration
-export * from "./linear-client"
-export * from "./linear-mapping"
-export * from "./linear-tasks"
 
 // Parsing
 export * from "./markdown"
@@ -50,6 +44,7 @@ export * from "./cross-project"
 
 // Doc tree (types + pure functions only — fs-dependent functions via sub-path "@sherpa/studio-core/doc-tree")
 export * from "./doc-tree-types"
+export * from "./doc-drift"
 
 // Composites
 export * from "./file-tree"
@@ -58,3 +53,6 @@ export * from "./domain"
 
 // Initiative operations (MCP-facing CRUD)
 export * from "./initiative-ops"
+
+// Claude Code session logs (OBSERVE surfaces)
+export * from "./claude-code-sessions"

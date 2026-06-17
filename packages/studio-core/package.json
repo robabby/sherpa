@@ -29,7 +29,6 @@
     "./schemas": "./src/schemas.ts",
     "./lifecycle": "./src/lifecycle.ts",
     "./process-nodes-shared": "./src/process-nodes-shared.ts",
-    "./tasks": "./src/tasks.ts",
     "./mcp-dashboard": "./src/mcp-dashboard.ts",
     "./markdown": "./src/markdown.ts",
     "./activity-links": "./src/activity-links.ts",
@@ -46,14 +45,12 @@
     "./tokens": "./src/tokens.ts",
     "./patterns": "./src/patterns.ts",
     "./playbooks": "./src/playbooks.ts",
-    "./dispatch-meta": "./src/dispatch-meta.ts",
-    "./task-events": "./src/task-events.ts",
     "./doc-tree": "./src/doc-tree.ts",
+    "./doc-tree-types": "./src/doc-tree-types.ts",
     "./db": "./src/db/index.ts",
     "./knowledge": "./src/knowledge/index.ts",
     "./workflow": "./src/workflow.ts",
-    "./initiative-ops": "./src/initiative-ops.ts",
-    "./linear-client": "./src/linear-client.ts"
+    "./initiative-ops": "./src/initiative-ops.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

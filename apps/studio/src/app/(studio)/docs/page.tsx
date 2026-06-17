@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 
 import { DocsWorkspace } from "@/components/studio/docs-workspace";
-import { getDocTree, getDocContent, getDocsByCategory } from "@/lib/studio";
+import {
+  getDocTree,
+  getDocContent,
+  getDocsByCategory,
+  buildInitiativeTargetIndex,
+  computeDocDrift,
+} from "@/lib/studio";
 import { getResearchByTrack } from "@/lib/studio";
 import { markDocReviewed } from "./actions";
 
@@ -16,10 +22,14 @@ export default async function DocsPage({
   searchParams: Promise<{ doc?: string }>;
 }) {
   const { doc: selectedSlug } = await searchParams;
-  const sections = getDocTree();
+  const targetIndex = buildInitiativeTargetIndex();
+  const sections = getDocTree(undefined, { targetIndex });
 
   const slug = selectedSlug ?? sections[0]?.nodes[0]?.slug ?? null;
-  const initialDoc = slug ? getDocContent(slug) : null;
+  const rawDoc = slug ? getDocContent(slug) : null;
+  const initialDoc = rawDoc
+    ? { ...rawDoc, drift: computeDocDrift(rawDoc.provenance, targetIndex) }
+    : null;
 
   const docs = getDocsByCategory();
   const research = getResearchByTrack();

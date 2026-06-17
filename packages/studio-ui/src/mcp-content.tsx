@@ -229,12 +229,12 @@ function LmStudioCard({
 // ---------------------------------------------------------------------------
 
 const DOMAIN_STYLES = {
-  tasks: {
+  governance: {
     border: "border-[var(--color-mcp)]/15",
     badge: "border-[var(--color-mcp)]/30 bg-[var(--color-mcp)]/8 text-[var(--color-mcp)]",
     dot: "bg-[var(--color-mcp)]/60",
   },
-  infrastructure: {
+  knowledge: {
     border: "border-[var(--color-mcp)]/10",
     badge:
       "border-muted-foreground/20 bg-muted-foreground/8 text-muted-foreground/70",
@@ -432,8 +432,8 @@ interface McpContentProps {
 }
 
 export function McpContent({ data }: McpContentProps) {
-  const taskTools = data.tools.filter((t) => t.domain === "tasks");
-  const infraTools = data.tools.filter((t) => t.domain === "infrastructure");
+  const governanceTools = data.tools.filter((t) => t.domain === "governance");
+  const knowledgeTools = data.tools.filter((t) => t.domain === "knowledge");
 
   return (
     <MotionConfig reducedMotion="user">
@@ -473,8 +473,8 @@ export function McpContent({ data }: McpContentProps) {
           </p>
         </motion.div>
 
-        {/* Task tools */}
-        {taskTools.length > 0 && (
+        {/* Governance tools */}
+        {governanceTools.length > 0 && (
           <div>
             <motion.div
               variants={fadeVariant}
@@ -482,22 +482,22 @@ export function McpContent({ data }: McpContentProps) {
             >
               <span className="h-1 w-1 rounded-full bg-[var(--color-mcp)]/60" />
               <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--color-mcp)]/70">
-                Tasks
+                Governance
               </span>
               <span className="text-[10px] text-muted-foreground/40">
-                {taskTools.length}
+                {governanceTools.length}
               </span>
             </motion.div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {taskTools.map((tool) => (
+              {governanceTools.map((tool) => (
                 <ToolCard key={tool.name} tool={tool} />
               ))}
             </div>
           </div>
         )}
 
-        {/* Infrastructure tools */}
-        {infraTools.length > 0 && (
+        {/* Knowledge tools */}
+        {knowledgeTools.length > 0 && (
           <div>
             <motion.div
               variants={fadeVariant}
@@ -505,14 +505,14 @@ export function McpContent({ data }: McpContentProps) {
             >
               <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
               <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground/50">
-                Infrastructure
+                Knowledge
               </span>
               <span className="text-[10px] text-muted-foreground/40">
-                {infraTools.length}
+                {knowledgeTools.length}
               </span>
             </motion.div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {infraTools.map((tool) => (
+              {knowledgeTools.map((tool) => (
                 <ToolCard key={tool.name} tool={tool} />
               ))}
             </div>

@@ -1,8 +1,8 @@
 ---
-status: approved
+status: declined
 initiative: ai-sdk-dispatch
 created: 2026-03-13
-updated: '2026-03-13'
+updated: '2026-06-17'
 type: research-synthesis
 risk: additive
 targets:

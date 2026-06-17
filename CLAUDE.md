@@ -1,6 +1,6 @@
 # Sherpa
 
-Behavioral agentic collaboration framework. A toolkit for running Human+AI collaborative workflows using filesystem-based governance, behavioral agent definitions, and AI-native process conventions.
+Governance engine for Human+AI collaboration. Filesystem-based governance, behavioral role conventions, and provenance tracking — the process layer that works alongside your AI development tools (Claude Code) rather than dispatching agents itself.
 
 ## Three Entities
 
@@ -17,15 +17,15 @@ apps/
   studio/         Next.js 16 Studio app (Tailwind v4, shadcn/ui)    [pnpm workspace]
 packages/
   studio-core/    @sherpa/studio-core — domain logic, types, schemas [pnpm workspace]
-  studio-ui/      @sherpa/studio-ui — 91 React components            [pnpm workspace]
-  studio-mcp/     @sherpa/studio-mcp — MCP server                    [pnpm workspace]
+  studio-ui/      @sherpa/studio-ui — React components               [pnpm workspace]
+  studio-mcp/     @sherpa/studio-mcp — MCP governance + knowledge API [pnpm workspace]
   studio/         @sherpa/studio — umbrella (withSherpa, defineConfig)[pnpm workspace]
 docs/
-  initiatives/    Initiative directories (proposal → plan → activity → implementation)
-  agents/roles/   Behavioral agent role definitions
+  initiatives/    Initiative directories (proposal → shape → plan → integrate)
+  agents/roles/   Behavioral role definitions (authored conventions)
 .claude/
   rules/          Convention files (auto-load via globs)
-  skills/         Skill commands (/rr, /integration-review, /plan-tasks)
+  skills/         Skill commands (/rr, /propose, /shape, /design, /integrate)
 .worktrees/       Git worktrees for isolated work
 ```
 
@@ -40,53 +40,45 @@ pnpm check        # Typecheck all packages
 pnpm install      # Install all dependencies
 ```
 
-## The Seven Pillars
+## The Pillars
 
-1. **Behavioral Agent System** — role definitions with behavioral constraints, not identity claims
-2. **Governance Engine** — initiative lifecycle, directoturtle convention, integration review
-3. **Execution Pipeline** — Planner/Worker/Judge dispatch, task board, MCP server
-4. **Studio Application** — shadcn/ui visualization of agentic workflows
+1. **Governance Engine** — initiative lifecycle (propose → shape → plan → integrate), directoturtle convention, integration review
+2. **Provenance & Drift** — maintained docs track authorship/review/verification; git-aware drift flags docs whose related code moved (`studio-core/doc-drift`)
+3. **Behavioral Role Conventions** — role definitions with behavioral constraints, not identity claims
+4. **Studio Application** — shadcn/ui pane-of-glass over the governance lifecycle; observes Claude Code sessions
 5. **Executable Conventions** — skills, rules, CLAUDE.md templates, hooks
 6. **Config-as-Code** — `sherpa.config.ts` with `defineConfig()`, vocabulary, theming, plugins
 7. **Convention Sync CLI** — `sherpa init`, `sherpa sync`, provenance tracking
 
+## Operating Model
+
+**Pane of glass.** The governance lifecycle is driven *through Claude Code* (the skills below + the MCP governance API). Studio reads, visualizes, verifies, and surfaces provenance/drift — the one write it owns is the human **mark-verified** action. Autonomous agent execution is delegated to external tools (Claude Code, OpenClaw), not run by Studio.
+
 ## Current Phase
 
-**Monorepo with Studio.** The `@sherpa/studio-*` packages have been extracted from WavePoint. The Studio app runs against Sherpa's own governance data (initiatives, rules, skills, agents). WavePoint-specific panels (primitives, API catalog, transit content, portfolio) are stubbed out.
+**Governance refocus.** Studio does one thing — the governance lifecycle. The autonomous-agent dispatch layer has been removed (see `docs/initiatives/studio-governance-refocus/`). The MCP server exposes governance (`initiative_*`) + knowledge (`search_knowledge`, `get_summary`, …) tools; the Sessions surface reflects real Claude Code logs.
 
 ## Conventions
 
 Cross-cutting conventions auto-load from `.claude/rules/` based on file globs:
 
 - `initiative-convention.md` — directoturtle structure, proposal format, activity logs
-- `behavioral-engineering.md` — agent roles use behavioral constraints, not identity claims
+- `behavioral-engineering.md` — role definitions use behavioral constraints, not identity claims
 - `effort-estimation.md` — sessions as unit of effort, not calendar time
 - `claude-md-standards.md` — CLAUDE.md authoring rules
 - `worktree-conventions.md` — naming, lifecycle, cleanup
-
-## Dispatch
-
-```bash
-./scripts/dispatch.sh <role-slug>       # Interactive: launch CLI for a role
-./scripts/worker.sh <task-slug>         # Headless: dispatch a task to its backend
-./scripts/auto-judge.sh <task-slug>     # Judge: review completed task
-./scripts/dispatch-queue.sh --pending   # Queue: dispatch all pending tasks
-```
-
-Task CRUD is via Linear (MCP tools: `task_list`, `task_get`, `task_create`, `task_update`).
-
-9 backends: 5 CLI (`claude`, `opencode`, `codex`, `gemini`, `lm-studio`), 3 API (`groq`, `google-ai`, `lm-studio-api`), 1 gateway (`openclaw` — remote OpenClaw agent via WebSocket protocol v3). Routing configured in `sherpa.config.ts` dispatch section. Task-type determines backend; `openclaw` is explicit-only (set `backend: openclaw` on the task).
+- `provenance-convention.md` — doc provenance frontmatter, banners, drift
 
 ## Skills
 
 - `/rr` — Recursive research. The discovery engine for initiatives.
-- `/integration-review` — Batch review of pending proposals.
-- `/plan-tasks` — Break approved initiatives into dispatchable tasks.
+- `/propose` · `/shape` · `/design` — turn an idea into a scoped, designed initiative.
+- `/integrate` · `/integration-review` — fold completed work into the docs with provenance.
 
 ## Docs
 
 | File | Purpose |
 |------|---------|
 | `docs/initiatives/` | Initiative directories — research, proposals, plans |
-| `docs/agents/roles/` | Behavioral agent role definitions |
-| `docs/templates/server-provision.md` | Hetzner VPS provisioning runbook — standard stack, volume layout, security baseline |
+| `docs/architecture/` | System architecture (maintained docs with provenance) |
+| `docs/agents/roles/` | Behavioral role definitions |

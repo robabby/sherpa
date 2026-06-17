@@ -1,8 +1,8 @@
 ---
-status: approved
+status: declined
 initiative: linear-initiative-sync
 created: 2026-03-22
-updated: '2026-03-22'
+updated: '2026-06-17'
 type: new-plan
 risk: evolutionary
 targets:

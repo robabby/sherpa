@@ -4,14 +4,12 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
   GitBranch,
-  CheckSquare,
-  Send,
-  Workflow,
   FileText,
   BookOpen,
   Zap,
   Play,
   Users,
+  FlaskConical,
   Clock,
   Plug,
   Activity,
@@ -25,10 +23,7 @@ import {
   CommandItem,
   CommandSeparator,
 } from "@/components/ui/command";
-import type {
-  CommandPaletteData,
-  CommandPaletteItem,
-} from "@/app/(studio)/actions/command-palette-items";
+import type { CommandPaletteData } from "@/app/(studio)/actions/command-palette-items";
 import { getCommandPaletteItems } from "@/app/(studio)/actions/command-palette-items";
 
 /* -------------------------------------------------------------------------- */
@@ -37,14 +32,12 @@ import { getCommandPaletteItems } from "@/app/(studio)/actions/command-palette-i
 
 const ROUTE_ICONS: Record<string, React.ElementType> = {
   "/process": GitBranch,
-  "/tasks": CheckSquare,
-  "/dispatch": Send,
-  "/workflow": Workflow,
-  "/docs": FileText,
   "/conventions": BookOpen,
   "/skills": Zap,
   "/playbooks": Play,
-  "/workforce": Users,
+  "/roles": Users,
+  "/docs": FileText,
+  "/research": FlaskConical,
   "/sessions": Clock,
   "/mcp": Plug,
   "/activity": Activity,
@@ -138,30 +131,6 @@ export function CommandPalette() {
                       onSelect={() => handleSelect(item.href)}
                     >
                       <GitBranch />
-                      <span>{item.label}</span>
-                      {item.status && (
-                        <span className="ml-auto font-mono text-xs text-muted-foreground">
-                          {item.status}
-                        </span>
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </>
-            )}
-
-            {/* Tasks */}
-            {data.tasks.length > 0 && (
-              <>
-                <CommandSeparator />
-                <CommandGroup heading="Tasks">
-                  {data.tasks.map((item) => (
-                    <CommandItem
-                      key={item.href}
-                      keywords={item.keywords}
-                      onSelect={() => handleSelect(item.href)}
-                    >
-                      <CheckSquare />
                       <span>{item.label}</span>
                       {item.status && (
                         <span className="ml-auto font-mono text-xs text-muted-foreground">

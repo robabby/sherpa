@@ -12,7 +12,6 @@ import type {
   ThemeConfig,
   VocabularyConfig,
 } from "./types"
-import { DEFAULT_DISPATCH } from "../dispatch"
 
 export const DEFAULT_DOC_SECTIONS: DocSectionConfig[] = [
   { label: "Architecture", path: "docs/architecture", type: "directory" },
@@ -138,7 +137,6 @@ export function buildDefaults(userConfig: SherpaUserConfig): SherpaConfig {
       },
     },
     projects: userConfig.projects ?? [],
-    dispatch: { ...DEFAULT_DISPATCH, ...userConfig.dispatch },
     plugins: userConfig.plugins ?? [],
   }
 }

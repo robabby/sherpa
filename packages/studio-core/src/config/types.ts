@@ -3,8 +3,6 @@
 // framework resolves (SherpaConfig) after merging defaults + plugins.
 // ---------------------------------------------------------------------------
 
-import type { DispatchConfig } from "../dispatch"
-
 /** Plugin: receives resolved config, returns modified config. */
 export type SherpaPlugin = (config: SherpaConfig) => SherpaConfig
 
@@ -186,8 +184,6 @@ export interface SherpaUserConfig {
   knowledge?: KnowledgeConfig
   /** Governance configuration. */
   governance?: GovernanceConfig
-  /** Dispatch routing configuration. */
-  dispatch?: Partial<DispatchConfig>
   /** Additional projects to federate in Studio. */
   projects?: ProjectConfig[]
   /**
@@ -216,6 +212,5 @@ export interface SherpaConfig {
   knowledge: Required<KnowledgeConfig>
   governance: GovernanceConfig
   projects: ProjectConfig[]
-  dispatch: DispatchConfig
   plugins: SherpaPlugin[]
 }

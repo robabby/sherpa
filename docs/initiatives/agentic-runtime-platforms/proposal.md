@@ -1,8 +1,8 @@
 ---
-status: approved
+status: declined
 initiative: agentic-runtime-platforms
 created: 2026-03-17
-updated: '2026-03-18'
+updated: '2026-06-17'
 type: new-plan
 risk: structural
 targets:

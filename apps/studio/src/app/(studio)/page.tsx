@@ -14,11 +14,8 @@ import {
 } from "@/lib/studio"
 import { readProjectFile } from "@/lib/studio/content"
 import type { HubStats, Initiative, Session } from "@/lib/studio"
-import path from "path"
-import { getTaskBoard } from "@/lib/studio/tasks"
-import { getBackendHealth, getAllProjects, getPrimarySlug } from "@sherpa/studio-core"
+import { getAllProjects, getPrimarySlug } from "@sherpa/studio-core"
 
-const PROJECT_ROOT = path.resolve(process.cwd(), "../..")
 import { getMcpDashboard } from "@/lib/studio/mcp"
 
 function computeSessionStats(sessions: Session[]): HubStats["sessions"] {
@@ -166,14 +163,10 @@ export default async function StudioPage() {
   const portfolio = getPortfolio()
   const skills = getSkills()
   const sessions = getSessions()
-  const tasks = await getTaskBoard()
-  const health = getBackendHealth(PROJECT_ROOT)
   const mcpData = await getMcpDashboard()
 
   const attentionNeeded = buildAttentionNeeded(initiatives, workstreams)
   const pendingReview = buildPendingReview(initiatives)
-  const failedTasks = tasks.filter((t) => t.status === "failed")
-  const activeTasks = tasks.filter((t) => t.status === "dispatched" || t.status === "running")
   const inProgressInitiatives = initiatives.filter((i) => i.status === "in-progress")
   const staleCount = initiatives.filter((i) => {
     if (i.status !== "in-progress" && i.status !== "approved") return false
@@ -185,7 +178,7 @@ export default async function StudioPage() {
   // Deduplicate: remove pendingReview items already covered by attentionNeeded
   const attentionSlugs = new Set(attentionNeeded.map((a) => a.slug))
   const uniquePendingReview = pendingReview.filter((p) => !attentionSlugs.has(p.slug))
-  const actionCount = attentionNeeded.length + uniquePendingReview.length + failedTasks.length
+  const actionCount = attentionNeeded.length + uniquePendingReview.length
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-6">
@@ -245,16 +238,6 @@ export default async function StudioPage() {
                   days={item.days}
                 />
               ))}
-              {/* Failed tasks */}
-              {failedTasks.map((task) => (
-                <ActionCard key={task.id} href={`/tasks/${task.id}`}
-                  title={task.title || task.id}
-                  description={`Task dispatch failed — ${task.backend} backend`}
-                  badge="Failed"
-                  badgeVariant="failed"
-                  days={daysSinceDate(task.created, Date.now())}
-                />
-              ))}
             </div>
           )}
         </section>
@@ -264,8 +247,8 @@ export default async function StudioPage() {
           <h2 className="mb-4 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
             Active Work
           </h2>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {/* Left column: In-progress initiatives */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* In-progress initiatives */}
             <div className="rounded-xl border border-border/50 bg-card/30 p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-[13px] font-medium text-foreground">In-Progress Initiatives</h3>
@@ -287,41 +270,6 @@ export default async function StudioPage() {
               </div>
             </div>
 
-            {/* Right column: Active tasks + dispatches */}
-            <div className="rounded-xl border border-border/50 bg-card/30 p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-[13px] font-medium text-foreground">Tasks &amp; Dispatch</h3>
-                <span className="text-[12px] text-muted-foreground">{activeTasks.length} running</span>
-              </div>
-              <div className="space-y-2.5">
-                {activeTasks.slice(0, 6).map((task) => (
-                  <a key={task.id} href={`/tasks/${task.id}`} className="flex items-center justify-between group">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded bg-indigo-500/10 px-2 py-0.5 font-mono text-[11px] text-indigo-400">Running</span>
-                      <span className="text-[13px] text-foreground/90 group-hover:text-foreground transition-colors">{task.title || task.id}</span>
-                    </div>
-                    <span className="font-mono text-[11px] text-muted-foreground">{task.backend}</span>
-                  </a>
-                ))}
-                {activeTasks.length === 0 && (
-                  <p className="text-[13px] text-muted-foreground">No tasks running</p>
-                )}
-                {/* Backend health row */}
-                <div className="mt-2 border-t border-border/30 pt-2">
-                  <div className="flex items-center justify-between text-[12px]">
-                    <span className="text-muted-foreground">Backend Health</span>
-                    <div className="flex items-center gap-2">
-                      {health.map((b) => (
-                        <span key={b.backend} className="flex items-center gap-1">
-                          <span className={`inline-block size-1.5 rounded-full ${b.available ? "bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.4)]" : "bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.3)]"}`} />
-                          <span className="text-muted-foreground">{b.backend}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -331,13 +279,8 @@ export default async function StudioPage() {
             <summary className="flex cursor-pointer list-none items-center gap-2 text-muted-foreground">
               <svg className="size-3.5 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               <span className="font-mono text-[11px] uppercase tracking-[0.12em]">System Status</span>
-              <div className="flex items-center gap-1.5 ml-1">
-                {health.map((b) => (
-                  <span key={b.backend} className={`inline-block size-1.5 rounded-full ${b.available ? "bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.4)]" : "bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.3)]"}`} />
-                ))}
-              </div>
             </summary>
-            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
               {/* MCP */}
               <div className="rounded-xl border border-border/50 bg-card/30 p-4">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">MCP Server</div>
@@ -349,18 +292,6 @@ export default async function StudioPage() {
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Sessions</div>
                 <div className="text-sm text-foreground">{sessionStats.total} total · {sessionStats.thisWeek} this week</div>
                 <div className="mt-1 text-[12px] text-muted-foreground">{(sessionStats.weeklyTokens / 1_000_000).toFixed(1)}M tokens weekly</div>
-              </div>
-              {/* Backends */}
-              <div className="rounded-xl border border-border/50 bg-card/30 p-4">
-                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Backends</div>
-                <div className="space-y-1 mt-1">
-                  {health.map((b) => (
-                    <div key={b.backend} className="flex items-center justify-between text-[12px]">
-                      <span className="text-foreground/80">{b.backend}</span>
-                      <span className={b.available ? "text-emerald-400" : "text-amber-400"}>{b.available ? "available" : "unavailable"}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           </details>

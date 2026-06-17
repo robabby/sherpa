@@ -6,6 +6,7 @@ import { getDefaultContext } from "./config"
 import type { ProjectContext } from "./config/types"
 import { resolveCtxPath } from "./context"
 import { parseProvenance, computeState } from "./doc-tree-types"
+import { computeDocDrift } from "./doc-drift"
 import type { DocTreeNode, DocTreeSection, Provenance } from "./doc-tree-types"
 
 // Re-export types and pure functions so existing server-side imports still work
@@ -126,12 +127,35 @@ export function scanDirectory(
 // ---------------------------------------------------------------------------
 
 /**
+ * Recursively apply git-aware drift to a node and its children: when a doc has
+ * drifted, set node.drift and recompute node.state (-> "stale").
+ */
+function applyDrift(
+  node: DocTreeNode,
+  targetIndex: Map<string, string[]>,
+  ctx: ProjectContext,
+): void {
+  const drift = computeDocDrift(node.provenance, targetIndex, ctx)
+  if (drift) {
+    node.drift = drift
+    node.state = computeState(node.provenance, drift)
+  }
+  for (const child of node.children) applyDrift(child, targetIndex, ctx)
+}
+
+/**
  * Build the full documentation tree, grouped into labeled sections.
  *
  * Sections are driven by `ctx.paths.docSections` — each entry specifies
  * a label, path, and scan type ("directory", "files", or "file").
+ *
+ * When `opts.targetIndex` (slug -> initiative targets) is provided, git-aware
+ * drift is computed for every maintained node and folded into its state.
  */
-export function getDocTree(ctx?: ProjectContext): DocTreeSection[] {
+export function getDocTree(
+  ctx?: ProjectContext,
+  opts?: { targetIndex?: Map<string, string[]> },
+): DocTreeSection[] {
   const c = ctx ?? getDefaultContext()
   const basePath = resolveCtxPath(c, "docs")
   const sections: DocTreeSection[] = []
@@ -150,6 +174,12 @@ export function getDocTree(ctx?: ProjectContext): DocTreeSection[] {
       if (nodes.length > 0) {
         sections.push({ label: section.label, nodes })
       }
+    }
+  }
+
+  if (opts?.targetIndex) {
+    for (const section of sections) {
+      for (const node of section.nodes) applyDrift(node, opts.targetIndex, c)
     }
   }
 

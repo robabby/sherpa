@@ -6,7 +6,6 @@ import {
   getAllProjects,
   getPrimarySlug,
 } from "@sherpa/studio-core";
-import { getTaskBoard } from "@/lib/studio/tasks";
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                      */
@@ -24,7 +23,6 @@ export interface CommandPaletteItem {
 export interface CommandPaletteData {
   routes: CommandPaletteItem[];
   initiatives: CommandPaletteItem[];
-  tasks: CommandPaletteItem[];
   skills: CommandPaletteItem[];
 }
 
@@ -33,25 +31,21 @@ export interface CommandPaletteData {
 /* -------------------------------------------------------------------------- */
 
 const STATIC_ROUTES: Omit<CommandPaletteItem, "project">[] = [
-  { label: "Process", href: "/process", group: "Operations", keywords: ["initiatives", "proposals", "governance"] },
-  { label: "Tasks", href: "/tasks", group: "Operations", keywords: ["task board", "dispatch", "workers"] },
-  { label: "Dispatch", href: "/dispatch", group: "Operations", keywords: ["queue", "agents", "backends"] },
-  { label: "Workflow", href: "/workflow", group: "Operations", keywords: ["pipeline", "planner", "worker", "judge"] },
-  { label: "Docs", href: "/docs", group: "Knowledge", keywords: ["documentation", "architecture", "guides"] },
-  { label: "Conventions", href: "/conventions", group: "Knowledge", keywords: ["rules", "standards", "patterns"] },
-  { label: "Skills", href: "/skills", group: "Knowledge", keywords: ["commands", "slash commands", "rr", "review"] },
-  { label: "Playbooks", href: "/playbooks", group: "Knowledge", keywords: ["recipes", "workflows", "automation"] },
-  { label: "Workforce", href: "/workforce", group: "System", keywords: ["agents", "roles", "behavioral"] },
-  { label: "Sessions", href: "/sessions", group: "System", keywords: ["context", "history", "logs"] },
-  { label: "MCP", href: "/mcp", group: "System", keywords: ["model context protocol", "server", "tools"] },
-  { label: "Activity", href: "/activity", group: "Activity", keywords: ["log", "timeline", "events"] },
+  { label: "Process", href: "/process", group: "Govern", keywords: ["initiatives", "proposals", "governance", "lifecycle"] },
+  { label: "Conventions", href: "/conventions", group: "Author", keywords: ["rules", "standards", "patterns"] },
+  { label: "Skills", href: "/skills", group: "Author", keywords: ["commands", "slash commands", "rr", "review"] },
+  { label: "Playbooks", href: "/playbooks", group: "Author", keywords: ["recipes", "sequences", "plays"] },
+  { label: "Roles", href: "/roles", group: "Author", keywords: ["agents", "behavioral", "roles", "conventions"] },
+  { label: "Docs", href: "/docs", group: "Author", keywords: ["documentation", "architecture", "guides"] },
+  { label: "Research", href: "/research", group: "Author", keywords: ["research", "iterations", "findings"] },
+  { label: "Sessions", href: "/sessions", group: "Observe", keywords: ["context", "history", "logs", "claude code"] },
+  { label: "Activity", href: "/activity", group: "Observe", keywords: ["log", "timeline", "events"] },
+  { label: "MCP", href: "/mcp", group: "Observe", keywords: ["model context protocol", "server", "tools"] },
 ];
 
 /* -------------------------------------------------------------------------- */
 /*  Server action                                                              */
 /* -------------------------------------------------------------------------- */
-
-const MAX_TASKS = 50;
 
 export async function getCommandPaletteItems(): Promise<CommandPaletteData> {
   const projects = getAllProjects();
@@ -105,15 +99,5 @@ export async function getCommandPaletteItems(): Promise<CommandPaletteData> {
     }
   }
 
-  // Tasks from Linear workspace
-  const taskBoard = await getTaskBoard();
-  const tasks: CommandPaletteItem[] = taskBoard.slice(0, MAX_TASKS).map((t) => ({
-    label: t.title,
-    href: `/projects/${primarySlug}/tasks/${t.id}`,
-    group: "Tasks",
-    status: t.status,
-    keywords: [t.id, t.status, t.initiative ?? "", t.backend].filter(Boolean),
-  }));
-
-  return { routes, initiatives, tasks, skills };
+  return { routes, initiatives, skills };
 }
