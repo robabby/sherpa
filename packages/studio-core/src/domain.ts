@@ -1,11 +1,11 @@
 import { getDefaultContext } from "./config"
+import { readClaudeCodeSessions } from "./claude-code-sessions"
 import type { ProjectContext } from "./config/types"
 import {
   readCtxFile,
   listCtxMarkdownFiles,
   listCtxSubdirectories,
   countCtxFiles,
-  listCtxJsonFiles,
   getCtxFileStats,
   findCtxClaudeMdFiles,
 } from "./context"
@@ -27,7 +27,6 @@ import {
   branchSeedFrontmatterSchema,
   initiativeFrontmatterSchema,
   ruleFrontmatterSchema,
-  sessionSchema,
   skillFrontmatterSchema,
 } from "./schemas"
 import type {
@@ -1025,29 +1024,13 @@ export function getUnifiedProcessData(
 }
 
 /**
- * Scan docs/sessions/*.json, parse and validate each, return Session[].
+ * Read Claude Code session logs (~/.claude/projects) for this project and
+ * return them as Session[], most recent first. The host-path coupling and the
+ * defensive JSONL parsing live in ./claude-code-sessions.
  */
 export function getSessions(ctx?: ProjectContext): Session[] {
   const c = ctx ?? getDefaultContext()
-  const files = listCtxJsonFiles(c, "docs/sessions")
-  const sessions: Session[] = []
-
-  for (const filePath of files) {
-    const source = readCtxFile(c, filePath)
-    if (!source) continue
-
-    try {
-      const raw = JSON.parse(source)
-      const parsed = sessionSchema.safeParse(raw)
-      if (parsed.success) {
-        sessions.push(parsed.data)
-      }
-    } catch {
-      // Skip malformed JSON
-    }
-  }
-
-  return sessions.sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+  return readClaudeCodeSessions({ projectRoot: c.root })
 }
 
 /**

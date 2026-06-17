@@ -52,3 +52,6 @@ export * from "./domain"
 
 // Initiative operations (MCP-facing CRUD)
 export * from "./initiative-ops"
+
+// Claude Code session logs (OBSERVE surfaces)
+export * from "./claude-code-sessions"
