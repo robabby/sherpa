@@ -7,7 +7,7 @@
  * and implementation provenance.
  *
  * These recipes are consumed by the /design skill to generate on-brand
- * UI prototypes, and by Storybook to demonstrate pattern composition.
+ * UI prototypes.
  */
 
 // ── Types ──────────────────────────────────────────────────────────
