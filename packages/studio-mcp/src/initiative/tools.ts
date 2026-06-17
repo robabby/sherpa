@@ -1,6 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
-import type Database from "better-sqlite3"
 import {
   listInitiatives,
   getInitiative,
@@ -11,7 +10,6 @@ import {
   appendActivity,
 } from "@sherpa/studio-core/initiative-ops"
 import type { GovernancePolicy } from "@sherpa/studio-core/initiative-ops"
-import { checkAuthority } from "../authority/operations.js"
 
 // ---------------------------------------------------------------------------
 // Options
@@ -20,29 +18,6 @@ import { checkAuthority } from "../authority/operations.js"
 export interface InitiativeToolsOptions {
   projectRoot: string
   approvalPolicy?: GovernancePolicy
-  requireAuthority?: boolean
-  coordinationDb?: Database.Database
-}
-
-// ---------------------------------------------------------------------------
-// Authority check helper
-// ---------------------------------------------------------------------------
-
-function checkAuth(
-  db: Database.Database | undefined,
-  scope: string,
-  agentId: string,
-  requireAuthority: boolean,
-): string | null {
-  if (!requireAuthority || !db) return null
-  const lease = checkAuthority(db, scope)
-  if (!lease || lease.agentId !== agentId) {
-    return `Authority required on scope '${scope}'. Acquire authority first.`
-  }
-  if (new Date(lease.expiresAt) < new Date()) {
-    return `Authority lease on '${scope}' has expired. Re-acquire.`
-  }
-  return null
 }
 
 // ---------------------------------------------------------------------------
@@ -54,7 +29,7 @@ export function registerInitiativeTools(
   server: McpServer,
   opts: InitiativeToolsOptions,
 ): void {
-  const { projectRoot, approvalPolicy = "additive-only", requireAuthority = false, coordinationDb } = opts
+  const { projectRoot, approvalPolicy = "additive-only" } = opts
 
   // -----------------------------------------------------------------------
   // Read-only tools
@@ -132,7 +107,7 @@ export function registerInitiativeTools(
   )
 
   // -----------------------------------------------------------------------
-  // Write tools (authority-gated when DB available)
+  // Write tools
   // -----------------------------------------------------------------------
 
   server.tool(
@@ -160,20 +135,8 @@ export function registerInitiativeTools(
         .describe("Risk level"),
       targets: z.array(z.string()).optional().describe("Target file or directory paths"),
       dependencies: z.array(z.string()).optional().describe("Slugs of blocking initiatives"),
-      agent_id: z.string().optional().describe("Agent ID for authority check"),
     },
-    async ({ slug, title, summary, body, type, risk, targets, dependencies, agent_id }) => {
-      // Authority check on the initiatives directory
-      if (agent_id) {
-        const authError = checkAuth(coordinationDb, "dir:docs/initiatives/", agent_id, requireAuthority)
-        if (authError) {
-          return {
-            content: [{ type: "text" as const, text: `Error: ${authError}` }],
-            isError: true,
-          }
-        }
-      }
-
+    async ({ slug, title, summary, body, type, risk, targets, dependencies }) => {
       const result = createInitiative(projectRoot, {
         slug,
         title,
@@ -206,17 +169,6 @@ export function registerInitiativeTools(
       agent_id: z.string().optional().describe("Agent ID — if provided, actor is 'agent' and governance policy applies"),
     },
     async ({ slug, agent_id }) => {
-      // Authority check on the initiative directory
-      if (agent_id) {
-        const authError = checkAuth(coordinationDb, `dir:docs/initiatives/${slug}/`, agent_id, requireAuthority)
-        if (authError) {
-          return {
-            content: [{ type: "text" as const, text: `Error: ${authError}` }],
-            isError: true,
-          }
-        }
-      }
-
       const actor = agent_id ? "agent" : "human"
       const result = approveInitiative(projectRoot, slug, actor, approvalPolicy)
 
@@ -241,20 +193,8 @@ export function registerInitiativeTools(
       status: z
         .enum(["pending", "approved", "in-progress", "integrated", "declined", "archived"])
         .describe("New status"),
-      agent_id: z.string().optional().describe("Agent ID for authority check"),
     },
-    async ({ slug, status, agent_id }) => {
-      // Authority check on the initiative directory
-      if (agent_id) {
-        const authError = checkAuth(coordinationDb, `dir:docs/initiatives/${slug}/`, agent_id, requireAuthority)
-        if (authError) {
-          return {
-            content: [{ type: "text" as const, text: `Error: ${authError}` }],
-            isError: true,
-          }
-        }
-      }
-
+    async ({ slug, status }) => {
       const result = updateInitiativeStatus(projectRoot, slug, status)
 
       if (!result.ok) {
@@ -276,20 +216,8 @@ export function registerInitiativeTools(
     {
       slug: z.string().describe("Initiative slug"),
       entry: z.string().describe("Activity entry text (will be timestamped automatically)"),
-      agent_id: z.string().optional().describe("Agent ID for authority check"),
     },
-    async ({ slug, entry, agent_id }) => {
-      // Authority check on the initiative directory
-      if (agent_id) {
-        const authError = checkAuth(coordinationDb, `dir:docs/initiatives/${slug}/`, agent_id, requireAuthority)
-        if (authError) {
-          return {
-            content: [{ type: "text" as const, text: `Error: ${authError}` }],
-            isError: true,
-          }
-        }
-      }
-
+    async ({ slug, entry }) => {
       const result = appendActivity(projectRoot, slug, entry)
 
       if (!result.ok) {

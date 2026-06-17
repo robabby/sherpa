@@ -5,21 +5,15 @@ export * from "./schemas"
 // Pure logic
 export * from "./lifecycle"
 export * from "./playbooks"
-export * from "./dispatch"
 export * from "./process-nodes-shared"
 
 // Workflow canvas
 export * from "./workflow"
 
 // Self-contained modules
-export * from "./tasks"
-export * from "./task-events"
 export * from "./mcp-dashboard"
 
 // Linear integration
-export * from "./linear-client"
-export * from "./linear-mapping"
-export * from "./linear-tasks"
 
 // Parsing
 export * from "./markdown"

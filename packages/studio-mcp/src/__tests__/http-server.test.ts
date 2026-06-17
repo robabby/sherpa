@@ -4,7 +4,6 @@ import path from "node:path"
 import os from "node:os"
 import { closeAll } from "@sherpa/studio-core/db"
 import { startHttpServer } from "../http-server"
-import { stopReaper } from "../authority/reaper"
 import type http from "node:http"
 
 // The http-server module registers SIGINT/SIGTERM handlers that call
@@ -15,7 +14,6 @@ let httpServer: http.Server | null = null
 let tmpDir: string | null = null
 
 afterEach(async () => {
-  stopReaper()
   if (httpServer) {
     await new Promise<void>((resolve, reject) => {
       httpServer!.close((err) => (err ? reject(err) : resolve()))
