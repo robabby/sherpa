@@ -1,8 +1,8 @@
 ---
-status: in-progress
+status: declined
 initiative: agentic-workforce
 created: 2026-03-06
-updated: 2026-03-12
+updated: '2026-06-17'
 started: 2026-03-06
 type: new-plan
 risk: structural

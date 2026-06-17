@@ -1,8 +1,8 @@
 ---
-status: in-progress
+status: declined
 initiative: agent-infrastructure
 created: 2026-03-06
-updated: 2026-03-07
+updated: '2026-06-17'
 type: new-plan
 risk: structural
 targets:

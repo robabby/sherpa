@@ -1,8 +1,8 @@
 ---
-status: approved
+status: declined
 initiative: studio-workflow-canvas
 created: 2026-03-16
-updated: '2026-03-16'
+updated: '2026-06-17'
 type: new-plan
 risk: evolutionary
 targets:

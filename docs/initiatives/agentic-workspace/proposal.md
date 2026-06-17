@@ -1,8 +1,8 @@
 ---
-status: approved
+status: declined
 initiative: agentic-workspace
 created: 2026-03-12T00:00:00.000Z
-updated: '2026-03-12'
+updated: '2026-06-17'
 started: 2026-03-12T00:00:00.000Z
 type: research-synthesis
 risk: additive
