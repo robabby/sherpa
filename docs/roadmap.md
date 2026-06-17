@@ -1,10 +1,12 @@
 # Sherpa Roadmap
 
-Last updated: 2026-03-16
+Last updated: 2026-06-17
 
-## Current Phase: Framework Extraction + Governance Foundation
+> **Direction update (2026-06-17):** Studio has been refocused onto the **governance lifecycle** as its single core; the autonomous-agent **dispatch/execution layer was removed** (see `docs/initiatives/studio-governance-refocus/`). Roadmap items below concerning dispatch, the agentic workforce, or overnight execution (`dispatch-center`, `agentic-workforce`, `ai-sdk-dispatch`, `scheduled-dispatch`, agent instances, …) are **superseded** and retained only as historical context — see the portfolio triage in the refocus initiative. Execution is delegated to Claude Code / external tools; Studio is the pane of glass that governs it.
 
-The `@sherpa/studio-*` packages have been extracted from WavePoint into this monorepo. Studio runs against Sherpa's own governance data. The current phase builds the governance foundation: behavioral agent schema, coordination layer, and the first research-backed consulting positioning.
+## Current Phase: Governance Refocus
+
+Studio does one thing: the governance lifecycle (propose → shape → plan → integrate, with provenance). The autonomous-agent dispatch layer has been removed; the MCP server exposes governance + knowledge tools; the Sessions surface reflects real Claude Code logs. Near-term focus is making the governance loop legible and the provenance/drift surface useful.
 
 ## Recently Integrated
 
