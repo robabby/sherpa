@@ -46,6 +46,7 @@
     "./patterns": "./src/patterns.ts",
     "./playbooks": "./src/playbooks.ts",
     "./doc-tree": "./src/doc-tree.ts",
+    "./doc-tree-types": "./src/doc-tree-types.ts",
     "./db": "./src/db/index.ts",
     "./knowledge": "./src/knowledge/index.ts",
     "./workflow": "./src/workflow.ts",

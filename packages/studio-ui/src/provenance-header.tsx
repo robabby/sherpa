@@ -2,12 +2,13 @@
 
 import { Monitor, ShieldCheck, User, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import type { Provenance, ProvenanceState } from "@sherpa/studio-core"
+import type { Provenance, ProvenanceState, DocDrift } from "@sherpa/studio-core"
 import { cn } from "./lib/utils"
 
 interface ProvenanceHeaderProps {
   provenance: Provenance
   state: ProvenanceState
+  drift?: DocDrift | null
   onMarkReviewed?: () => void
 }
 
@@ -59,6 +60,7 @@ const stateConfig: Record<
 export function ProvenanceHeader({
   provenance,
   state,
+  drift,
   onMarkReviewed,
 }: ProvenanceHeaderProps) {
   const config = stateConfig[state]
@@ -86,8 +88,8 @@ export function ProvenanceHeader({
           )}
         </div>
 
-        {/* Action: Mark as Reviewed button (awaiting-review only) */}
-        {state === "awaiting-review" && onMarkReviewed && (
+        {/* Action: Mark as Reviewed — for unreviewed or drifted (stale) docs */}
+        {(state === "awaiting-review" || state === "stale") && onMarkReviewed && (
           <button
             onClick={onMarkReviewed}
             className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-gold)]/10 border border-[var(--color-gold)]/30 px-3 py-1 text-xs font-medium text-[var(--color-gold)] hover:bg-[var(--color-gold)]/20 transition-colors"
@@ -110,6 +112,15 @@ export function ProvenanceHeader({
       {config.sublabel && (
         <div className="text-[11px] text-muted-foreground/50 mb-2">
           {config.sublabel}
+        </div>
+      )}
+
+      {/* Drift detail (stale state) */}
+      {state === "stale" && drift && (
+        <div className="text-[11px] text-rose-400/70 mb-2">
+          {drift.commitsSinceVerified} commit
+          {drift.commitsSinceVerified === 1 ? "" : "s"} to related code
+          {provenance.lastVerified ? ` since verified ${provenance.lastVerified}` : ""}
         </div>
       )}
 

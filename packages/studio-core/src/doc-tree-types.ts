@@ -25,6 +25,16 @@ export interface Provenance {
   sourceInitiatives: string[]
 }
 
+/** Git-aware drift signal for a maintained doc (see ./doc-drift). */
+export interface DocDrift {
+  /** Code/doc paths this doc derives from — union of its source initiatives' targets. */
+  relatedPaths: string[]
+  /** Commits touching relatedPaths since the doc's last-verified date. */
+  commitsSinceVerified: number
+  /** True when commitsSinceVerified > 0. */
+  isStale: boolean
+}
+
 export interface DocTreeNode {
   slug: string
   title: string
@@ -33,6 +43,8 @@ export interface DocTreeNode {
   state: ProvenanceState
   children: DocTreeNode[]
   lineCount: number
+  /** Present only when drift was computed (maintained doc with source initiatives). */
+  drift?: DocDrift | null
 }
 
 export interface DocTreeSection {
@@ -132,16 +144,26 @@ export function parseProvenance(
 // ---------------------------------------------------------------------------
 
 /**
- * Derive a ProvenanceState from provenance metadata.
+ * Derive a ProvenanceState from provenance metadata, optionally factoring in
+ * git-aware drift.
  *
  * - No provenance or maintained-by human -> "human-owned"
- * - reviewed-by human -> "verified"
+ * - maintained doc whose related code moved since verification -> "stale"
+ * - reviewed-by human or ai -> "verified"
  * - reviewed-by null -> "awaiting-review"
- * - reviewed-by ai -> "verified" (AI-validated counts as verified)
+ *
+ * Drift only fires for docs that were previously verified (they carry a
+ * last-verified date), so "stale" never masks "awaiting-review".
  */
-export function computeState(provenance: Provenance): ProvenanceState {
+export function computeState(
+  provenance: Provenance,
+  drift?: DocDrift | null,
+): ProvenanceState {
   if (!provenance.maintainedBy || provenance.maintainedBy === "human") {
     return "human-owned"
+  }
+  if (drift?.isStale) {
+    return "stale"
   }
   if (provenance.reviewedBy === "human") {
     return "verified"

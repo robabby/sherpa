@@ -44,6 +44,7 @@ export * from "./cross-project"
 
 // Doc tree (types + pure functions only — fs-dependent functions via sub-path "@sherpa/studio-core/doc-tree")
 export * from "./doc-tree-types"
+export * from "./doc-drift"
 
 // Composites
 export * from "./file-tree"

@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ClipboardCheck, FileText } from "lucide-react";
 
-import type { DocTreeSection, Provenance, ProvenanceState } from "@sherpa/studio-core";
+import type { DocTreeSection, Provenance, DocDrift } from "@sherpa/studio-core";
+import { computeState } from "@sherpa/studio-core/doc-tree-types";
 
 import { cn } from "./lib/utils";
 import { DocTree } from "./doc-tree";
@@ -52,13 +53,6 @@ function stripProvenanceBanner(content: string): string {
     .trimStart();
 }
 
-/** Derive ProvenanceState from provenance metadata. */
-function computeProvenanceState(provenance: Provenance): ProvenanceState {
-  if (provenance.reviewedBy === "human") return "verified";
-  if (provenance.reviewedBy === null) return "awaiting-review";
-  return "human-owned";
-}
-
 /** Recursively count nodes with state === "awaiting-review" across all sections. */
 function countAwaitingReview(sections: DocTreeSection[]): number {
   let count = 0;
@@ -86,6 +80,7 @@ export interface DocsWorkspaceProps {
     content: string;
     relativePath: string;
     provenance: Provenance | null;
+    drift?: DocDrift | null;
   } | null;
   initialSlug: string | null;
   searchItems: { relativePath: string; fileName: string; title: string }[];
@@ -206,7 +201,7 @@ export function DocsWorkspace({
   const showProvenance =
     doc?.provenance && doc.provenance.maintainedBy === "self-documenting-system";
   const provenanceState = doc?.provenance
-    ? computeProvenanceState(doc.provenance)
+    ? computeState(doc.provenance, doc.drift)
     : null;
 
   return (
@@ -275,8 +270,11 @@ export function DocsWorkspace({
               <ProvenanceHeader
                 provenance={doc.provenance}
                 state={provenanceState}
+                drift={doc.drift}
                 onMarkReviewed={
-                  provenanceState === "awaiting-review" && onMarkReviewed
+                  (provenanceState === "awaiting-review" ||
+                    provenanceState === "stale") &&
+                  onMarkReviewed
                     ? async () => {
                         const result = await onMarkReviewed(doc.relativePath);
                         if (result.success) {
