@@ -7,8 +7,8 @@ interface HubMcpPanelProps {
 }
 
 export function HubMcpPanel({ data }: HubMcpPanelProps) {
-  const taskTools = data.tools.filter((t) => t.domain === "tasks");
-  const infraTools = data.tools.filter((t) => t.domain === "infrastructure");
+  const governanceTools = data.tools.filter((t) => t.domain === "governance");
+  const knowledgeTools = data.tools.filter((t) => t.domain === "knowledge");
 
   return (
     <HubPanel
@@ -59,8 +59,8 @@ export function HubMcpPanel({ data }: HubMcpPanelProps) {
             <span className="ml-1 text-xs text-muted-foreground/60">tools</span>
           </div>
           <div className="flex gap-3 font-mono text-xs text-muted-foreground/50">
-            <span>{taskTools.length} tasks</span>
-            <span>{infraTools.length} infra</span>
+            <span>{governanceTools.length} governance</span>
+            <span>{knowledgeTools.length} knowledge</span>
           </div>
         </div>
 
