@@ -113,7 +113,9 @@ describe("Lookup helpers", () => {
 
   it("getComponentsByDomain returns matching components", () => {
     const hub = getComponentsByDomain("hub")
-    expect(hub.length).toBeGreaterThanOrEqual(15)
+    // floor lowered 15→14: the 3 dispatch hub panels (tasks/workflow/workforce)
+    // were removed in the studio-governance-refocus initiative
+    expect(hub.length).toBeGreaterThanOrEqual(14)
     for (const h of hub) {
       expect(h.domain).toBe("hub")
     }

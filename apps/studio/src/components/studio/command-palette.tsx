@@ -25,10 +25,7 @@ import {
   CommandItem,
   CommandSeparator,
 } from "@/components/ui/command";
-import type {
-  CommandPaletteData,
-  CommandPaletteItem,
-} from "@/app/(studio)/actions/command-palette-items";
+import type { CommandPaletteData } from "@/app/(studio)/actions/command-palette-items";
 import { getCommandPaletteItems } from "@/app/(studio)/actions/command-palette-items";
 
 /* -------------------------------------------------------------------------- */
@@ -138,30 +135,6 @@ export function CommandPalette() {
                       onSelect={() => handleSelect(item.href)}
                     >
                       <GitBranch />
-                      <span>{item.label}</span>
-                      {item.status && (
-                        <span className="ml-auto font-mono text-xs text-muted-foreground">
-                          {item.status}
-                        </span>
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </>
-            )}
-
-            {/* Tasks */}
-            {data.tasks.length > 0 && (
-              <>
-                <CommandSeparator />
-                <CommandGroup heading="Tasks">
-                  {data.tasks.map((item) => (
-                    <CommandItem
-                      key={item.href}
-                      keywords={item.keywords}
-                      onSelect={() => handleSelect(item.href)}
-                    >
-                      <CheckSquare />
                       <span>{item.label}</span>
                       {item.status && (
                         <span className="ml-auto font-mono text-xs text-muted-foreground">
